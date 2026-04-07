@@ -19,7 +19,21 @@ npm run build
 
 ## رفع المشروع إلى GitHub
 
-`gh` غير مثبت على الجهاز؛ أنشئ مستودعاً فارغاً على GitHub (بدون README إن وُجد محلياً)، ثم من مجلد المشروع:
+### باستخدام GitHub CLI (`gh`)
+
+إذا كان [GitHub CLI](https://cli.github.com/) مثبتاً ومسجّلاً:
+
+```bash
+cd C:\Users\hosam\Projects\al-mubarmij-workshop
+gh auth login
+gh repo create al-mubarmij-workshop --public --source=. --remote=origin --push
+```
+
+`gh repo create` ينشئ المستودع ويربط `origin` ويدفع فرع `main` دفعة واحدة (عدّل اسم المستودع إن رغبت).
+
+### يدوياً
+
+أنشئ مستودعاً فارغاً على GitHub (بدون README إن وُجد محلياً)، ثم:
 
 ```bash
 cd C:\Users\hosam\Projects\al-mubarmij-workshop
