@@ -67,4 +67,5 @@ body {
   @apply rounded-xl border border-slate-600 bg-slate-900 p-4 font-mono text-sm text-emerald-100;
   direction: ltr;
   text-align: left;
+  tab-size: 4;
 }

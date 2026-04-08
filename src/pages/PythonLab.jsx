@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
 import { pythonExercises } from "../data/pythonExercises";
 import { curriculumUnits } from "../data/curriculum";
+import { formatSkulptError } from "../lib/pythonErrorHelp";
 import { ensureSkulptLoaded, runPythonWithSkulpt } from "../lib/skulptRun";
 
 export default function PythonLab() {
@@ -19,7 +19,7 @@ export default function PythonLab() {
 
   const [code, setCode] = useState(exercise.starter);
   const [out, setOut] = useState("");
-  const [err, setErr] = useState("");
+  const [feedback, setFeedback] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const filteredExercises = useMemo(() => {
@@ -33,7 +33,7 @@ export default function PythonLab() {
     setActiveId(id);
     setCode(ex.starter);
     setOut("");
-    setErr("");
+    setFeedback(null);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set("ex", id);
@@ -51,7 +51,7 @@ export default function PythonLab() {
       setActiveId(exFromUrl);
       setCode(ex.starter);
       setOut("");
-      setErr("");
+      setFeedback(null);
       if (ex?.unitId) setUnitFilter(ex.unitId);
     }
   }, [exFromUrl]);
@@ -65,7 +65,7 @@ export default function PythonLab() {
       setActiveId(first.id);
       setCode(first.starter);
       setOut("");
-      setErr("");
+      setFeedback(null);
       setSearchParams((prev) => {
         const p = new URLSearchParams(prev);
         p.set("ex", first.id);
@@ -77,12 +77,12 @@ export default function PythonLab() {
   async function run() {
     setBusy(true);
     setOut("");
-    setErr("");
+    setFeedback(null);
     try {
       const text = await runPythonWithSkulpt(code);
       setOut(text);
     } catch (e) {
-      setErr(String(e?.message || e));
+      setFeedback(e?.feedback ?? formatSkulptError(e));
     } finally {
       setBusy(false);
     }
@@ -91,12 +91,12 @@ export default function PythonLab() {
   return (
     <div className="min-h-screen bg-[#0a0e1a] pb-16 pt-24 font-ar text-white">
       <div className="mx-auto max-w-5xl px-4">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
+        <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold sm:text-4xl">مختبر بايثون</h1>
           <p className="mt-2 text-slate-400">
             تمارين مرتبطة بوحدات المسار — صفوف 4–8. استخدم الفلتر أدناه لتضييق القائمة حسب الموضوع.
           </p>
-        </motion.div>
+        </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <label className="text-sm text-slate-400">فلتر الوحدة:</label>
@@ -135,11 +135,18 @@ export default function PythonLab() {
             <label className="mb-2 block text-sm text-slate-400">الكود</label>
             <textarea
               dir="ltr"
-              className="code-editor min-h-[280px] w-full resize-y"
+              className="code-editor min-h-[min(70vh,520px)] w-full resize-y"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               spellCheck={false}
+              autoCapitalize="off"
+              autoCorrect="off"
             />
+            <p className="mt-2 text-xs leading-relaxed text-slate-500">
+              يمكنك كتابة برنامج متعدد الأسطر: <span dir="ltr">if</span>،{" "}
+              <span dir="ltr">for</span>، <span dir="ltr">while</span>، دوال، وقوائم — كما في دروس الورشة. التشغيل كامل
+              للكود المكتوب في المربع.
+            </p>
             <button
               type="button"
               onClick={run}
@@ -151,15 +158,44 @@ export default function PythonLab() {
             <p className="mt-3 text-xs text-amber-200/90">{exercise.hintAr}</p>
           </div>
           <div>
-            <label className="mb-2 block text-sm text-slate-400">المخرجات</label>
-            <pre
-              dir="ltr"
-              className="min-h-[200px] whitespace-pre-wrap rounded-xl border border-white/10 bg-black/50 p-4 text-left font-mono text-sm text-emerald-200"
-            >
-              {err ? `خطأ:\n${err}` : out || "اضغط «تشغيل الكود»"}
-            </pre>
+            <label className="mb-2 block text-sm text-slate-400">المخرجات والملاحظات</label>
+            {feedback ? (
+              <div
+                className="min-h-[220px] space-y-3 rounded-xl border border-amber-500/35 bg-amber-950/25 p-4 text-right"
+                dir="rtl"
+              >
+                <p className="text-base font-bold text-amber-100">{feedback.headlineAr}</p>
+                {feedback.line != null && (
+                  <p className="text-sm text-slate-300">
+                    رقم السطر المشار إليه في الرسالة (إن وُجد):{" "}
+                    <span dir="ltr" className="rounded bg-white/10 px-2 py-0.5 font-mono text-amber-200">
+                      {feedback.line}
+                    </span>
+                  </p>
+                )}
+                <p className="text-xs text-slate-500">تفاصيل تقنية (غالباً بالإنجليزية):</p>
+                <pre
+                  dir="ltr"
+                  className="max-h-[220px] overflow-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-black/50 p-3 text-left font-mono text-xs text-slate-300"
+                >
+                  {feedback.detail}
+                </pre>
+                <div className="rounded-lg border border-emerald-500/25 bg-emerald-950/30 p-3 text-sm leading-relaxed text-emerald-50">
+                  <span className="font-semibold text-emerald-300">كيف تصحّح؟ </span>
+                  {feedback.hintAr}
+                </div>
+              </div>
+            ) : (
+              <pre
+                dir="ltr"
+                className="min-h-[220px] whitespace-pre-wrap rounded-xl border border-white/10 bg-black/50 p-4 text-left font-mono text-sm text-emerald-200"
+              >
+                {out || "اضغط «تشغيل الكود»"}
+              </pre>
+            )}
             <p className="mt-4 text-xs leading-relaxed text-slate-500">
-              التشغيل يتم في المتصفح عبر Skulpt — مناسب للورشة دون تثبيت بايثون على كل جهاز.
+              التشغيل في المتصفح عبر Skulpt (بايثون للتعليم). بعض مكتبات بايثون الكبيرة غير متوفرة هنا — البرامج الطويلة
+              والشرطية والحلقات مدعومة ضمن ما يغطيه المنهج.
             </p>
           </div>
         </div>

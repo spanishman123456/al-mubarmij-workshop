@@ -1,5 +1,6 @@
 /** تشغيل بايثون في المتصفح عبر Skulpt — مسارات الملفات تُحلّ عبر Vite (?url) لتعمل مع أي base ونشر ثابت */
 
+import { formatSkulptError } from "./pythonErrorHelp.js";
 import skulptMinUrl from "../assets/skulpt/skulpt.min.js?url";
 import skulptStdlibUrl from "../assets/skulpt/skulpt-stdlib.js?url";
 
@@ -101,6 +102,10 @@ export async function runPythonWithSkulpt(code) {
     .asyncToPromise(() => Sk.importMainWithBody("<stdin>", false, code, true), Infinity)
     .then(() => out.join("") || "(لا يوجد إخراج)")
     .catch((err) => {
-      throw err;
+      const feedback = formatSkulptError(err);
+      const e = new Error(feedback.headlineAr);
+      e.name = "PythonRunError";
+      e.feedback = feedback;
+      throw e;
     });
 }
