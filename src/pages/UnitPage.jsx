@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { getUnitById, GRADES } from "../data/curriculum";
 
 export default function UnitPage() {
@@ -28,7 +28,7 @@ export default function UnitPage() {
           <span className="text-slate-800">{unit.titleAr}</span>
         </nav>
 
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <Motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <p className="text-xs font-medium text-violet-600">{unit.weekHint}</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-900">{unit.titleAr}</h1>
           <p className="mt-3 text-lg leading-relaxed text-slate-600">{unit.summaryAr}</p>
@@ -44,12 +44,27 @@ export default function UnitPage() {
               </span>
             ))}
           </div>
-        </motion.div>
+        </Motion.div>
+
+        <div className="mt-6 flex flex-wrap gap-3 text-sm">
+          <Link
+            to={`/worksheets?unit=${unit.id}`}
+            className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 font-semibold text-amber-900 hover:bg-amber-100"
+          >
+            ورقة عمل لهذه الوحدة
+          </Link>
+          <Link
+            to="/quizzes"
+            className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 font-semibold text-sky-900 hover:bg-sky-100"
+          >
+            الاختبارات الإلكترونية
+          </Link>
+        </div>
 
         <h2 className="mb-4 mt-10 text-xl font-bold text-slate-900">الدروس</h2>
         <ol className="space-y-3">
           {(unit.lessons ?? []).map((le, idx) => (
-            <motion.li
+            <Motion.li
               key={le.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -64,7 +79,7 @@ export default function UnitPage() {
                 </span>
                 <p className="mt-1 text-sm text-slate-600">{le.summaryAr}</p>
               </Link>
-            </motion.li>
+            </Motion.li>
           ))}
         </ol>
       </div>

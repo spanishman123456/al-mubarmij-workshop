@@ -1,18 +1,18 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { curriculumUnits, GRADES } from "../data/curriculum";
 
 export default function CurriculumPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-16 pt-24 font-ar">
       <div className="mx-auto max-w-5xl px-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center">
+        <Motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center">
           <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">المسار الدراسي للورشة</h1>
           <p className="mx-auto mt-3 max-w-2xl text-slate-600">
             هيكل كامل: <strong>وحدات</strong> و<strong>دروس</strong> و<strong>تمارين بايثون</strong> مرتبطة — مُحاذى
             لمقرر «برمجة الحاسب»؛ يمكن مطابقة النصوص حرفياً مع ملف المقرر الرسمي عند توفره.
           </p>
-        </motion.div>
+        </Motion.div>
 
         <div className="mb-10 flex flex-wrap justify-center gap-2">
           {GRADES.map((g) => (
@@ -27,7 +27,7 @@ export default function CurriculumPage() {
 
         <ul className="space-y-5">
           {curriculumUnits.map((u, idx) => (
-            <motion.li
+            <Motion.li
               key={u.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -62,7 +62,7 @@ export default function CurriculumPage() {
                   </span>
                 ))}
               </div>
-            </motion.li>
+            </Motion.li>
           ))}
         </ul>
       </div>

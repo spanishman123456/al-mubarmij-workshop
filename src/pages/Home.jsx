@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { BinaryToy } from "../components/BinaryToy";
 import { curriculumUnits, learningPillars } from "../data/curriculum";
 import { useState } from "react";
@@ -61,14 +61,14 @@ export default function Home() {
           />
         </div>
         <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
-          <motion.p
+          <Motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-2 text-sm font-medium text-violet-300"
           >
             ورشة برمجة الحاسب · صفوف 4 – 8
-          </motion.p>
-          <motion.h1
+          </Motion.p>
+          <Motion.h1
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
@@ -79,8 +79,8 @@ export default function Home() {
               {" "}
               البرمجة والعلوم الحاسوبية
             </span>
-          </motion.h1>
-          <motion.p
+          </Motion.h1>
+          <Motion.p
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.12 }}
@@ -88,8 +88,8 @@ export default function Home() {
           >
             محتوى مُحاذى لمقرر «برمجة الحاسب»: أسس علوم الحاسب، النظام الثنائي، الخوارزميات، المنطق، ولغة بايثون —
             مع أنشطة تفاعلية وتمارين كثيرة خاصة في بايثون.
-          </motion.p>
-          <motion.div
+          </Motion.p>
+          <Motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -107,7 +107,19 @@ export default function Home() {
             >
               المسار الدراسي
             </Link>
-          </motion.div>
+            <Link
+              to="/worksheets"
+              className="rounded-full border border-amber-400/40 bg-amber-500/20 px-8 py-3 font-bold text-amber-100 backdrop-blur hover:bg-amber-500/30"
+            >
+              أوراق العمل
+            </Link>
+            <Link
+              to="/quizzes"
+              className="rounded-full border border-sky-400/40 bg-sky-500/20 px-8 py-3 font-bold text-sky-100 backdrop-blur hover:bg-sky-500/30"
+            >
+              الاختبارات
+            </Link>
+          </Motion.div>
         </div>
       </section>
 
@@ -137,7 +149,7 @@ export default function Home() {
         </p>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {learningPillars.map((p, i) => (
-            <motion.div
+            <Motion.div
               key={p.titleAr}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -148,7 +160,7 @@ export default function Home() {
               <div className="mb-2 text-3xl">{p.icon}</div>
               <h3 className="text-lg font-bold text-slate-900">{p.titleAr}</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">{p.descAr}</p>
-            </motion.div>
+            </Motion.div>
           ))}
         </div>
       </section>

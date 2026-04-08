@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { getLessonById } from "../data/curriculum";
 import { pythonExercises } from "../data/pythonExercises";
 
@@ -37,10 +37,10 @@ export default function LessonPage() {
           <span className="text-slate-800">{lesson.titleAr}</span>
         </nav>
 
-        <motion.header initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <Motion.header initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-3xl font-bold text-slate-900">{lesson.titleAr}</h1>
           <p className="mt-3 text-lg text-slate-600">{lesson.summaryAr}</p>
-        </motion.header>
+        </Motion.header>
 
         <section className="mt-8">
           <h2 className="text-lg font-bold text-slate-900">أهداف التعلّم</h2>

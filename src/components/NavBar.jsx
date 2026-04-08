@@ -3,9 +3,14 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 export function NavBar() {
   const { pathname } = useLocation();
   const curriculumActive = pathname.startsWith("/curriculum");
+  const worksheetsActive = pathname.startsWith("/worksheets");
+  const quizzesActive = pathname.startsWith("/quizzes");
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#0a0e1a]/90 backdrop-blur-md">
+    <header
+      id="app-navbar"
+      className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#0a0e1a]/90 backdrop-blur-md print:hidden"
+    >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Link to="/" className="font-ar text-lg font-bold text-white">
           المبرمج الصغير{" "}
@@ -40,6 +45,26 @@ export function NavBar() {
             }
           >
             مختبر بايثون
+          </NavLink>
+          <NavLink
+            to="/worksheets"
+            className={() =>
+              `rounded-full px-3 py-1.5 font-ar transition ${
+                worksheetsActive ? "bg-amber-600 text-white" : "text-slate-300 hover:bg-white/10"
+              }`
+            }
+          >
+            أوراق العمل
+          </NavLink>
+          <NavLink
+            to="/quizzes"
+            className={() =>
+              `rounded-full px-3 py-1.5 font-ar transition ${
+                quizzesActive ? "bg-sky-600 text-white" : "text-slate-300 hover:bg-white/10"
+              }`
+            }
+          >
+            الاختبارات
           </NavLink>
         </nav>
       </div>

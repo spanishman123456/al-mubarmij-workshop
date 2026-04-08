@@ -69,3 +69,12 @@ body {
   text-align: left;
   tab-size: 4;
 }
+
+@media print {
+  #app-navbar {
+    display: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
