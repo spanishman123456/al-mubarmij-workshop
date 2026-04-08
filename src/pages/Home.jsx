@@ -159,14 +159,16 @@ export default function Home() {
           <h2 className="mb-8 text-center text-3xl font-bold text-slate-900">وحدات مستمدة من المقرر</h2>
           <div className="grid gap-4 md:grid-cols-2">
             {previewUnits.map((u) => (
-              <div
+              <Link
                 key={u.id}
-                className="rounded-2xl border border-white bg-white p-5 shadow-sm ring-1 ring-slate-100"
+                to={`/curriculum/unit/${u.id}`}
+                className="block rounded-2xl border border-white bg-white p-5 shadow-sm ring-1 ring-slate-100 transition hover:border-violet-200 hover:shadow-md"
               >
                 <p className="text-xs font-medium text-violet-600">{u.weekHint}</p>
                 <h3 className="mt-1 text-lg font-bold text-slate-900">{u.titleAr}</h3>
                 <p className="mt-2 line-clamp-3 text-sm text-slate-600">{u.summaryAr}</p>
-              </div>
+                <p className="mt-3 text-xs font-medium text-violet-600">عرض الدروس ←</p>
+              </Link>
             ))}
           </div>
           <div className="mt-8 text-center">

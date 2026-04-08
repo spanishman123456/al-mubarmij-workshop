@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { curriculumUnits, GRADES } from "../data/curriculum";
 
@@ -8,8 +9,8 @@ export default function CurriculumPage() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center">
           <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">المسار الدراسي للورشة</h1>
           <p className="mx-auto mt-3 max-w-2xl text-slate-600">
-            محاذاة مع محتوى كتاب <strong>برمجة الحاسب</strong> (أسس علوم الحاسب، والمنطق، وبايثون) مع توسيع
-            الصفوف من الرابع إلى الثامن كما طلبت.
+            هيكل كامل: <strong>وحدات</strong> و<strong>دروس</strong> و<strong>تمارين بايثون</strong> مرتبطة — مُحاذى
+            لمقرر «برمجة الحاسب»؛ يمكن مطابقة النصوص حرفياً مع ملف المقرر الرسمي عند توفره.
           </p>
         </motion.div>
 
@@ -34,11 +35,20 @@ export default function CurriculumPage() {
               className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+                <div className="flex-1">
                   <p className="text-xs font-medium text-violet-600">{u.weekHint}</p>
                   <h2 className="text-xl font-bold text-slate-900">{u.titleAr}</h2>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">{u.summaryAr}</p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    عدد الدروس: <strong>{u.lessons?.length ?? 0}</strong>
+                  </p>
                 </div>
+                <Link
+                  to={`/curriculum/unit/${u.id}`}
+                  className="shrink-0 rounded-full bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-500"
+                >
+                  عرض الوحدة
+                </Link>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {u.grades.map((gid) => (

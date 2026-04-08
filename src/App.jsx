@@ -4,6 +4,8 @@ import { NavBar } from "./components/NavBar";
 import Home from "./pages/Home";
 import PythonLab from "./pages/PythonLab";
 import CurriculumPage from "./pages/CurriculumPage";
+import UnitPage from "./pages/UnitPage";
+import LessonPage from "./pages/LessonPage";
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/python" element={<PythonLab />} />
             <Route path="/curriculum" element={<CurriculumPage />} />
+            <Route path="/curriculum/unit/:unitId" element={<UnitPage />} />
+            <Route path="/curriculum/unit/:unitId/lesson/:lessonId" element={<LessonPage />} />
           </Routes>
         </div>
       </ErrorBoundary>
