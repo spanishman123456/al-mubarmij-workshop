@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BinaryToy } from "../components/BinaryToy";
-import { HeroCharacter } from "../components/HeroCharacter";
 import { curriculumUnits, learningPillars } from "../data/curriculum";
 import { useState } from "react";
 
@@ -61,60 +60,54 @@ export default function Home() {
             aria-hidden
           />
         </div>
-        {/* RTL: first column = start (right). Mobile: character on top via flex-col-reverse */}
-        <div className="relative z-10 mx-auto flex max-w-6xl flex-col-reverse items-center gap-10 px-4 lg:grid lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-6">
-          <div className="w-full text-center lg:text-right">
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-2 text-sm font-medium text-violet-300"
+        <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-2 text-sm font-medium text-violet-300"
+          >
+            ورشة برمجة الحاسب · صفوف 4 – 8
+          </motion.p>
+          <motion.h1
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="text-4xl font-extrabold leading-tight text-white sm:text-5xl"
+          >
+            ابدأ رحلتك في عالم
+            <span className="bg-gradient-to-r from-fuchsia-400 via-violet-300 to-cyan-300 bg-clip-text text-transparent">
+              {" "}
+              البرمجة والعلوم الحاسوبية
+            </span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="mx-auto mt-5 max-w-2xl text-lg text-slate-300"
+          >
+            محتوى مُحاذى لمقرر «برمجة الحاسب»: أسس علوم الحاسب، النظام الثنائي، الخوارزميات، المنطق، ولغة بايثون —
+            مع أنشطة تفاعلية وتمارين كثيرة خاصة في بايثون.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-8 flex flex-wrap justify-center gap-3"
+          >
+            <Link
+              to="/python"
+              className="rounded-full bg-gradient-to-r from-violet-600 to-pink-600 px-8 py-3 font-bold text-white shadow-lg transition hover:brightness-110"
             >
-              ورشة برمجة الحاسب · صفوف 4 – 8
-            </motion.p>
-            <motion.h1
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="text-4xl font-extrabold leading-tight text-white sm:text-5xl"
+              مختبر بايثون
+            </Link>
+            <Link
+              to="/curriculum"
+              className="rounded-full border border-white/30 bg-white/10 px-8 py-3 font-bold text-white backdrop-blur hover:bg-white/20"
             >
-              ابدأ رحلتك في عالم
-              <span className="bg-gradient-to-r from-fuchsia-400 via-violet-300 to-cyan-300 bg-clip-text text-transparent">
-                {" "}
-                البرمجة والعلوم الحاسوبية
-              </span>
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12 }}
-              className="mx-auto mt-5 max-w-2xl text-lg text-slate-300 lg:ms-0 lg:me-auto"
-            >
-              محتوى مُحاذى لمقرر «برمجة الحاسب»: أسس علوم الحاسب، النظام الثنائي، الخوارزميات، المنطق، ولغة بايثون —
-              مع أنشطة تفاعلية وتمارين كثيرة خاصة في بايثون.
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-end"
-            >
-              <Link
-                to="/python"
-                className="rounded-full bg-gradient-to-r from-violet-600 to-pink-600 px-8 py-3 font-bold text-white shadow-lg transition hover:brightness-110"
-              >
-                مختبر بايثون
-              </Link>
-              <Link
-                to="/curriculum"
-                className="rounded-full border border-white/30 bg-white/10 px-8 py-3 font-bold text-white backdrop-blur hover:bg-white/20"
-              >
-                المسار الدراسي
-              </Link>
-            </motion.div>
-          </div>
-          <div className="flex w-full justify-center lg:justify-center">
-            <HeroCharacter />
-          </div>
+              المسار الدراسي
+            </Link>
+          </motion.div>
         </div>
       </section>
 
@@ -264,18 +257,6 @@ export default function Home() {
         <p className="font-ar">
           ورشة تعليمية — محتوى المسار مُستوحى من هيكل مقرر «برمجة الحاسب» (علوم الحاسب وبايثون). التصميم يحافظ على
           روح تجربة «المبرمج الصغير» التفاعلية.
-        </p>
-        <p className="mt-3 text-xs text-slate-400">
-          الرسوم المتحركة في الصفحة الرئيسية: ملف Lottie مجاني من مجتمع{" "}
-          <a
-            href="https://lottiefiles.com/"
-            className="text-violet-600 underline-offset-2 hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            LottieFiles
-          </a>
-          .
         </p>
       </footer>
     </div>
