@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { pythonExercises } from "../data/pythonExercises";
 import { curriculumUnits } from "../data/curriculum";
-import { runPythonWithSkulpt } from "../lib/skulptRun";
+import { ensureSkulptLoaded, runPythonWithSkulpt } from "../lib/skulptRun";
 
 export default function PythonLab() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -40,6 +40,10 @@ export default function PythonLab() {
       return next;
     });
   }, [setSearchParams]);
+
+  useEffect(() => {
+    ensureSkulptLoaded().catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (exFromUrl && pythonExercises.some((e) => e.id === exFromUrl)) {
