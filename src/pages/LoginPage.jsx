@@ -28,11 +28,11 @@ export default function LoginPage() {
     navigate("/student", { replace: true });
   }
 
-  function submitTeacher(e) {
+  async function submitTeacher(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const res = loginTeacher(username, password);
+    const res = await loginTeacher(username, password);
     setLoading(false);
     if (!res.ok) {
       setError(res.message);
@@ -128,11 +128,14 @@ export default function LoginPage() {
           ) : (
             <form onSubmit={submitTeacher} className="space-y-5">
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-slate-700">اسم المستخدم</span>
+                <span className="mb-2 block text-sm font-bold text-slate-700">رقم الهوية</span>
                 <input
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-lg tracking-widest text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value.replace(/\D/g, ""))}
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="أدخل رقم الهوية"
                   autoComplete="username"
                   required
                 />

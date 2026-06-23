@@ -70,9 +70,9 @@ export function PlatformProvider({ children }) {
   const isStudentSession = Boolean(user?.role === "student");
 
   const loginTeacher = useCallback(
-    (username, password) => {
-      const found = findTeacher(username, password);
-      if (!found) return { ok: false, message: "اسم المستخدم أو كلمة المرور غير صحيحة." };
+    async (username, password) => {
+      const found = await findTeacher(username, password);
+      if (!found) return { ok: false, message: "بيانات الدخول غير صحيحة." };
       persist((prev) => ({ ...prev, ...createSessionPatch(found.id) }));
       return { ok: true, user: found };
     },
