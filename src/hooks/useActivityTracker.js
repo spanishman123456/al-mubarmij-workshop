@@ -1,16 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
 
 export function ActivityTracker() {
   const { pathname } = useLocation();
-  const { user, trackPageView } = usePlatform();
+  const { isStudentSession, trackPageView } = usePlatform();
+  const lastTracked = useRef("");
 
   useEffect(() => {
-    if (user?.role === "student") {
-      trackPageView(pathname);
-    }
-  }, [pathname, user, trackPageView]);
+    if (!isStudentSession) return;
+    if (lastTracked.current === pathname) return;
+    lastTracked.current = pathname;
+    trackPageView(pathname);
+  }, [pathname, isStudentSession, trackPageView]);
 
   return null;
 }

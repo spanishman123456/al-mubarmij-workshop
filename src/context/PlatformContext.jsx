@@ -11,6 +11,7 @@ import {
   getStudentAnalytics,
   computeProgressStats,
   defaultProgressForStudent,
+  ensureStudentRecords,
 } from "../lib/platformStore";
 import {
   recordLogin,
@@ -60,7 +61,13 @@ export function PlatformProvider({ children }) {
     });
   }, []);
 
-  const user = state.sessionUserId ? resolveSessionUser(state.sessionUserId) : null;
+  const user = useMemo(
+    () => (state.sessionUserId ? resolveSessionUser(state.sessionUserId) : null),
+    [state.sessionUserId],
+  );
+
+  const sessionUserId = state.sessionUserId;
+  const isStudentSession = Boolean(user?.role === "student");
 
   const loginTeacher = useCallback(
     (username, password) => {
@@ -80,15 +87,9 @@ export function PlatformProvider({ children }) {
       }
       const student = rosterStudentToUser(row);
       persist((prev) => {
-        const next = { ...prev, ...createSessionPatch(student.id) };
-        if (!next.progressByStudent[student.id]) {
-          next.progressByStudent = {
-            ...next.progressByStudent,
-            [student.id]: defaultProgressForStudent(student.id),
-          };
-        }
-        if (!next.analyticsByStudent) next.analyticsByStudent = {};
-        const current = next.analyticsByStudent[student.id] || defaultAnalytics();
+        let next = { ...prev, ...createSessionPatch(student.id) };
+        next = ensureStudentRecords(next, student.id);
+        const current = next.analyticsByStudent[student.id];
         next.analyticsByStudent = {
           ...next.analyticsByStudent,
           [student.id]: recordLogin(current),
@@ -112,61 +113,72 @@ export function PlatformProvider({ children }) {
 
   const trackPageView = useCallback(
     (path) => {
-      if (!user || user.role !== "student") return;
       persist((prev) => {
-        const current = getStudentAnalytics(prev, user.id);
+        const uid = prev.sessionUserId;
+        if (!uid) return prev;
+        const resolved = resolveSessionUser(uid);
+        if (!resolved || resolved.role !== "student") return prev;
+        const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
         return {
           ...prev,
           analyticsByStudent: {
             ...prev.analyticsByStudent,
-            [user.id]: recordPageView(current, path),
+            [uid]: recordPageView(current, path),
           },
         };
       });
     },
-    [persist, user],
+    [persist],
   );
 
   const trackSimRun = useCallback(
     (simId) => {
-      if (!user || user.role !== "student") return;
       persist((prev) => {
-        const current = getStudentAnalytics(prev, user.id);
+        const uid = prev.sessionUserId;
+        if (!uid) return prev;
+        const resolved = resolveSessionUser(uid);
+        if (!resolved || resolved.role !== "student") return prev;
+        const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
         return {
           ...prev,
           analyticsByStudent: {
             ...prev.analyticsByStudent,
-            [user.id]: recordSimRun(current, simId),
+            [uid]: recordSimRun(current, simId),
           },
         };
       });
     },
-    [persist, user],
+    [persist],
   );
 
   const trackPythonRun = useCallback(() => {
-    if (!user || user.role !== "student") return;
     persist((prev) => {
-      const current = getStudentAnalytics(prev, user.id);
+      const uid = prev.sessionUserId;
+      if (!uid) return prev;
+      const resolved = resolveSessionUser(uid);
+      if (!resolved || resolved.role !== "student") return prev;
+      const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
       return {
         ...prev,
         analyticsByStudent: {
           ...prev.analyticsByStudent,
-          [user.id]: recordPythonRun(current),
+          [uid]: recordPythonRun(current),
         },
       };
     });
-  }, [persist, user]);
+  }, [persist]);
 
   const myProgress = useMemo(() => {
-    if (!user || user.role !== "student") return null;
-    return getStudentProgress(state, user.id);
-  }, [state, user]);
+    if (!sessionUserId || !isStudentSession) return null;
+    return (
+      state.progressByStudent[sessionUserId] ?? defaultProgressForStudent(sessionUserId)
+    );
+  }, [state.progressByStudent, sessionUserId, isStudentSession]);
 
   const myAnalytics = useMemo(() => {
-    if (!user || user.role !== "student") return null;
-    return getStudentAnalytics(state, user.id);
-  }, [state, user]);
+    if (!sessionUserId || !isStudentSession) return null;
+    return state.analyticsByStudent?.[sessionUserId] ?? defaultAnalytics();
+  }, [state.analyticsByStudent, sessionUserId, isStudentSession]);
 
   const myStats = useMemo(() => {
     if (!myProgress) return null;
@@ -428,6 +440,8 @@ export function PlatformProvider({ children }) {
       trackPageView,
       trackSimRun,
       trackPythonRun,
+      sessionUserId,
+      isStudentSession,
       state,
     }),
     [
@@ -452,6 +466,8 @@ export function PlatformProvider({ children }) {
       trackPageView,
       trackSimRun,
       trackPythonRun,
+      sessionUserId,
+      isStudentSession,
       state,
     ],
   );

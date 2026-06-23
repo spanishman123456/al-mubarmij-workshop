@@ -92,18 +92,29 @@ export function savePlatformState(state) {
 }
 
 export function getStudentProgress(state, studentId) {
-  if (!state.progressByStudent[studentId]) {
-    state.progressByStudent[studentId] = defaultProgressForStudent(studentId);
-  }
-  return state.progressByStudent[studentId];
+  return state.progressByStudent?.[studentId] ?? defaultProgressForStudent(studentId);
 }
 
 export function getStudentAnalytics(state, studentId) {
-  if (!state.analyticsByStudent) state.analyticsByStudent = seedAnalytics();
-  if (!state.analyticsByStudent[studentId]) {
-    state.analyticsByStudent[studentId] = defaultAnalytics();
+  return state.analyticsByStudent?.[studentId] ?? defaultAnalytics();
+}
+
+export function ensureStudentRecords(state, studentId) {
+  const progressByStudent = { ...state.progressByStudent };
+  const analyticsByStudent = { ...(state.analyticsByStudent || {}) };
+  let changed = false;
+
+  if (!progressByStudent[studentId]) {
+    progressByStudent[studentId] = defaultProgressForStudent(studentId);
+    changed = true;
   }
-  return state.analyticsByStudent[studentId];
+  if (!analyticsByStudent[studentId]) {
+    analyticsByStudent[studentId] = defaultAnalytics();
+    changed = true;
+  }
+
+  if (!changed) return state;
+  return { ...state, progressByStudent, analyticsByStudent };
 }
 
 export function computeProgressStats(progress) {

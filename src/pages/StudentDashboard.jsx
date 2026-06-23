@@ -1,19 +1,19 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
 import { ProgressBar } from "../components/ProgressBar";
 import { curriculumDays } from "../data/curriculum15Days";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { MawhibaBrand } from "../components/branding/MawhibaBrand";
-import { getAttendanceStatus } from "../lib/platformAnalytics";
+import { getAttendanceStatus, maskNationalId } from "../lib/platformAnalytics";
 
 const QUICK_LINKS = [
-  { to: "/path", title: "المسار الدراسي", desc: "15 يومًا من الدروس والأنشطة", color: "violet" },
-  { to: "/python", title: "مختبر بايثون", desc: "اكتب واحفظ أكوادك", color: "emerald" },
-  { to: "/worksheets", title: "أوراق العمل", desc: "تمارين نظرية وتطبيقية", color: "amber" },
-  { to: "/quizzes", title: "الاختبارات", desc: "قبلي، قصير، وبعدي", color: "cyan" },
-  { to: "/simulations", title: "المحاكاة", desc: "معمل تفاعلي للمفاهيم", color: "violet" },
-  { to: "/projects", title: "المشروع النهائي", desc: "مخرج الأسبوع الثالث", color: "emerald" },
-  { to: "/microbit", title: "مشاريع micro:bit", desc: "وحدة إثرائية تطبيقية", color: "amber" },
+  { to: "/path", title: "المسار الدراسي", desc: "15 يومًا من الدروس والأنشطة" },
+  { to: "/python", title: "مختبر بايثون", desc: "اكتب واحفظ أكوادك" },
+  { to: "/worksheets", title: "أوراق العمل", desc: "تمارين نظرية وتطبيقية" },
+  { to: "/quizzes", title: "الاختبارات", desc: "قبلي، قصير، وبعدي" },
+  { to: "/simulations", title: "المحاكاة", desc: "معمل تفاعلي للمفاهيم" },
+  { to: "/projects", title: "المشروع النهائي", desc: "مخرج الأسبوع الثالث" },
+  { to: "/microbit", title: "مشاريع micro:bit", desc: "وحدة إثرائية تطبيقية" },
 ];
 
 function formatDate(iso) {
@@ -25,32 +25,59 @@ function formatDate(iso) {
   }
 }
 
-export default function StudentDashboard() {
-  const { user, myStats, myProgress, myAnalytics, logout } = usePlatform();
+function DashboardLoading() {
+  return (
+    <PageShell title="لوحة الطالب" badge="جاري التحميل">
+      <EduCard className="py-12 text-center">
+        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-violet-300 border-t-violet-700" />
+        <p className="mt-4 text-base font-semibold text-slate-700">جاري تحميل بيانات الطالب...</p>
+      </EduCard>
+    </PageShell>
+  );
+}
 
-  if (!user || user.role !== "student") {
-    return (
-      <PageShell title="لوحة الطالب">
-        <EduCard className="text-center">
-          <p className="edu-text">يجب تسجيل الدخول برقم الهوية للوصول إلى لوحة التحكم.</p>
-          <Link to="/login" className="edu-btn edu-btn-primary mt-4 inline-flex">
-            تسجيل الدخول
+function DashboardError({ onLogout }) {
+  return (
+    <PageShell title="لوحة الطالب" badge="خطأ">
+      <EduCard className="py-10 text-center" accent="amber">
+        <p className="text-base font-semibold text-red-700">
+          تعذر تحميل بيانات الطالب. الرجاء تسجيل الخروج والمحاولة مرة أخرى.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <button type="button" onClick={onLogout} className="edu-btn edu-btn-primary">
+            تسجيل الخروج
+          </button>
+          <Link to="/login" className="edu-btn edu-btn-outline">
+            العودة لتسجيل الدخول
           </Link>
-        </EduCard>
-      </PageShell>
-    );
+        </div>
+      </EduCard>
+    </PageShell>
+  );
+}
+
+export default function StudentDashboard() {
+  const { user, authReady, myStats, myProgress, myAnalytics, logout } = usePlatform();
+
+  if (!authReady) {
+    return <DashboardLoading />;
   }
 
-  const pre = myProgress?.preTest?.percent;
-  const post = myProgress?.postTest?.percent;
+  if (!user || user.role !== "student") {
+    return <Navigate to="/login" replace />;
+  }
+
+  const pre = myProgress.preTest?.percent;
+  const post = myProgress.postTest?.percent;
   const growth = pre != null && post != null ? post - pre : null;
   const attendance = getAttendanceStatus(myAnalytics, myStats);
-  const wsPending = Object.entries(myProgress?.worksheetStatus || {}).filter(
+  const wsPending = Object.entries(myProgress.worksheetStatus || {}).filter(
     ([, s]) => s !== "completed",
   ).length;
-  const teacherNote = myAnalytics?.teacherNotes;
-
-  const recentDays = curriculumDays.filter((d) => !(myProgress?.completedDays || []).includes(d.id)).slice(0, 3);
+  const teacherNote = myAnalytics.teacherNotes;
+  const recentDays = curriculumDays
+    .filter((d) => !(myProgress.completedDays || []).includes(d.id))
+    .slice(0, 3);
 
   return (
     <PageShell
@@ -72,10 +99,27 @@ export default function StudentDashboard() {
         <img src="/images/mawhiba/mawhiba-banner.png" alt="موهبة" className="h-16 object-contain" />
       </EduCard>
 
+      <EduCard className="mb-4" accent="cyan">
+        <div className="flex flex-wrap gap-4 text-sm text-slate-700">
+          <p>
+            <span className="font-bold text-slate-900">الهوية: </span>
+            {maskNationalId(user.nationalId)}
+          </p>
+          <p>
+            <span className="font-bold text-slate-900">الصف: </span>
+            {user.grade ?? "6-8"}
+          </p>
+          <p>
+            <span className="font-bold text-slate-900">الوحدة: </span>
+            {user.unitAr ?? "برمجة الحاسب"}
+          </p>
+        </div>
+      </EduCard>
+
       <div className="mb-4 flex flex-wrap gap-2">
         <span className={`rounded-full px-3 py-1 text-xs font-bold ${attendance.color}`}>{attendance.label}</span>
         <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-800">
-          آخر نشاط: {formatDate(myAnalytics?.lastActivityAt)}
+          آخر نشاط: {formatDate(myAnalytics.lastActivityAt)}
         </span>
       </div>
 
@@ -85,12 +129,12 @@ export default function StudentDashboard() {
           <Stat label="الدروس المكتملة" value={`${myStats?.completedDays ?? 0} / ${myStats?.totalDays ?? 15}`} />
           <Stat label="أوراق العمل المنجزة" value={myStats?.worksheetsDone ?? 0} />
           <Stat label="أوراق معلّقة" value={wsPending} />
-          <Stat label="أكواد بايثون" value={myProgress?.pythonSnippets?.length ?? 0} />
+          <Stat label="أكواد بايثون" value={myProgress.pythonSnippets?.length ?? 0} />
           <Stat label="التقويم القبلي" value={pre != null ? `${pre}%` : "لم يُجرَ"} />
           <Stat label="التقويم البعدي" value={post != null ? `${post}%` : "لم يُجرَ"} />
           <Stat label="نمو الأداء" value={growth != null ? (growth >= 0 ? `+${growth}%` : `${growth}%`) : "—"} />
-          <Stat label="المشروع النهائي" value={myProgress?.project?.status ?? "لم يبدأ"} />
-          <Stat label="عدد الدخول" value={myAnalytics?.loginCount ?? 0} />
+          <Stat label="المشروع النهائي" value={myProgress.project?.status ?? "لم يبدأ"} />
+          <Stat label="عدد الدخول" value={myAnalytics.loginCount ?? 0} />
         </div>
       </EduCard>
 
@@ -111,7 +155,7 @@ export default function StudentDashboard() {
               </li>
             ))
           ) : (
-            <li className="text-emerald-700 font-semibold">أحسنت! أكملت جميع الدروس الأساسية.</li>
+            <li className="font-semibold text-emerald-700">أحسنت! أكملت جميع الدروس الأساسية.</li>
           )}
           <li>
             <Link to="/simulations" className="text-violet-700 hover:underline">
@@ -133,7 +177,7 @@ export default function StudentDashboard() {
       <EduCard className="mt-8" title="آخر الدروس المتاحة" accent="cyan">
         <ul className="mt-3 space-y-2">
           {curriculumDays.slice(0, 5).map((d) => {
-            const done = (myProgress?.completedDays || []).includes(d.id);
+            const done = (myProgress.completedDays || []).includes(d.id);
             return (
               <li key={d.id} className="flex items-center justify-between text-sm">
                 <Link to={`/path/day/${d.id}`} className="font-medium text-violet-700 hover:underline">
