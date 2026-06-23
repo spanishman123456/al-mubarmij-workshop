@@ -1,25 +1,33 @@
 import { useEffect, useState } from "react";
 import { PageShell } from "../components/layout/PageShell";
 import { LabPanel } from "../components/layout/LabPanel";
+import { usePlatform } from "../context/PlatformContext";
 import { NumberConverterSim, BinaryCalculatorSim } from "../components/sims/NumberConverter";
 import { TruthTableSim, LogicGatesSim, LogicCircuitSim } from "../components/sims/LogicSims";
 import { KarnaughMapSim } from "../components/sims/KarnaughMap";
 import { CaesarCipherSim } from "../components/sims/CaesarCipher";
 import { SearchSortSim } from "../components/sims/SearchSortSim";
+import { FibonacciSim } from "../components/sims/FibonacciSim";
+import { HanoiSim } from "../components/sims/HanoiSim";
+import { TruthTableExercises } from "../components/sims/TruthTableExercises";
 
 const SECTIONS = [
-  { id: "number-converter", title: "محوّل الأنظمة العددية", icon: "🔢" },
+  { id: "number-converter", title: "محوّل الأنظمة", icon: "🔢" },
   { id: "binary-calc", title: "حاسبة ثنائية", icon: "➕" },
   { id: "truth", title: "جدول الحقيقة", icon: "📋" },
-  { id: "gates", title: "البوابات المنطقية", icon: "⚡" },
+  { id: "truth-drills", title: "تدريبات جداول", icon: "✏️" },
+  { id: "gates", title: "البوابات", icon: "⚡" },
   { id: "circuit", title: "دوائر منطقية", icon: "🔌" },
-  { id: "karnaugh", title: "خريطة كارنوف", icon: "🗺️" },
-  { id: "caesar", title: "تشفير قيصر", icon: "🔐" },
-  { id: "search", title: "البحث والفرز", icon: "🔍" },
+  { id: "karnaugh", title: "كارنوف", icon: "🗺️" },
+  { id: "caesar", title: "تشفير", icon: "🔐" },
+  { id: "search", title: "بحث وفرز", icon: "🔍" },
+  { id: "fibonacci", title: "فيبوناتشي", icon: "🌀" },
+  { id: "hanoi", title: "برج هانوي", icon: "🗼" },
 ];
 
 export default function SimulationsPage() {
   const [active, setActive] = useState("number-converter");
+  const { trackSimRun } = usePlatform();
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
@@ -28,6 +36,7 @@ export default function SimulationsPage() {
 
   function select(id) {
     setActive(id);
+    trackSimRun(id);
     window.location.hash = id;
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -36,7 +45,7 @@ export default function SimulationsPage() {
     <PageShell
       title="معمل المحاكاة التفاعلية"
       subtitle="أدوات تعليمية لتجربة المفاهيم بنفسك — جرّب، فكّر، واستخدم التلميحات للفهم العميق."
-      badge="8 محاكيات تفاعلية"
+      badge="11 محاكاة وتدريب تفاعلي"
     >
       <nav className="sim-nav no-print" aria-label="أقسام المحاكاة">
         {SECTIONS.map((s) => (
@@ -71,6 +80,12 @@ export default function SimulationsPage() {
           </LabPanel>
         </section>
 
+        <section id="truth-drills" className="scroll-mt-28">
+          <LabPanel title="تدريبات جداول الحقيقة" hint="مستويات سهل/متوسط/متقدم — الحل يظهر بعد محاولتك">
+            <TruthTableExercises />
+          </LabPanel>
+        </section>
+
         <section id="gates" className="scroll-mt-28">
           <LabPanel title="محاكي البوابات المنطقية" hint="غيّر المدخلات 0/1 وشاهد المخرجات فورًا">
             <LogicGatesSim />
@@ -98,6 +113,18 @@ export default function SimulationsPage() {
         <section id="search" className="scroll-mt-28">
           <LabPanel title="محاكاة البحث والفرز" hint="Linear Search، Binary Search، Bubble Sort، Selection Sort">
             <SearchSortSim />
+          </LabPanel>
+        </section>
+
+        <section id="fibonacci" className="scroll-mt-28">
+          <LabPanel title="متتالية فيبوناتشي" hint="توليد خطوة بخطوة مع تمارين وكود Python">
+            <FibonacciSim />
+          </LabPanel>
+        </section>
+
+        <section id="hanoi" className="scroll-mt-28">
+          <LabPanel title="برج هانوي" hint="محاكاة بصرية مع عدد النقلات الأمثل">
+            <HanoiSim />
           </LabPanel>
         </section>
       </div>

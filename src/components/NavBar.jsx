@@ -22,21 +22,25 @@ export function NavBar() {
   const { pathname } = useLocation();
   const { user, logout } = usePlatform();
   const [open, setOpen] = useState(false);
+  const hideOnLogin = pathname === "/login";
 
   const dashLink = user?.role === "teacher" ? "/teacher" : user?.role === "student" ? "/student" : "/login";
   const dashLabel = user ? (user.role === "teacher" ? "لوحة المعلم" : "حسابي") : "دخول";
 
+  if (hideOnLogin) return null;
+
   return (
     <header
       id="app-navbar"
-      className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#0a0e1a]/95 backdrop-blur-md print:hidden"
+      className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#1a1a4b]/95 backdrop-blur-md print:hidden"
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-        <Link to="/" className="font-ar text-lg font-bold text-white">
-          المبرمج الصغير{" "}
-          <span className="bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent">
-            · موهبة
-          </span>
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5">
+        <Link to="/" className="flex items-center gap-3">
+          <img src="/images/mawhiba/mawhiba-logo.png" alt="موهبة" className="h-9 w-auto object-contain" />
+          <div>
+            <p className="font-ar text-base font-bold text-white">برمجة الحاسب</p>
+            <p className="text-[10px] text-violet-300">برنامج موهبة — صفوف 6-8</p>
+          </div>
         </Link>
 
         <button
@@ -55,7 +59,7 @@ export function NavBar() {
         </button>
 
         <nav
-          className={`${open ? "flex" : "hidden"} absolute left-0 right-0 top-full flex-col gap-1 border-b border-white/10 bg-[#0a0e1a] p-4 md:static md:flex md:flex-row md:flex-wrap md:items-center md:border-0 md:bg-transparent md:p-0`}
+          className={`${open ? "flex" : "hidden"} absolute left-0 right-0 top-full flex-col gap-1 border-b border-white/10 bg-[#1a1a4b] p-4 md:static md:flex md:flex-row md:flex-wrap md:items-center md:border-0 md:bg-transparent md:p-0`}
         >
           {LINKS.map((link) => {
             const active = isLinkActive(pathname, link);

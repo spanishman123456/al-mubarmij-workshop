@@ -46,6 +46,15 @@ export default function ProjectsPage() {
     >
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="space-y-6 lg:col-span-2">
+          <EduCard title="مشاريع micro:bit الإثرائية" accent="amber">
+            <p className="edu-card-subtitle mt-2">
+              10 مشاريع جاهزة مع كود MicroPython وخطوات التنفيذ — للطلاب المتقدمين.
+            </p>
+            <Link to="/microbit" className="edu-btn edu-btn-primary mt-4 inline-flex">
+              استكشف مشاريع micro:bit
+            </Link>
+          </EduCard>
+
           <EduCard title="أفكار مقترحة" accent="violet">
             <ul className="mt-4 space-y-3">
               {PROJECT_IDEAS.map((item) => (

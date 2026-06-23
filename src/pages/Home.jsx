@@ -61,12 +61,20 @@ export default function Home() {
           />
         </div>
         <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
+          <Motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 flex flex-wrap items-center justify-center gap-6"
+          >
+            <img src="/images/mawhiba/mawhiba-logo.png" alt="موهبة" className="h-16 object-contain" />
+            <img src="/images/mawhiba/mawhiba-banner.png" alt="مؤسسة موهبة" className="hidden h-14 object-contain sm:block" />
+          </Motion.div>
           <Motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-2 text-sm font-medium text-violet-300"
           >
-            ورشة برمجة الحاسب · صفوف 4 – 8
+            برنامج موهبة الأكاديمي · برمجة الحاسب · صفوف 6–8
           </Motion.p>
           <Motion.h1
             initial={{ opacity: 0, y: 14 }}
@@ -74,11 +82,12 @@ export default function Home() {
             transition={{ delay: 0.05 }}
             className="text-4xl font-extrabold leading-tight text-white sm:text-5xl"
           >
-            ابدأ رحلتك في عالم
+            منصة
             <span className="bg-gradient-to-r from-fuchsia-400 via-violet-300 to-cyan-300 bg-clip-text text-transparent">
               {" "}
-              البرمجة والعلوم الحاسوبية
+              برمجة الحاسب
             </span>
+            {" "}التفاعلية
           </Motion.h1>
           <Motion.p
             initial={{ opacity: 0, y: 14 }}
@@ -270,7 +279,7 @@ export default function Home() {
       <footer className="border-t border-slate-200 bg-slate-50 py-8 text-center text-sm text-slate-500">
         <p className="font-ar">
           ورشة تعليمية — محتوى المسار مُستوحى من هيكل مقرر «برمجة الحاسب» (علوم الحاسب وبايثون). التصميم يحافظ على
-          روح تجربة «المبرمج الصغير» التفاعلية.
+          روح تجربة «برمجة الحاسب» التفاعلية لطلاب موهبة.
         </p>
       </footer>
     </div>

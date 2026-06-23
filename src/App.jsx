@@ -19,6 +19,7 @@ import SimulationsPage from "./pages/SimulationsPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import WorksheetDetailPage from "./pages/WorksheetDetailPage";
 import MicrobitPage from "./pages/MicrobitPage";
+import { ActivityTracker } from "./hooks/useActivityTracker";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
       <BrowserRouter>
         <ErrorBoundary>
           <div className="min-h-screen font-ar">
+            <ActivityTracker />
             <NavBar />
             <Routes>
               <Route path="/" element={<Home />} />

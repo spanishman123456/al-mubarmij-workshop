@@ -1,21 +1,23 @@
 import { getAllDayIds } from "../data/curriculum15Days";
+import { STUDENTS_ROSTER } from "../data/studentsRoster";
+import { defaultAnalytics } from "./platformAnalytics";
 
-const STORAGE_KEY = "mubarmij-platform-v1";
+const STORAGE_KEY = "mubarmij-platform-v2";
 
 function defaultProgressForStudent(studentId) {
-  const days = getAllDayIds();
   return {
     studentId,
     completedDays: [],
     completedActivities: [],
-    worksheetStatus: {}, // dayId -> not_started | in_progress | completed | needs_review
-    worksheetAnswers: {}, // wsId -> { answers, updatedAt }
-    quizScores: {}, // quizId -> { score, total, percent, at }
+    worksheetStatus: {},
+    worksheetAnswers: {},
+    quizScores: {},
+    drillResults: {},
     preTest: null,
     postTest: null,
-    pythonSnippets: [], // { id, title, code, at, teacherNote }
+    pythonSnippets: [],
     project: {
-      status: "not_started", // not_started | draft | submitted | reviewed
+      status: "not_started",
       title: "",
       description: "",
       code: "",
@@ -29,42 +31,59 @@ function defaultProgressForStudent(studentId) {
 
 function seedProgress() {
   const map = {};
-  ["stu-1", "stu-2", "stu-3", "stu-4", "stu-5"].forEach((id, i) => {
-    const p = defaultProgressForStudent(id);
-    const doneCount = 3 + i * 2;
-    p.completedDays = getAllDayIds().slice(0, Math.min(doneCount, 15));
-    p.worksheetStatus["ws-day-01"] = "completed";
-    p.worksheetStatus["ws-day-02"] = i > 0 ? "completed" : "in_progress";
-    p.preTest = { score: 8 + i, total: 15, percent: Math.round(((8 + i) / 15) * 100), at: "2025-09-01" };
-    if (i >= 2) {
-      p.postTest = { score: 11 + i, total: 15, percent: Math.round(((11 + i) / 15) * 100), at: "2025-09-20" };
-    }
-    if (i === 4) {
-      p.project = {
-        status: "submitted",
-        title: "لعبة تخمين الرقم",
-        description: "لعبة تعليمية بلغة بايثون",
-        code: 'print("مرحبًا بالموهبة!")',
-        teacherScore: null,
-        teacherNote: "",
-        rubric: {},
-      };
-    }
-    map[id] = p;
+  STUDENTS_ROSTER.forEach((row) => {
+    map[`stu-${row.nationalId}`] = defaultProgressForStudent(`stu-${row.nationalId}`);
   });
   return map;
+}
+
+function seedAnalytics() {
+  const map = {};
+  STUDENTS_ROSTER.forEach((row) => {
+    map[`stu-${row.nationalId}`] = defaultAnalytics();
+  });
+  return map;
+}
+
+function migrateFromV1() {
+  try {
+    const raw = localStorage.getItem("mubarmij-platform-v1");
+    if (!raw) return null;
+    const old = JSON.parse(raw);
+    const progressByStudent = { ...seedProgress(), ...(old.progressByStudent || {}) };
+    const analyticsByStudent = seedAnalytics();
+    Object.keys(old.progressByStudent || {}).forEach((id) => {
+      if (!analyticsByStudent[id]) analyticsByStudent[id] = defaultAnalytics();
+    });
+    return {
+      sessionUserId: old.sessionUserId,
+      progressByStudent,
+      analyticsByStudent,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function loadPlatformState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (!parsed.analyticsByStudent) {
+        parsed.analyticsByStudent = seedAnalytics();
+      }
+      return parsed;
+    }
   } catch {
     /* ignore */
   }
+  const migrated = migrateFromV1();
+  if (migrated) return migrated;
   return {
     sessionUserId: null,
     progressByStudent: seedProgress(),
+    analyticsByStudent: seedAnalytics(),
   };
 }
 
@@ -79,15 +98,27 @@ export function getStudentProgress(state, studentId) {
   return state.progressByStudent[studentId];
 }
 
+export function getStudentAnalytics(state, studentId) {
+  if (!state.analyticsByStudent) state.analyticsByStudent = seedAnalytics();
+  if (!state.analyticsByStudent[studentId]) {
+    state.analyticsByStudent[studentId] = defaultAnalytics();
+  }
+  return state.analyticsByStudent[studentId];
+}
+
 export function computeProgressStats(progress) {
   const totalDays = getAllDayIds().length;
   const completedDays = progress.completedDays?.length ?? 0;
   const worksheets = Object.values(progress.worksheetStatus || {});
   const worksheetsDone = worksheets.filter((s) => s === "completed").length;
+  const quizCount = Object.keys(progress.quizScores || {}).length;
+  const drillsDone = Object.values(progress.drillResults || {}).filter((d) => d?.completed).length;
   const percent = Math.round(
-    ((completedDays / totalDays) * 0.5 +
-      (worksheetsDone / Math.max(worksheets.length, 1)) * 0.25 +
-      (progress.project?.status === "submitted" || progress.project?.status === "reviewed" ? 0.25 : 0)) *
+    ((completedDays / totalDays) * 0.4 +
+      (worksheetsDone / Math.max(worksheets.length, 1)) * 0.2 +
+      (quizCount / 5) * 0.15 +
+      (drillsDone / 10) * 0.1 +
+      (progress.project?.status === "submitted" || progress.project?.status === "reviewed" ? 0.15 : 0)) *
       100,
   );
   return {
@@ -95,6 +126,8 @@ export function computeProgressStats(progress) {
     completedDays,
     dayPercent: Math.round((completedDays / totalDays) * 100),
     worksheetsDone,
+    quizCount,
+    drillsDone,
     overallPercent: Math.min(100, percent),
     preTest: progress.preTest,
     postTest: progress.postTest,

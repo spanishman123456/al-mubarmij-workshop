@@ -9,6 +9,36 @@ const GATE_META = {
   NAND: { label: "NAND", inputs: 2, outputs: 1, color: "#a855f7", w: 72, h: 48 },
   NOR: { label: "NOR", inputs: 2, outputs: 1, color: "#9333ea", w: 72, h: 48 },
   XOR: { label: "XOR", inputs: 2, outputs: 1, color: "#c084fc", w: 72, h: 48 },
+  XNOR: { label: "XNOR", inputs: 2, outputs: 1, color: "#d8b4fe", w: 72, h: 48 },
+};
+
+const PRESETS = {
+  and: {
+    nodes: [
+      { id: "in-1", type: "INPUT", x: 40, y: 80, value: false, label: "A" },
+      { id: "in-2", type: "INPUT", x: 40, y: 160, value: false, label: "B" },
+      { id: "g-1", type: "AND", x: 180, y: 110 },
+      { id: "out-1", type: "OUTPUT", x: 340, y: 120 },
+    ],
+    wires: [
+      { id: "w1", from: "in-1", to: "g-1", toPort: 0 },
+      { id: "w2", from: "in-2", to: "g-1", toPort: 1 },
+      { id: "w3", from: "g-1", to: "out-1", toPort: 0 },
+    ],
+  },
+  xor: {
+    nodes: [
+      { id: "in-1", type: "INPUT", x: 40, y: 80, value: true, label: "A" },
+      { id: "in-2", type: "INPUT", x: 40, y: 160, value: false, label: "B" },
+      { id: "g-1", type: "XOR", x: 180, y: 110 },
+      { id: "out-1", type: "OUTPUT", x: 340, y: 120 },
+    ],
+    wires: [
+      { id: "w1", from: "in-1", to: "g-1", toPort: 0 },
+      { id: "w2", from: "in-2", to: "g-1", toPort: 1 },
+      { id: "w3", from: "g-1", to: "out-1", toPort: 0 },
+    ],
+  },
 };
 
 const OPS = {
@@ -17,6 +47,7 @@ const OPS = {
   NAND: (a, b) => !(a && b),
   NOR: (a, b) => !(a || b),
   XOR: (a, b) => a !== b,
+  XNOR: (a, b) => a === b,
   NOT: (a) => !a,
 };
 
@@ -177,6 +208,20 @@ export function LogicCircuitBuilder() {
     setSelected(null);
   }
 
+  function loadPreset(key) {
+    const p = PRESETS[key];
+    if (!p) return;
+    setNodes(p.nodes);
+    setWires(p.wires);
+    setSelected(null);
+    setWireFrom(null);
+  }
+
+  function resetCircuit() {
+    loadPreset("and");
+    setNodes((prev) => prev.map((n) => (n.type === "INPUT" ? { ...n, value: false } : n)));
+  }
+
   return (
     <div className="space-y-4" dir="rtl">
       <p className="lab-hint">
@@ -201,6 +246,27 @@ export function LogicCircuitBuilder() {
           className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs text-red-300 hover:bg-red-900/30"
         >
           حذف المحدد
+        </button>
+        <button
+          type="button"
+          onClick={resetCircuit}
+          className="rounded-lg border border-slate-500/40 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800/50"
+        >
+          إعادة ضبط
+        </button>
+        <button
+          type="button"
+          onClick={() => loadPreset("and")}
+          className="rounded-lg border border-cyan-500/40 px-3 py-1.5 text-xs text-cyan-300 hover:bg-cyan-900/30"
+        >
+          مثال AND
+        </button>
+        <button
+          type="button"
+          onClick={() => loadPreset("xor")}
+          className="rounded-lg border border-cyan-500/40 px-3 py-1.5 text-xs text-cyan-300 hover:bg-cyan-900/30"
+        >
+          مثال XOR
         </button>
         {wireFrom ? (
           <span className="self-center text-xs text-cyan-300">وضع التوصيل — اختر مدخل الهدف</span>
@@ -266,8 +332,26 @@ export function LogicCircuitBuilder() {
               <div className="flex h-full flex-col items-center justify-center text-xs font-bold text-white">
                 {node.type === "INPUT" ? (
                   <>
+                    <span className="mb-0.5 text-[9px] text-slate-300">مفتاح</span>
                     <span>{node.label}</span>
+                    <span
+                      className={`mt-1 h-4 w-4 rounded-full border-2 ${
+                        node.value ? "border-emerald-300 bg-emerald-400 shadow-[0_0_8px_#34d399]" : "border-slate-500 bg-slate-700"
+                      }`}
+                    />
                     <span className="text-[10px] text-emerald-300">{node.value ? "1" : "0"}</span>
+                  </>
+                ) : node.type === "OUTPUT" ? (
+                  <>
+                    <span className="mb-0.5 text-[9px] text-slate-300">مصباح</span>
+                    <span
+                      className={`h-6 w-6 rounded-full border-2 ${
+                        isOn
+                          ? "border-yellow-200 bg-yellow-300 shadow-[0_0_12px_#fde047]"
+                          : "border-slate-600 bg-slate-800"
+                      }`}
+                    />
+                    <span className="text-[10px]">{isOn ? "ON" : "OFF"}</span>
                   </>
                 ) : (
                   m.label

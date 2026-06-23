@@ -3,9 +3,20 @@ import { usePlatform } from "../context/PlatformContext";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { PrePostComparisonChart } from "../components/charts/PrePostComparisonChart";
+import { MawhibaBrand } from "../components/branding/MawhibaBrand";
+import { maskNationalId, getAccountStatus, getAttendanceStatus } from "../lib/platformAnalytics";
+
+function formatDate(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("ar-SA", { dateStyle: "short", timeStyle: "short" });
+  } catch {
+    return "—";
+  }
+}
 
 export default function TeacherDashboard() {
-  const { user, allStudentsProgress, logout, teacherUpdateStudent } = usePlatform();
+  const { user, allStudentsProgress, logout, teacherSetNote } = usePlatform();
 
   if (!user || user.role !== "teacher") {
     return (
@@ -23,13 +34,19 @@ export default function TeacherDashboard() {
   const avg =
     allStudentsProgress.reduce((s, x) => s + x.stats.overallPercent, 0) /
     Math.max(allStudentsProgress.length, 1);
-  const behind = allStudentsProgress.filter((x) => x.stats.overallPercent < 40);
-  const ahead = allStudentsProgress.filter((x) => x.stats.overallPercent >= 70);
+  const neverLogged = allStudentsProgress.filter((x) => !x.analytics?.loginCount);
+  const presentToday = allStudentsProgress.filter((x) => {
+    const today = new Date().toISOString().slice(0, 10);
+    return x.analytics?.dailyLog?.[today]?.entered;
+  });
+  const needsFollowup = allStudentsProgress.filter(
+    (x) => getAttendanceStatus(x.analytics, x.stats).key === "needs_followup",
+  );
 
   return (
     <PageShell
       title="لوحة المعلم"
-      subtitle={`${user.nameAr} — متابعة تقدم الطلاب ونتائج الاختبارات والمشاريع`}
+      subtitle={`${user.nameAr} — متابعة تقدم ونشاط طلاب برمجة الحاسب`}
       badge="برنامج موهبة"
       hero={
         <button
@@ -41,82 +58,89 @@ export default function TeacherDashboard() {
         </button>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard value={allStudentsProgress.length} label="عدد الطلاب" color="violet" />
+      <EduCard className="mb-6 flex flex-wrap items-center justify-between gap-4" accent="violet">
+        <MawhibaBrand variant="horizontal" />
+        <img
+          src="/images/mawhiba/mawhiba-banner.png"
+          alt="موهبة"
+          className="hidden h-14 object-contain sm:block"
+        />
+      </EduCard>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <SummaryCard value={allStudentsProgress.length} label="إجمالي الطلاب" color="violet" />
         <SummaryCard value={`${Math.round(avg)}%`} label="متوسط التقدم" color="emerald" />
-        <SummaryCard value={behind.length} label="يحتاجون دعمًا" color="amber" />
-        <SummaryCard value={ahead.length} label="متقدمون" color="cyan" />
+        <SummaryCard value={presentToday.length} label="حاضرون اليوم" color="cyan" />
+        <SummaryCard value={neverLogged.length} label="لم يسجلوا بعد" color="amber" />
+        <SummaryCard value={needsFollowup.length} label="يحتاجون متابعة" color="amber" />
       </div>
 
       <PrePostComparisonChart className="mt-8" students={allStudentsProgress} />
 
       <section className="mt-10 space-y-5">
-        <h2 className="text-xl font-bold text-slate-900">تقدم الطلاب</h2>
-        {allStudentsProgress.map(({ student, progress, stats }) => {
-          const pre = progress.preTest?.percent;
-          const post = progress.postTest?.percent;
-          const wsCount = Object.values(progress.worksheetStatus || {}).filter(
-            (s) => s === "completed",
-          ).length;
+        <h2 className="text-xl font-bold text-slate-900">متابعة الطلاب — {allStudentsProgress.length} طالب</h2>
+        {allStudentsProgress.map(({ student, progress, analytics, stats }) => {
+          const account = getAccountStatus(analytics);
+          const attendance = getAttendanceStatus(analytics, stats);
+          const wsCount = Object.values(progress.worksheetStatus || {}).filter((s) => s === "completed").length;
+          const quizCount = Object.keys(progress.quizScores || {}).length;
+          const simRuns = Object.values(analytics?.simRuns || {}).reduce((a, b) => a + b, 0);
+          const pagesCount = Object.values(analytics?.pagesVisited || {}).reduce((a, b) => a + b, 0);
 
           return (
             <EduCard key={student.id} accent="violet">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">{student.nameAr}</h3>
-                  <p className="text-sm text-slate-600">الصف {student.grade}</p>
+                  <p className="text-sm text-slate-600">هوية: {maskNationalId(student.nationalId)}</p>
                 </div>
-                <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-bold text-violet-800">
-                  {stats.overallPercent}%
-                </span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                    {account.label}
+                  </span>
+                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${attendance.color}`}>
+                    {attendance.label}
+                  </span>
+                  <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-bold text-violet-800">
+                    {stats.overallPercent}%
+                  </span>
+                </div>
               </div>
 
-              <ProgressBar className="mt-4" value={stats.overallPercent} label="إكمال المحتوى" />
+              <ProgressBar className="mt-4" value={stats.overallPercent} label="نسبة التقدم العامة" />
 
               <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                <Info label="آخر دخول" value={formatDate(analytics?.lastLoginAt)} />
+                <Info label="عدد الدخول" value={analytics?.loginCount ?? 0} />
+                <Info label="آخر نشاط" value={formatDate(analytics?.lastActivityAt)} />
+                <Info label="الصفحات المزارة" value={pagesCount} />
                 <Info label="الدروس" value={`${stats.completedDays}/${stats.totalDays}`} />
                 <Info label="أوراق العمل" value={wsCount} />
-                <Info label="قبلي → بعدي" value={`${pre ?? "—"}% → ${post ?? "—"}%`} />
+                <Info label="الاختبارات" value={quizCount} />
+                <Info label="المحاكاة" value={simRuns} />
+                <Info label="تشغيل بايثون" value={analytics?.pythonRuns ?? 0} />
                 <Info label="المشروع" value={progress.project?.status ?? "لم يبدأ"} />
+                <Info
+                  label="قبلي → بعدي"
+                  value={`${progress.preTest?.percent ?? "—"}% → ${progress.postTest?.percent ?? "—"}%`}
+                />
+                <Info label="الأنشطة المكتملة" value={analytics?.activitiesCompleted ?? 0} />
               </div>
 
-              {progress.pythonSnippets?.[0] ? (
-                <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-slate-700">
-                    آخر كود بايثون
-                  </summary>
-                  <pre
-                    className="mt-2 overflow-x-auto rounded bg-slate-900 p-3 text-xs text-emerald-300"
-                    dir="ltr"
-                  >
-                    {progress.pythonSnippets[0].code}
-                  </pre>
-                </details>
-              ) : null}
-
-              {progress.project?.title ? (
-                <div className="mt-3 rounded-lg bg-cyan-50 p-3">
-                  <p className="text-sm font-bold text-cyan-900">مشروع: {progress.project.title}</p>
-                  {progress.project.teacherNote ? (
-                    <p className="mt-1 text-sm text-cyan-800">ملاحظة: {progress.project.teacherNote}</p>
-                  ) : null}
-                </div>
+              {analytics?.teacherNotes ? (
+                <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                  ملاحظة المعلم: {analytics.teacherNotes}
+                </p>
               ) : null}
 
               <button
                 type="button"
                 className="edu-btn edu-btn-outline mt-4 text-xs"
                 onClick={() =>
-                  teacherUpdateStudent(student.id, {
-                    project: {
-                      ...progress.project,
-                      teacherNote: "عمل جيد — أضف توثيقًا للكود وشرحًا للفكرة.",
-                      status: "reviewed",
-                    },
-                  })
+                  teacherSetNote(student.id, "يُنصح بمتابعة إكمال أوراق العمل والمحاكاة اليومية.")
                 }
               >
-                إضافة ملاحظة تجريبية
+                إضافة ملاحظة للطالب
               </button>
             </EduCard>
           );
