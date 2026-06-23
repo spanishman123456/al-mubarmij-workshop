@@ -3,6 +3,8 @@
  * correctIndex: فهرس الإجابة الصحيحة في optionsAr (0..n-1)
  */
 
+import { dayQuizzes } from "./dayQuizzes";
+
 /** @typedef {{
  *   id: string,
  *   questionAr: string,
@@ -518,6 +520,7 @@ export const quizzes = [
       },
     ],
   },
+  ...dayQuizzes,
   {
     id: "quiz-pre",
     unitId: null,

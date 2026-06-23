@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
 import { DEMO_STUDENTS } from "../data/demoUsers";
+import { PageShell, EduCard } from "../components/layout/PageShell";
 
 export default function LoginPage() {
   const { login, user } = usePlatform();
@@ -29,29 +30,63 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-lg px-4 pb-16 pt-24 font-ar text-right" dir="rtl">
-      <h1 className="text-3xl font-bold text-white">تسجيل الدخول</h1>
-      <p className="mt-2 text-slate-400">منصة موهبة — وحدة برمجة الحاسب (صفوف 6–8)</p>
-      <form onSubmit={submit} className="mt-8 space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6">
-        {error ? <p className="text-sm text-red-400">{error}</p> : null}
-        <label className="block text-sm">
-          اسم المستخدم
-          <input className="mt-1 w-full rounded-lg border border-white/10 bg-[#0a0e1a] px-3 py-2 text-white" value={username} onChange={(e) => setUsername(e.target.value)} />
-        </label>
-        <label className="block text-sm">
-          كلمة المرور
-          <input type="password" className="mt-1 w-full rounded-lg border border-white/10 bg-[#0a0e1a] px-3 py-2 text-white" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </label>
-        <button type="submit" className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 py-3 font-bold text-white">
-          دخول
-        </button>
-      </form>
-      <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
-        <p className="font-bold text-slate-200">حسابات تجريبية:</p>
-        <p>معلم: teacher / teacher123</p>
-        <p>طالب: {DEMO_STUDENTS[0].username} / {DEMO_STUDENTS[0].password}</p>
+    <PageShell
+      title="تسجيل الدخول"
+      subtitle="منصة المبرمج الصغير — وحدة برمجة الحاسب لبرنامج موهبة الأكاديمي (صفوف 6–8)"
+      badge="حسابات تجريبية متاحة"
+    >
+      <div className="mx-auto max-w-md">
+        <EduCard>
+          <form onSubmit={submit} className="space-y-5">
+            {error ? (
+              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p>
+            ) : null}
+            <label className="block">
+              <span className="edu-label">اسم المستخدم</span>
+              <input
+                className="edu-input"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+              />
+            </label>
+            <label className="block">
+              <span className="edu-label">كلمة المرور</span>
+              <input
+                type="password"
+                className="edu-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </label>
+            <button type="submit" className="edu-btn edu-btn-primary w-full py-3">
+              دخول
+            </button>
+          </form>
+        </EduCard>
+
+        <EduCard className="mt-6" title="حسابات تجريبية" accent="violet">
+          <div className="mt-3 space-y-2 text-sm text-slate-700">
+            <p>
+              <span className="font-bold text-slate-900">معلم:</span> teacher / teacher123
+            </p>
+            <p>
+              <span className="font-bold text-slate-900">طالب:</span> {DEMO_STUDENTS[0].username} /{" "}
+              {DEMO_STUDENTS[0].password}
+            </p>
+            <p className="edu-muted mt-2">
+              بعد الدخول ستظهر لوحة تحكم تعرض تقدمك، اختباراتك، وأوراق عملك.
+            </p>
+          </div>
+        </EduCard>
+
+        <Link to="/" className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-violet-700 hover:text-violet-900">
+          ← العودة للرئيسية
+        </Link>
       </div>
-      <Link to="/" className="mt-6 inline-block text-violet-300 hover:underline">← العودة للرئيسية</Link>
-    </main>
+    </PageShell>
   );
 }

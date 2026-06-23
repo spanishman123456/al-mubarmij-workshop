@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { pythonExercises } from "../data/pythonExercises";
 import { curriculumUnits } from "../data/curriculum";
 import { formatSkulptError } from "../lib/pythonErrorHelp";
+import { getExerciseGuidance } from "../lib/pythonExerciseGuidance";
 import { ensureSkulptLoaded, runPythonWithSkulpt } from "../lib/skulptRun";
 import { usePlatform } from "../context/PlatformContext";
 
@@ -23,6 +24,10 @@ export default function PythonLab() {
   const [out, setOut] = useState("");
   const [feedback, setFeedback] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [hintLevel, setHintLevel] = useState(0);
+  const [checkResults, setCheckResults] = useState(null);
+
+  const guidance = useMemo(() => getExerciseGuidance(exercise.id), [exercise.id]);
 
   const filteredExercises = useMemo(() => {
     if (unitFilter === "all") return pythonExercises;
@@ -36,6 +41,8 @@ export default function PythonLab() {
     setCode(ex.starter);
     setOut("");
     setFeedback(null);
+    setHintLevel(0);
+    setCheckResults(null);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set("ex", id);
@@ -54,6 +61,8 @@ export default function PythonLab() {
       setCode(ex.starter);
       setOut("");
       setFeedback(null);
+      setHintLevel(0);
+      setCheckResults(null);
       if (ex?.unitId) setUnitFilter(ex.unitId);
     }
   }, [exFromUrl]);
@@ -76,10 +85,24 @@ export default function PythonLab() {
     }
   }
 
+  function revealHint() {
+    setHintLevel((h) => Math.min(h + 1, guidance.hints.length));
+  }
+
+  function checkProgress() {
+    const results = guidance.checks.map((ch) => ({
+      ...ch,
+      passed: ch.check(code),
+    }));
+    setCheckResults(results);
+  }
+
   async function run() {
     setBusy(true);
     setOut("");
     setFeedback(null);
+    setHintLevel(0);
+    setCheckResults(null);
     try {
       const text = await runPythonWithSkulpt(code);
       setOut(text);
@@ -170,6 +193,51 @@ export default function PythonLab() {
                 حفظ الكود في حسابي
               </button>
             ) : null}
+
+            <div className="mt-4 rounded-xl border border-violet-500/30 bg-violet-950/25 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-violet-200">تلميحات تعليمية (بدون حل جاهز)</h3>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={revealHint}
+                    disabled={hintLevel >= guidance.hints.length}
+                    className="rounded-lg bg-violet-600/80 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40"
+                  >
+                    تلميح {hintLevel}/{guidance.hints.length}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={checkProgress}
+                    className="rounded-lg border border-cyan-500/40 px-3 py-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-950/40"
+                  >
+                    تحقق من تقدمي
+                  </button>
+                </div>
+              </div>
+              {hintLevel > 0 ? (
+                <ul className="mt-3 space-y-2 text-sm text-violet-100">
+                  {guidance.hints.slice(0, hintLevel).map((h, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="font-bold text-violet-400">{i + 1}.</span>
+                      <span>{h}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500">اضغط «تلميح» للحصول على إرشاد تدريجي دون كشف الحل.</p>
+              )}
+              {checkResults ? (
+                <ul className="mt-3 space-y-1 border-t border-white/10 pt-3 text-xs">
+                  {checkResults.map((r) => (
+                    <li key={r.id} className={r.passed ? "text-emerald-300" : "text-amber-200"}>
+                      {r.passed ? "✓" : "○"} {r.messageAr}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+
             <p className="mt-3 text-xs text-amber-200/90">{exercise.hintAr}</p>
           </div>
           <div>

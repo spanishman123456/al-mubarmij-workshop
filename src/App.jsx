@@ -17,6 +17,7 @@ import LearningPathPage from "./pages/LearningPathPage";
 import DayLessonPage from "./pages/DayLessonPage";
 import SimulationsPage from "./pages/SimulationsPage";
 import ProjectsPage from "./pages/ProjectsPage";
+import WorksheetDetailPage from "./pages/WorksheetDetailPage";
 import MicrobitPage from "./pages/MicrobitPage";
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
               <Route path="/curriculum/unit/:unitId" element={<UnitPage />} />
               <Route path="/curriculum/unit/:unitId/lesson/:lessonId" element={<LessonPage />} />
               <Route path="/worksheets" element={<WorksheetsPage />} />
+              <Route path="/worksheets/:worksheetId" element={<WorksheetDetailPage />} />
               <Route path="/quizzes" element={<QuizzesPage />} />
               <Route path="/quizzes/run/:quizId" element={<QuizTakePage />} />
               <Route path="/simulations" element={<SimulationsPage />} />

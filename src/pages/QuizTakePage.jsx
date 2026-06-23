@@ -35,6 +35,8 @@ export default function QuizTakePage() {
   }
 
   const result = submitted ? computeResult(quiz, answers) : null;
+  const answeredCount = quiz.questions.filter((q) => answers[q.id] !== undefined).length;
+  const progressPercent = Math.round((answeredCount / quiz.questions.length) * 100);
 
   function setAnswer(questionId, optionIndex) {
     if (submitted) return;
@@ -81,10 +83,26 @@ export default function QuizTakePage() {
 
         <header className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6">
           <h1 className="text-2xl font-bold">{quiz.titleAr}</h1>
-          <p className="mt-2 text-sm text-slate-400">{quiz.descriptionAr}</p>
-          <p className="mt-3 text-xs text-emerald-300/90">
+          <p className="mt-2 text-sm text-slate-300">{quiz.descriptionAr}</p>
+          <p className="mt-3 text-xs text-emerald-300">
             معيار النجاح: {quiz.passPercent}٪ · عدد الأسئلة: {quiz.questions.length}
           </p>
+          {!submitted && (
+            <div className="mt-4">
+              <div className="mb-1 flex justify-between text-xs text-slate-400">
+                <span>التقدم في الإجابة</span>
+                <span>
+                  {answeredCount} / {quiz.questions.length}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-500 transition-all"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+          )}
         </header>
 
         {!submitted && (

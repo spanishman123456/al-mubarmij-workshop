@@ -1,16 +1,28 @@
 import { Link, useParams } from "react-router-dom";
 import { getDayById } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
+import { PageShell, EduCard } from "../components/layout/PageShell";
 
 const SIM_LINKS = {
-  "number-converter": "/simulations#converter",
+  "number-converter": "/simulations#number-converter",
   "binary-calculator": "/simulations#binary-calc",
   "truth-table": "/simulations#truth",
   "logic-gates": "/simulations#gates",
-  "logic-circuit": "/simulations#gates",
-  karnaugh: "/simulations#truth",
+  "logic-circuit": "/simulations#circuit",
+  karnaugh: "/simulations#karnaugh",
   "caesar-cipher": "/simulations#caesar",
   "search-sort": "/simulations#search",
+};
+
+const SIM_LABELS = {
+  "number-converter": "محوّل الأنظمة",
+  "binary-calculator": "حاسبة ثنائية",
+  "truth-table": "جدول الحقيقة",
+  "logic-gates": "البوابات المنطقية",
+  "logic-circuit": "دوائر منطقية",
+  karnaugh: "خريطة كارنوف",
+  "caesar-cipher": "تشفير قيصر",
+  "search-sort": "بحث وفرز",
 };
 
 export default function DayLessonPage() {
@@ -21,99 +33,117 @@ export default function DayLessonPage() {
 
   if (!day) {
     return (
-      <main className="px-4 pt-24 font-ar text-center text-slate-400">
-        <Link to="/path">العودة للمسار</Link>
-      </main>
+      <PageShell title="الدرس">
+        <EduCard>
+          <Link to="/path" className="edu-btn edu-btn-outline inline-flex">
+            العودة للمسار
+          </Link>
+        </EduCard>
+      </PageShell>
     );
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-16 pt-24 font-ar text-right" dir="rtl">
-      <Link to="/path" className="text-sm text-violet-300 hover:underline">← المسار الدراسي</Link>
-      <p className="mt-4 text-sm text-slate-500">الأسبوع {day.weekNumber} — اليوم {day.dayNumber}</p>
-      <h1 className="mt-2 text-3xl font-bold text-white">{day.titleAr}</h1>
-      <p className="mt-4 text-slate-300">{day.summaryAr}</p>
+    <PageShell
+      title={day.titleAr}
+      subtitle={day.summaryAr}
+      badge={`الأسبوع ${day.weekNumber} — اليوم ${day.dayNumber}`}
+    >
+      <Link to="/path" className="mb-6 inline-flex text-sm font-semibold text-violet-700 hover:text-violet-900">
+        ← المسار الدراسي
+      </Link>
 
-      <section className="mt-8 rounded-xl border border-white/10 bg-white/5 p-5">
-        <h2 className="font-bold text-violet-300">الأهداف التعليمية</h2>
-        <ul className="mt-2 list-disc space-y-1 pr-5 text-slate-300">
-          {day.objectivesAr.map((o) => (
-            <li key={o}>{o}</li>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <EduCard title="الأهداف التعليمية" accent="violet">
+            <ul className="mt-3 list-disc space-y-2 pr-5 text-slate-700">
+              {day.objectivesAr.map((o) => (
+                <li key={o}>{o}</li>
+              ))}
+            </ul>
+          </EduCard>
+
+          <EduCard title="المفاهيم الأساسية" accent="cyan">
+            <div className="mt-3 flex flex-wrap gap-2">
+              {day.conceptsAr.map((c) => (
+                <span key={c} className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-800">
+                  {c}
+                </span>
+              ))}
+            </div>
+          </EduCard>
+
+          {day.sections.map((sec) => (
+            <EduCard key={sec.titleAr} title={sec.titleAr}>
+              <p className="mt-2 leading-relaxed text-slate-700">{sec.bodyAr}</p>
+            </EduCard>
           ))}
-        </ul>
-      </section>
 
-      <section className="mt-6 rounded-xl border border-white/10 bg-white/5 p-5">
-        <h2 className="font-bold text-violet-300">المفاهيم الأساسية</h2>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {day.conceptsAr.map((c) => (
-            <span key={c} className="rounded-full bg-violet-500/20 px-3 py-1 text-sm text-violet-200">{c}</span>
-          ))}
-        </div>
-      </section>
-
-      {day.sections.map((sec) => (
-        <section key={sec.titleAr} className="mt-6 rounded-xl border border-white/10 bg-white/5 p-5">
-          <h2 className="font-bold text-white">{sec.titleAr}</h2>
-          <p className="mt-2 leading-relaxed text-slate-300">{sec.bodyAr}</p>
-        </section>
-      ))}
-
-      <section className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
-        <h2 className="font-bold text-amber-200">أنشطة تفاعلية</h2>
-        <ul className="mt-2 list-disc pr-5 text-slate-300">
-          {day.activitiesAr.map((a) => (
-            <li key={a}>{a}</li>
-          ))}
-        </ul>
-      </section>
-
-      {day.simulationIds?.length ? (
-        <section className="mt-6">
-          <h2 className="font-bold text-pink-300">محاكاة مرتبطة</h2>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {day.simulationIds.map((sid) => (
-              <Link key={sid} to={SIM_LINKS[sid] || "/simulations"} className="rounded-lg bg-pink-600/30 px-3 py-2 text-sm text-pink-100 hover:bg-pink-600/50">
-                {sid}
+          <EduCard title="تطبيق عملي" accent="emerald">
+            <p className="mt-2 text-slate-700">{day.practicalAr}</p>
+            {day.exerciseIds?.length ? (
+              <Link to={`/python?ex=${day.exerciseIds[0]}`} className="edu-btn edu-btn-primary mt-4 inline-flex text-sm">
+                افتح التمرين في مختبر بايثون
               </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
+            ) : null}
+          </EduCard>
+        </div>
 
-      <section className="mt-6 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-        <h2 className="font-bold text-emerald-200">تطبيق عملي</h2>
-        <p className="mt-2 text-slate-300">{day.practicalAr}</p>
-        {day.exerciseIds?.length ? (
-          <Link to={`/python?ex=${day.exerciseIds[0]}`} className="mt-3 inline-block text-emerald-300 hover:underline">
-            افتح التمرين في مختبر بايثون →
-          </Link>
-        ) : null}
-      </section>
+        <div className="space-y-6">
+          <EduCard title="أنشطة تفاعلية" accent="amber">
+            <ul className="mt-3 list-disc space-y-2 pr-5 text-sm text-slate-700">
+              {day.activitiesAr.map((a) => (
+                <li key={a}>{a}</li>
+              ))}
+            </ul>
+          </EduCard>
 
-      <section className="mt-6 rounded-xl border border-white/10 bg-white/5 p-5">
-        <h2 className="font-bold text-white">ملخص نهاية اليوم</h2>
-        <p className="mt-2 text-slate-300">{day.daySummaryAr}</p>
-      </section>
+          {day.simulationIds?.length ? (
+            <EduCard title="محاكاة مرتبطة" accent="violet">
+              <div className="mt-3 flex flex-col gap-2">
+                {day.simulationIds.map((sid) => (
+                  <Link
+                    key={sid}
+                    to={SIM_LINKS[sid] || "/simulations"}
+                    className="rounded-lg bg-pink-50 px-3 py-2 text-sm font-semibold text-pink-800 hover:bg-pink-100"
+                  >
+                    {SIM_LABELS[sid] ?? sid} →
+                  </Link>
+                ))}
+              </div>
+            </EduCard>
+          ) : null}
 
-      <div className="mt-8 flex flex-wrap gap-3">
-        {day.worksheetId ? (
-          <Link to={`/worksheets?day=${day.worksheetId}`} className="rounded-lg bg-amber-600 px-4 py-2 text-white">ورقة العمل</Link>
-        ) : null}
-        {day.quizId ? (
-          <Link to={`/quizzes/run/${day.quizId}`} className="rounded-lg bg-sky-600 px-4 py-2 text-white">اختبار قصير</Link>
-        ) : null}
-        {user?.role === "student" ? (
-          <button
-            type="button"
-            disabled={done}
-            onClick={() => markDayComplete(dayId)}
-            className="rounded-lg bg-violet-600 px-4 py-2 font-bold text-white disabled:opacity-50"
-          >
-            {done ? "تم إكمال اليوم ✓" : "أتممت هذا اليوم"}
-          </button>
-        ) : null}
+          <EduCard title="موارد الدرس">
+            <div className="mt-3 flex flex-col gap-2">
+              {day.worksheetId ? (
+                <Link to={`/worksheets/${day.worksheetId}`} className="edu-btn edu-btn-outline text-sm">
+                  ورقة العمل
+                </Link>
+              ) : null}
+              {day.quizId ? (
+                <Link to={`/quizzes/run/${day.quizId}`} className="edu-btn edu-btn-outline text-sm">
+                  اختبار قصير
+                </Link>
+              ) : null}
+              {user?.role === "student" ? (
+                <button
+                  type="button"
+                  disabled={done}
+                  onClick={() => markDayComplete(dayId)}
+                  className="edu-btn edu-btn-primary text-sm disabled:opacity-50"
+                >
+                  {done ? "تم إكمال اليوم ✓" : "أتممت هذا اليوم"}
+                </button>
+              ) : null}
+            </div>
+          </EduCard>
+
+          <EduCard title="ملخص نهاية اليوم" accent="emerald">
+            <p className="mt-2 text-slate-700">{day.daySummaryAr}</p>
+          </EduCard>
+        </div>
       </div>
-    </main>
+    </PageShell>
   );
 }

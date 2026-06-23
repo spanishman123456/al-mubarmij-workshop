@@ -17,6 +17,384 @@ body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
 
+/* ─── نظام التصميم التعليمي (موهبة) ─── */
+.page-shell {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 40%, #e2e8f0 100%);
+  color: #0f172a;
+}
+
+.page-shell-hero {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #4c1d95 100%);
+  border-bottom: 3px solid #7c3aed;
+  color: #fff;
+}
+
+.edu-page-title {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.edu-page-subtitle {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #e2e8f0;
+}
+
+.edu-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #c4b5fd;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.edu-card {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.edu-card:hover {
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1);
+  border-color: #c7d2fe;
+}
+
+.edu-card-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.edu-card-subtitle {
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.edu-card-accent {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.edu-card-accent--violet { background: linear-gradient(180deg, #7c3aed, #a78bfa); }
+.edu-card-accent--cyan { background: linear-gradient(180deg, #0891b2, #22d3ee); }
+.edu-card-accent--emerald { background: linear-gradient(180deg, #059669, #34d399); }
+.edu-card-accent--amber { background: linear-gradient(180deg, #d97706, #fbbf24); }
+
+.edu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.edu-btn-primary {
+  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+}
+
+.edu-btn-primary:hover {
+  background: linear-gradient(135deg, #5b21b6, #6d28d9);
+  transform: translateY(-1px);
+}
+
+.edu-btn-secondary {
+  background: #0e7490;
+  color: #fff;
+}
+
+.edu-btn-outline {
+  background: #fff;
+  color: #5b21b6;
+  border: 2px solid #c4b5fd;
+}
+
+.edu-btn-outline:hover {
+  background: #f5f3ff;
+  border-color: #7c3aed;
+}
+
+.edu-btn-ghost {
+  background: transparent;
+  color: #475569;
+}
+
+.edu-btn-ghost:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.edu-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.35rem;
+}
+
+.edu-input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.65rem;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.edu-input:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.edu-select {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.65rem;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.edu-muted {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.edu-text {
+  color: #334155;
+  line-height: 1.7;
+}
+
+.edu-heading {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* معمل المحاكاة — لوحة داكنة داخل صفحة فاتحة */
+.lab-panel {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid #334155;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  color: #e2e8f0;
+}
+
+.lab-panel .lab-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.lab-panel .lab-hint {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.lab-panel .lab-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+.lab-panel .lab-input:focus {
+  outline: none;
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+}
+
+.lab-panel .lab-select {
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #475569;
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+.lab-panel .lab-result {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.65rem;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #6ee7b7;
+  font-family: ui-monospace, monospace;
+  direction: ltr;
+  text-align: left;
+}
+
+.lab-panel .lab-steps {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  font-family: ui-monospace, monospace;
+  direction: ltr;
+  text-align: left;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* مسار تعليمي */
+.path-timeline {
+  position: relative;
+  padding-right: 2rem;
+}
+
+.path-timeline::before {
+  content: "";
+  position: absolute;
+  right: 0.65rem;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #7c3aed, #22d3ee, #10b981);
+  border-radius: 9999px;
+}
+
+.path-week-banner {
+  background: linear-gradient(90deg, #ede9fe, #e0f2fe);
+  border: 1px solid #c4b5fd;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.path-week-banner h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #4c1d95;
+}
+
+.path-week-banner p {
+  margin-top: 0.35rem;
+  color: #5b21b6;
+  font-size: 0.9rem;
+}
+
+.path-day-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  transition: all 0.2s;
+}
+
+.path-day-card:hover {
+  border-color: #a78bfa;
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.12);
+  transform: translateY(-2px);
+}
+
+.path-day-card--done {
+  border-color: #6ee7b7;
+  background: linear-gradient(135deg, #fff 0%, #ecfdf5 100%);
+}
+
+.path-day-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+/* شريط تنقل المحاكاة */
+.sim-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sim-nav-btn {
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sim-nav-btn:hover {
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+.sim-nav-btn--active {
+  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* بطاقة اختبار */
+.quiz-type-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.2s;
+}
+
+.quiz-type-card:hover {
+  border-color: #7c3aed;
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.1);
+}
+
+.quiz-type-card h3 {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.quiz-type-card p {
+  color: #475569;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
 .font-ar {
   font-family: "Tajawal", sans-serif;
 }

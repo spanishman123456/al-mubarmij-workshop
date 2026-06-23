@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 import { curriculumUnits } from "../data/curriculum";
 import { quizzes } from "../data/quizzes";
+import { curriculumDays } from "../data/curriculum15Days";
+import { usePlatform } from "../context/PlatformContext";
+import { PageShell, EduCard } from "../components/layout/PageShell";
 
 function unitTitle(unitId) {
   if (!unitId) return "جميع الوحدات";
@@ -8,120 +11,128 @@ function unitTitle(unitId) {
 }
 
 export default function QuizzesPage() {
+  const { myProgress } = usePlatform();
+  const scores = myProgress?.quizScores ?? {};
+
   const byUnit = curriculumUnits.map((u) => ({
     unit: u,
     items: quizzes.filter((q) => q.unitId === u.id),
   }));
-  const comprehensive = quizzes.filter((q) => q.unitId == null && !["quiz-pre", "quiz-post"].includes(q.id));
+  const comprehensive = quizzes.filter(
+    (q) => q.unitId == null && !["quiz-pre", "quiz-post"].includes(q.id) && !q.id.startsWith("quiz-day"),
+  );
   const prePost = quizzes.filter((q) => ["quiz-pre", "quiz-post"].includes(q.id));
+  const dayQuizzes = curriculumDays
+    .filter((d) => d.quizId)
+    .map((d) => ({
+      day: d,
+      quiz: quizzes.find((q) => q.id === d.quizId),
+    }))
+    .filter((x) => x.quiz);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-20 pt-24 font-ar">
-      <div className="mx-auto max-w-4xl px-4">
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">الاختبارات الإلكترونية</h1>
-          <p className="mx-auto mt-3 max-w-2xl text-slate-600">
-            اختبارات نظرية متعددة الخيارات لكل وحدة، واختبار شامل للمراجعة. بعد الإرسال تحصل على النتيجة ومعيار النجاح
-            (يختلف حسب الاختبار)، وشرح لكل سؤال.
+    <PageShell
+      title="الاختبارات الإلكترونية"
+      subtitle="التقويم القبلي، الاختبارات القصيرة أثناء التعلم، والتقويم البعدي — تُحفظ النتائج في حسابك وللمعلم."
+      badge="تقييم تكويني"
+    >
+      {prePost.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-slate-900">التقويم القبلي والبعدي</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            القبلي يقيس مستواك قبل البدء؛ البعدي بعد إتمام المنهج — للمقارنة مع المعلم.
           </p>
-        </div>
-
-        {prePost.length > 0 && (
-          <section className="mb-12">
-            <h2 className="mb-2 text-lg font-bold text-slate-900">التقويم القبلي والبعدي</h2>
-            <p className="mb-4 text-sm text-slate-600">
-              القبلي يقيس مستواك قبل الوحدة؛ البعدي بعد إتمام المنهج — تُحفظ النتائج في حسابك وللمعلم.
-            </p>
-            <ul className="space-y-3">
-              {prePost.map((q) => (
-                <li key={q.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-emerald-200 bg-emerald-50/80 p-5">
-                  <div>
-                    <h3 className="font-bold text-slate-900">{q.titleAr}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{q.descriptionAr}</p>
-                  </div>
-                  <Link to={`/quizzes/run/${q.id}`} className="shrink-0 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white">
-                    ابدأ
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {comprehensive.length > 0 && (
-          <section className="mb-12">
-            <h2 className="mb-4 text-lg font-bold text-slate-900">اختبار شامل</h2>
-            <ul className="space-y-3">
-              {comprehensive.map((q) => (
-                <li
-                  key={q.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-violet-200 bg-violet-50/80 p-5"
-                >
-                  <div>
-                    <h3 className="font-bold text-slate-900">{q.titleAr}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{q.descriptionAr}</p>
-                    <p className="mt-2 text-xs text-violet-700">
-                      {q.questions.length} أسئلة · نجاح من {q.passPercent}٪
-                    </p>
-                  </div>
-                  <Link
-                    to={`/quizzes/run/${q.id}`}
-                    className="shrink-0 rounded-full bg-violet-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-violet-500"
-                  >
-                    ابدأ الاختبار
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        <section>
-          <h2 className="mb-4 text-lg font-bold text-slate-900">اختبارات حسب الوحدة</h2>
-          <div className="space-y-8">
-            {byUnit.map(
-              ({ unit, items }) =>
-                items.length > 0 && (
-                  <div key={unit.id}>
-                    <h3 className="mb-3 text-sm font-semibold text-violet-700">{unit.titleAr}</h3>
-                    <ul className="space-y-3">
-                      {items.map((q) => (
-                        <li
-                          key={q.id}
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                        >
-                          <div>
-                            <h4 className="font-bold text-slate-900">{q.titleAr}</h4>
-                            <p className="mt-1 text-sm text-slate-600">{q.descriptionAr}</p>
-                            <p className="mt-2 text-xs text-slate-500">
-                              {q.questions.length} أسئلة · نجاح من {q.passPercent}٪ · {unitTitle(q.unitId)}
-                            </p>
-                          </div>
-                          <Link
-                            to={`/quizzes/run/${q.id}`}
-                            className="shrink-0 rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white hover:bg-emerald-500"
-                          >
-                            ابدأ
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )
-            )}
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {prePost.map((q) => (
+              <QuizCard key={q.id} quiz={q} score={scores[q.id]} variant="prepost" />
+            ))}
           </div>
         </section>
+      )}
 
-        <p className="mt-12 text-center text-sm text-slate-500">
-          <Link to="/curriculum" className="text-violet-700 underline-offset-2 hover:underline">
-            مراجعة المسار الدراسي
-          </Link>
-          {" · "}
-          <Link to="/worksheets" className="text-violet-700 underline-offset-2 hover:underline">
-            أوراق العمل
-          </Link>
-        </p>
+      {dayQuizzes.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-slate-900">اختبارات قصيرة — مسار 15 يومًا</h2>
+          <p className="mt-1 text-sm text-slate-600">اختبار بعد كل يوم دراسي لقياس الفهم الفوري.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {dayQuizzes.map(({ day, quiz }) => (
+              <QuizCard
+                key={quiz.id}
+                quiz={quiz}
+                score={scores[quiz.id]}
+                badge={`اليوم ${day.dayNumber}`}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {comprehensive.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-slate-900">اختبار شامل</h2>
+          <div className="mt-4 space-y-3">
+            {comprehensive.map((q) => (
+              <QuizCard key={q.id} quiz={q} score={scores[q.id]} variant="comprehensive" />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section>
+        <h2 className="text-xl font-bold text-slate-900">اختبارات حسب الوحدة</h2>
+        <div className="mt-6 space-y-8">
+          {byUnit.map(
+            ({ unit, items }) =>
+              items.length > 0 && (
+                <div key={unit.id}>
+                  <h3 className="mb-3 font-semibold text-violet-800">{unit.titleAr}</h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {items.map((q) => (
+                      <QuizCard key={q.id} quiz={q} score={scores[q.id]} />
+                    ))}
+                  </div>
+                </div>
+              ),
+          )}
+        </div>
+      </section>
+
+      <div className="mt-10 flex flex-wrap justify-center gap-4 text-sm">
+        <Link to="/path" className="font-semibold text-violet-700 hover:text-violet-900">
+          المسار الدراسي
+        </Link>
+        <Link to="/worksheets" className="font-semibold text-violet-700 hover:text-violet-900">
+          أوراق العمل
+        </Link>
       </div>
-    </div>
+    </PageShell>
+  );
+}
+
+function QuizCard({ quiz, score, variant, badge }) {
+  const border =
+    variant === "prepost"
+      ? "border-emerald-300 bg-emerald-50"
+      : variant === "comprehensive"
+        ? "border-violet-300 bg-violet-50"
+        : "border-slate-200 bg-white";
+
+  return (
+    <article className={`quiz-type-card flex flex-col ${border}`}>
+      {badge ? (
+        <span className="mb-2 inline-block w-fit rounded-md bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-800">
+          {badge}
+        </span>
+      ) : null}
+      <h3>{quiz.titleAr}</h3>
+      <p>{quiz.descriptionAr}</p>
+      <p className="mt-2 text-xs font-medium text-slate-500">
+        {quiz.questions.length} أسئلة · نجاح من {quiz.passPercent}٪
+        {score ? ` · نتيجتك: ${score.percent}%` : ""}
+      </p>
+      <Link to={`/quizzes/run/${quiz.id}`} className="edu-btn edu-btn-primary mt-4 w-fit text-sm">
+        {score ? "إعادة" : "ابدأ"}
+      </Link>
+    </article>
   );
 }
