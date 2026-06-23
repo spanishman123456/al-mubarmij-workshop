@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getQuizById } from "../data/quizzes";
+import { usePlatform } from "../context/PlatformContext";
 
 function computeResult(quiz, answers) {
   let correct = 0;
@@ -16,6 +17,7 @@ function computeResult(quiz, answers) {
 export default function QuizTakePage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const { saveQuizResult, user } = usePlatform();
   const quiz = useMemo(() => getQuizById(quizId ?? ""), [quizId]);
 
   const [answers, setAnswers] = useState(() => ({}));
@@ -48,6 +50,15 @@ export default function QuizTakePage() {
       if (!ok) return;
     }
     setSubmitted(true);
+    if (user?.role === "student") {
+      const r = computeResult(quiz, answers);
+      saveQuizResult(quiz.id, {
+        score: r.correct,
+        total: r.total,
+        percent: r.percent,
+        passed: r.passed,
+      });
+    }
   }
 
   function handleRetry() {

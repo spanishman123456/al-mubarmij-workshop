@@ -518,6 +518,67 @@ export const quizzes = [
       },
     ],
   },
+  {
+    id: "quiz-pre",
+    unitId: null,
+    titleAr: "التقويم القبلي — قبل دراسة الوحدة",
+    descriptionAr:
+      "يُستخدم لقياس مستواك قبل البدء في وحدة برمجة الحاسب. النتيجة تُحفظ في حسابك وللمعلم.",
+    passPercent: 0,
+    questions: [
+      {
+        id: "pre-q1",
+        questionAr: "ما النظام الذي يستخدم الرقمين 0 و 1 فقط؟",
+        optionsAr: ["العشري", "الثنائي", "الست عشري", "الروماني"],
+        correctIndex: 1,
+        explainAr: "النظام الثنائي أساس تمثيل البيانات في الحاسب.",
+      },
+      {
+        id: "pre-q2",
+        questionAr: "ما هي الخوارزمية؟",
+        optionsAr: ["لعبة حاسوب", "خطوات واضحة لحل مسألة", "نوع شاشة", "برنامج مضاد للفيروسات"],
+        correctIndex: 1,
+        explainAr: "الخوارزمية سلسلة خطوات منظمة.",
+      },
+      {
+        id: "pre-q3",
+        questionAr: "أي لغة نستخدمها في هذه الورشة للبرمجة؟",
+        optionsAr: ["Java", "Python", "HTML", "SQL"],
+        correctIndex: 1,
+        explainAr: "المقرر يعتمد بايثون كأداة تعلم.",
+      },
+    ],
+  },
+  {
+    id: "quiz-post",
+    unitId: null,
+    titleAr: "التقويم البعدي — بعد إتمام الوحدة",
+    descriptionAr: "يُقيس مدى تطورك بعد دراسة المنهج. قارن نتيجتك مع التقويم القبلي.",
+    passPercent: 60,
+    questions: [
+      {
+        id: "post-q1",
+        questionAr: "أي بوابة تعطي 1 فقط عندما يكون كلا المدخلين 1؟",
+        optionsAr: ["OR", "AND", "NOT", "XOR"],
+        correctIndex: 1,
+        explainAr: "بوابة AND تتطلب 1 و1.",
+      },
+      {
+        id: "post-q2",
+        questionAr: "أي بحث أسرع على قائمة مرتبة؟",
+        optionsAr: ["البحث الخطي", "البحث الثنائي", "الفرز الفقاعي", "العشوائي"],
+        correctIndex: 1,
+        explainAr: "البحث الثنائي يقسم المجال كل مرة.",
+      },
+      {
+        id: "post-q3",
+        questionAr: "شيفرة قيصر تعتمد على ماذا؟",
+        optionsAr: ["حذف الحروف", "إزاحة الحروف", "عكس الجملة", "تبديل الكلمات"],
+        correctIndex: 1,
+        explainAr: "الإزاحة Shift هي فكرة التشفير الأساسية.",
+      },
+    ],
+  },
 ];
 
 export function getQuizById(id) {

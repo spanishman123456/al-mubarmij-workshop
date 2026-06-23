@@ -4,8 +4,10 @@ import { pythonExercises } from "../data/pythonExercises";
 import { curriculumUnits } from "../data/curriculum";
 import { formatSkulptError } from "../lib/pythonErrorHelp";
 import { ensureSkulptLoaded, runPythonWithSkulpt } from "../lib/skulptRun";
+import { usePlatform } from "../context/PlatformContext";
 
 export default function PythonLab() {
+  const { user, savePythonSnippet } = usePlatform();
   const [searchParams, setSearchParams] = useSearchParams();
   const exFromUrl = searchParams.get("ex");
 
@@ -155,6 +157,19 @@ export default function PythonLab() {
             >
               {busy ? "جارٍ التشغيل…" : "تشغيل الكود"}
             </button>
+            {user?.role === "student" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const title = exercise?.titleAr || "كود محفوظ";
+                  savePythonSnippet(title, code);
+                  window.alert("تم حفظ الكود في حسابك — يمكن للمعلم مراجعته.");
+                }}
+                className="mt-2 w-full rounded-xl border border-white/20 py-2 text-sm text-slate-200 hover:bg-white/10"
+              >
+                حفظ الكود في حسابي
+              </button>
+            ) : null}
             <p className="mt-3 text-xs text-amber-200/90">{exercise.hintAr}</p>
           </div>
           <div>

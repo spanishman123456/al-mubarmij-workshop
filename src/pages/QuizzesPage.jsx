@@ -12,7 +12,8 @@ export default function QuizzesPage() {
     unit: u,
     items: quizzes.filter((q) => q.unitId === u.id),
   }));
-  const comprehensive = quizzes.filter((q) => q.unitId == null);
+  const comprehensive = quizzes.filter((q) => q.unitId == null && !["quiz-pre", "quiz-post"].includes(q.id));
+  const prePost = quizzes.filter((q) => ["quiz-pre", "quiz-post"].includes(q.id));
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-20 pt-24 font-ar">
@@ -24,6 +25,28 @@ export default function QuizzesPage() {
             (يختلف حسب الاختبار)، وشرح لكل سؤال.
           </p>
         </div>
+
+        {prePost.length > 0 && (
+          <section className="mb-12">
+            <h2 className="mb-2 text-lg font-bold text-slate-900">التقويم القبلي والبعدي</h2>
+            <p className="mb-4 text-sm text-slate-600">
+              القبلي يقيس مستواك قبل الوحدة؛ البعدي بعد إتمام المنهج — تُحفظ النتائج في حسابك وللمعلم.
+            </p>
+            <ul className="space-y-3">
+              {prePost.map((q) => (
+                <li key={q.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-emerald-200 bg-emerald-50/80 p-5">
+                  <div>
+                    <h3 className="font-bold text-slate-900">{q.titleAr}</h3>
+                    <p className="mt-1 text-sm text-slate-600">{q.descriptionAr}</p>
+                  </div>
+                  <Link to={`/quizzes/run/${q.id}`} className="shrink-0 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white">
+                    ابدأ
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {comprehensive.length > 0 && (
           <section className="mb-12">
