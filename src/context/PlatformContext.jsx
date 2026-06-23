@@ -1,13 +1,11 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { findTeacher, findTeacherById } from "../data/demoUsers";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { findTeacher } from "../data/demoUsers";
 import {
   findStudentByNationalId,
   rosterStudentToUser,
   getAllRosterStudents,
-  findRosterUserById,
 } from "../data/studentsRoster";
 import {
-  loadPlatformState,
   savePlatformState,
   getStudentProgress,
   getStudentAnalytics,
@@ -23,16 +21,36 @@ import {
   recordActivityComplete,
   defaultAnalytics,
 } from "../lib/platformAnalytics";
+import {
+  loadValidatedPlatformState,
+  resolveSessionUser,
+  createSessionPatch,
+  clearSessionPatch,
+  hardRedirectToLogin,
+} from "../lib/session";
 
 const PlatformContext = createContext(null);
 
-function resolveUser(userId) {
-  if (!userId) return null;
-  return findTeacherById(userId) || findRosterUserById(userId);
-}
-
 export function PlatformProvider({ children }) {
-  const [state, setState] = useState(() => loadPlatformState());
+  const [state, setState] = useState(() => loadValidatedPlatformState());
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    setAuthReady(true);
+
+    function onPageShow(event) {
+      if (!event.persisted) return;
+      const fresh = loadValidatedPlatformState();
+      if (!fresh.sessionUserId) {
+        hardRedirectToLogin();
+        return;
+      }
+      setState(fresh);
+    }
+
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   const persist = useCallback((updater) => {
     setState((prev) => {
@@ -42,13 +60,13 @@ export function PlatformProvider({ children }) {
     });
   }, []);
 
-  const user = state.sessionUserId ? resolveUser(state.sessionUserId) : null;
+  const user = state.sessionUserId ? resolveSessionUser(state.sessionUserId) : null;
 
   const loginTeacher = useCallback(
     (username, password) => {
       const found = findTeacher(username, password);
       if (!found) return { ok: false, message: "اسم المستخدم أو كلمة المرور غير صحيحة." };
-      persist((prev) => ({ ...prev, sessionUserId: found.id }));
+      persist((prev) => ({ ...prev, ...createSessionPatch(found.id) }));
       return { ok: true, user: found };
     },
     [persist],
@@ -62,7 +80,7 @@ export function PlatformProvider({ children }) {
       }
       const student = rosterStudentToUser(row);
       persist((prev) => {
-        const next = { ...prev, sessionUserId: student.id };
+        const next = { ...prev, ...createSessionPatch(student.id) };
         if (!next.progressByStudent[student.id]) {
           next.progressByStudent = {
             ...next.progressByStudent,
@@ -83,7 +101,13 @@ export function PlatformProvider({ children }) {
   );
 
   const logout = useCallback(() => {
-    persist((prev) => ({ ...prev, sessionUserId: null }));
+    persist((prev) => ({ ...prev, ...clearSessionPatch() }));
+    try {
+      sessionStorage.clear();
+    } catch {
+      /* ignore */
+    }
+    hardRedirectToLogin();
   }, [persist]);
 
   const trackPageView = useCallback(
@@ -384,6 +408,7 @@ export function PlatformProvider({ children }) {
   const value = useMemo(
     () => ({
       user,
+      authReady,
       loginTeacher,
       loginStudentByNationalId,
       logout,
@@ -407,6 +432,7 @@ export function PlatformProvider({ children }) {
     }),
     [
       user,
+      authReady,
       loginTeacher,
       loginStudentByNationalId,
       logout,

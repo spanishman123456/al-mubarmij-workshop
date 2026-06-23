@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
 import { MawhibaBrand, SiteTitle } from "../components/branding/MawhibaBrand";
 
 export default function LoginPage() {
-  const { loginStudentByNationalId, loginTeacher, user } = usePlatform();
+  const { loginStudentByNationalId, loginTeacher, authReady } = usePlatform();
   const navigate = useNavigate();
   const [tab, setTab] = useState("student");
   const [nationalId, setNationalId] = useState("");
@@ -13,13 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      navigate(user.role === "teacher" ? "/teacher" : "/student", { replace: true });
-    }
-  }, [user, navigate]);
-
-  if (user) return null;
+  if (!authReady) return null;
 
   function submitStudent(e) {
     e.preventDefault();
@@ -31,7 +25,7 @@ export default function LoginPage() {
       setError(res.message);
       return;
     }
-    navigate("/student");
+    navigate("/student", { replace: true });
   }
 
   function submitTeacher(e) {
@@ -44,7 +38,7 @@ export default function LoginPage() {
       setError(res.message);
       return;
     }
-    navigate("/teacher");
+    navigate("/teacher", { replace: true });
   }
 
   return (
@@ -164,15 +158,8 @@ export default function LoginPage() {
             </form>
           )}
 
-          <p className="mt-6 text-center text-xs text-emerald-600">● النظام جاهز — البيانات محفوظة محليًا</p>
+          <p className="mt-6 text-center text-xs text-emerald-600">● النظام محمي — يتطلب تسجيل دخول صالح</p>
         </div>
-
-        <Link
-          to="/"
-          className="mt-8 inline-flex items-center gap-1 text-sm font-semibold text-violet-200 hover:text-white"
-        >
-          ← العودة للرئيسية
-        </Link>
       </div>
     </div>
   );

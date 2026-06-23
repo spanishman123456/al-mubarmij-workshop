@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { NavBar } from "./components/NavBar";
-import { PlatformProvider } from "./context/PlatformContext";
+import { PlatformProvider, usePlatform } from "./context/PlatformContext";
+import { ProtectedRoute, GuestRoute, AuthLoading } from "./components/auth/ProtectedRoute";
 import Home from "./pages/Home";
 import PythonLab from "./pages/PythonLab";
 import CurriculumPage from "./pages/CurriculumPage";
@@ -21,34 +22,198 @@ import WorksheetDetailPage from "./pages/WorksheetDetailPage";
 import MicrobitPage from "./pages/MicrobitPage";
 import { ActivityTracker } from "./hooks/useActivityTracker";
 
+function NotFoundRedirect() {
+  const { user, authReady } = usePlatform();
+  if (!authReady) return <AuthLoading />;
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={user.role === "teacher" ? "/teacher" : "/student"} replace />;
+}
+
+function AppRoutes() {
+  const { user, authReady } = usePlatform();
+
+  return (
+    <div className="min-h-screen font-ar">
+      {authReady && user ? (
+        <>
+          <ActivityTracker />
+          <NavBar />
+        </>
+      ) : null}
+
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            <GuestRoute>
+              <LoginPage />
+            </GuestRoute>
+          }
+        />
+
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/teacher"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/path"
+          element={
+            <ProtectedRoute>
+              <LearningPathPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/path/day/:dayId"
+          element={
+            <ProtectedRoute>
+              <DayLessonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/python"
+          element={
+            <ProtectedRoute>
+              <PythonLab />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/curriculum"
+          element={
+            <ProtectedRoute>
+              <CurriculumPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/curriculum/unit/:unitId"
+          element={
+            <ProtectedRoute>
+              <UnitPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/curriculum/unit/:unitId/lesson/:lessonId"
+          element={
+            <ProtectedRoute>
+              <LessonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/worksheets"
+          element={
+            <ProtectedRoute>
+              <WorksheetsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/worksheets/:worksheetId"
+          element={
+            <ProtectedRoute>
+              <WorksheetDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/quizzes"
+          element={
+            <ProtectedRoute>
+              <QuizzesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quizzes/run/:quizId"
+          element={
+            <ProtectedRoute>
+              <QuizTakePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/simulations"
+          element={
+            <ProtectedRoute>
+              <SimulationsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/microbit"
+          element={
+            <ProtectedRoute>
+              <MicrobitPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* مسارات قديمة/بديلة */}
+        <Route path="/simulation" element={<Navigate to="/simulations" replace />} />
+        <Route path="/tests" element={<Navigate to="/quizzes" replace />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <Navigate to="/student" replace />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<NotFoundRedirect />} />
+      </Routes>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <PlatformProvider>
       <BrowserRouter>
         <ErrorBoundary>
-          <div className="min-h-screen font-ar">
-            <ActivityTracker />
-            <NavBar />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/student" element={<StudentDashboard />} />
-              <Route path="/teacher" element={<TeacherDashboard />} />
-              <Route path="/path" element={<LearningPathPage />} />
-              <Route path="/path/day/:dayId" element={<DayLessonPage />} />
-              <Route path="/python" element={<PythonLab />} />
-              <Route path="/curriculum" element={<CurriculumPage />} />
-              <Route path="/curriculum/unit/:unitId" element={<UnitPage />} />
-              <Route path="/curriculum/unit/:unitId/lesson/:lessonId" element={<LessonPage />} />
-              <Route path="/worksheets" element={<WorksheetsPage />} />
-              <Route path="/worksheets/:worksheetId" element={<WorksheetDetailPage />} />
-              <Route path="/quizzes" element={<QuizzesPage />} />
-              <Route path="/quizzes/run/:quizId" element={<QuizTakePage />} />
-              <Route path="/simulations" element={<SimulationsPage />} />
-              <Route path="/projects" element={<ProjectsPage />} />
-              <Route path="/microbit" element={<MicrobitPage />} />
-            </Routes>
-          </div>
+          <AppRoutes />
         </ErrorBoundary>
       </BrowserRouter>
     </PlatformProvider>

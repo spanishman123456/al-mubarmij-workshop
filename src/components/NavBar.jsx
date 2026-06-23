@@ -22,12 +22,11 @@ export function NavBar() {
   const { pathname } = useLocation();
   const { user, logout } = usePlatform();
   const [open, setOpen] = useState(false);
-  const hideOnLogin = pathname === "/login";
 
-  const dashLink = user?.role === "teacher" ? "/teacher" : user?.role === "student" ? "/student" : "/login";
-  const dashLabel = user ? (user.role === "teacher" ? "لوحة المعلم" : "حسابي") : "دخول";
+  if (!user) return null;
 
-  if (hideOnLogin) return null;
+  const dashLink = user.role === "teacher" ? "/teacher" : "/student";
+  const dashLabel = user.role === "teacher" ? "لوحة المعلم" : "حسابي";
 
   return (
     <header
