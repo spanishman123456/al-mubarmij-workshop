@@ -115,7 +115,7 @@ export function TruthTableExercises() {
               )}
               <td className="border p-2">
                 <select
-                  className="rounded border px-2 py-1"
+                  className="edu-select edu-select-compact w-full max-w-[5rem]"
                   value={answers[i] ?? ""}
                   onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
                   disabled={attempted}

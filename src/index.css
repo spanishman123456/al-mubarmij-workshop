@@ -178,11 +178,117 @@ body {
 .edu-select {
   width: 100%;
   padding: 0.65rem 0.85rem;
+  padding-inline-end: 2.25rem;
   border-radius: 0.65rem;
   border: 1px solid #cbd5e1;
-  background: #fff;
+  background-color: #fff;
   color: #0f172a;
   cursor: pointer;
+  color-scheme: light;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%23475569' d='M3.5 5.25 7 8.75l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: inline-end 0.65rem center;
+  background-size: 0.875rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.edu-select:hover {
+  border-color: #94a3b8;
+  background-color: #f8fafc;
+}
+
+.edu-select:focus,
+.edu-select:focus-visible {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+  background-color: #fff;
+}
+
+.edu-select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+.edu-select option:checked {
+  background-color: #ede9fe;
+  color: #4c1d95;
+}
+
+/* قوائم داكنة — مختبر بايثون والأسطح الداكنة */
+.edu-select-dark,
+.python-lab-page select,
+.dark-surface select {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  padding-inline-end: 2.25rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background-color: #1e293b;
+  color: #f8fafc;
+  cursor: pointer;
+  color-scheme: dark;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%23cbd5e1' d='M3.5 5.25 7 8.75l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: inline-end 0.65rem center;
+  background-size: 0.875rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.edu-select-dark:hover,
+.python-lab-page select:hover,
+.dark-surface select:hover {
+  border-color: #a78bfa;
+  background-color: #273449;
+}
+
+.edu-select-dark:focus,
+.edu-select-dark:focus-visible,
+.python-lab-page select:focus,
+.python-lab-page select:focus-visible,
+.dark-surface select:focus,
+.dark-surface select:focus-visible {
+  outline: none;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.28);
+  background-color: #1e293b;
+}
+
+.edu-select-dark option,
+.python-lab-page select option,
+.dark-surface select option {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
+.edu-select-dark option:checked,
+.python-lab-page select option:checked,
+.dark-surface select option:checked {
+  background-color: #4c1d95;
+  color: #faf5ff;
+}
+
+.edu-select-compact {
+  padding: 0.4rem 0.65rem;
+  padding-inline-end: 2rem;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+}
+
+.edu-select:disabled,
+.edu-select-dark:disabled,
+.python-lab-page select:disabled,
+.lab-panel .lab-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .edu-muted {
@@ -236,11 +342,47 @@ body {
 }
 
 .lab-panel .lab-select {
+  width: 100%;
   padding: 0.55rem 0.75rem;
+  padding-inline-end: 2.1rem;
   border-radius: 0.5rem;
   border: 1px solid #475569;
-  background: #1e293b;
+  background-color: #1e293b;
   color: #f1f5f9;
+  cursor: pointer;
+  color-scheme: dark;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%2394a3b8' d='M3.5 5.25 7 8.75l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: inline-end 0.55rem center;
+  background-size: 0.875rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.lab-panel .lab-select:hover {
+  border-color: #22d3ee;
+  background-color: #273449;
+}
+
+.lab-panel .lab-select:focus,
+.lab-panel .lab-select:focus-visible {
+  outline: none;
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.25);
+  background-color: #1e293b;
+}
+
+.lab-panel .lab-select option {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+.lab-panel .lab-select option:checked {
+  background-color: #0e7490;
+  color: #ecfeff;
 }
 
 .lab-panel .lab-result {
@@ -553,6 +695,7 @@ body {
 
   select,
   .edu-select,
+  .edu-select-dark,
   textarea,
   input[type="text"],
   input[type="number"] {
@@ -561,6 +704,7 @@ body {
 
   select:hover,
   .edu-select:hover,
+  .edu-select-dark:hover,
   textarea:hover,
   input[type="text"]:hover,
   input[type="number"]:hover {

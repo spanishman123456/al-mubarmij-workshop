@@ -358,7 +358,7 @@ export default function PythonLab() {
                 dir="ltr"
                 value={unitFilter}
                 onChange={(e) => onUnitFilterChange(e.target.value)}
-                className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white"
+                className="edu-select-dark w-auto max-w-md text-sm"
               >
                 <option value="all">كل الوحدات</option>
                 {curriculumUnits.map((u) => (
