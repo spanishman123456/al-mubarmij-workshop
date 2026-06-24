@@ -12,7 +12,7 @@ const EXPORT_ACTIONS = [
   {
     id: "exe",
     label: "حزمة بناء EXE",
-    sub: "build_windows.bat → project_runner.exe",
+    sub: "build_windows.bat → اسم المشروع.exe",
     fn: exportWindowsExeKit,
     capKey: "exe",
   },
@@ -37,7 +37,10 @@ export function ProjectExportPanel({
   const [busy, setBusy] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const caps = useMemo(() => analyzeExportCapabilities(code, mode), [code, mode]);
+  const caps = useMemo(
+    () => analyzeExportCapabilities(code, mode, { templateId, title }),
+    [code, mode, templateId, title],
+  );
 
   function showToast(result) {
     setToast(result);
@@ -137,8 +140,8 @@ export function ProjectExportPanel({
 
       <div className={`mt-3 rounded-lg p-2 text-xs ${isDark ? "bg-black/30 text-slate-400" : "bg-white text-slate-500"}`}>
         <p>📱 <strong>الجوال:</strong> استخدم Web App أو PWA — ملف exe لا يعمل على Android/iOS.</p>
-        <p className="mt-1">🖥️ <strong>Windows:</strong> حمّل ZIP → شغّل <span dir="ltr">build_windows.bat</span> → الناتج <span dir="ltr">project_runner.exe</span></p>
-        <p className="mt-1 opacity-90">أسماء الملفات التنفيذية إنجليزية دائمًا لتجنب أخطاء CMD مع الأسماء العربية.</p>
+        <p className="mt-1">🖥️ <strong>Windows:</strong> حمّل ZIP → شغّل <span dir="ltr">build_windows.bat</span> → الناتج <span dir="ltr">dist\اسم_المشروع.exe</span></p>
+        <p className="mt-1 opacity-90">يُفحَص المشروع تلقائيًا قبل البناء — عند الخطأ راجع <span dir="ltr">debug_log.txt</span></p>
         <p className="mt-1 opacity-80">📦 APK: {caps.apk.message}</p>
       </div>
 

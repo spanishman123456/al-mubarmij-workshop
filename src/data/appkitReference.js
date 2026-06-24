@@ -1,7 +1,7 @@
 export const APPKIT_COMMANDS = [
   { sig: 'appkit.title("العنوان")', desc: "عنوان البرنامج في أعلى الواجهة" },
   { sig: 'appkit.text("نص توضيحي")', desc: "سطر نصي للشرح" },
-  { sig: 'appkit.input("id", "التسمية", "افتراضي")', desc: "مربع إدخال نص" },
+  { sig: 'appkit.input("id", "التسمية", "افتراضي", "placeholder")', desc: "مربع إدخال نص" },
   { sig: 'appkit.number_input("id", "التسمية", "0", "مثال: 10")', desc: "مربع إدخال رقم مع placeholder" },
   { sig: 'appkit.output("id", "التسمية")', desc: "منطقة عرض نتيجة" },
   { sig: 'appkit.button("id", "نص الزر")', desc: "زر تفاعلي" },
@@ -11,6 +11,7 @@ export const APPKIT_COMMANDS = [
   { sig: 'appkit.canvas("id", عرض, ارتفاع)', desc: "مساحة رسم" },
   { sig: "appkit.draw_rect(...)", desc: "رسم مستطيل على Canvas" },
   { sig: "appkit.draw_text(...)", desc: "كتابة نص على Canvas" },
+  { sig: 'appkit.clear_canvas("id")', desc: "مسح لوحة الرسم" },
   { sig: "appkit.build()", desc: "إنهاء بناء الواجهة — ضعه في آخر الكود" },
 ];
 

@@ -1,11 +1,27 @@
 import { GRAPHIC_APP_PROJECTS } from "../data/graphicAppProjects.js";
 
-/** اسم ملف exe ثابت — إنجليزي فقط — يتجنب مشاكل CMD والمسارات العربية */
+/** اسم افتراضي عند غياب قالب معروف */
 export const EXE_BINARY_NAME = "project_runner";
 
 const TEMPLATE_SLUG_BY_ID = Object.fromEntries(
   GRAPHIC_APP_PROJECTS.map((p) => [p.id, p.exportSlug || p.id.replace(/^app-/, "")]),
 );
+
+/**
+ * اسم ملف exe من slug المشروع — إنجليزي وشرطات سفلية فقط
+ * مثال: number-guessing-game → number_guessing_game.exe
+ */
+export function exeBinaryName(safeSlug) {
+  const base = String(safeSlug || "")
+    .replace(/-/g, "_")
+    .replace(/[^a-zA-Z0-9_]/g, "")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "")
+    .toLowerCase()
+    .slice(0, 48);
+  if (base.length >= 3 && /^[a-z]/.test(base)) return base;
+  return EXE_BINARY_NAME;
+}
 
 /**
  * slug آمن للملفات والمجلدات — أحرف إنجليزية وأرقام وشرطة فقط
@@ -34,6 +50,7 @@ export function safeExportSlug(title, templateId = null) {
 }
 
 export function buildProjectMeta({ title, templateId, safeSlug, mode, authorName }) {
+  const exeName = exeBinaryName(safeSlug);
   return JSON.stringify(
     {
       titleAr: title || "مشروع برمجة الحاسب",
@@ -41,7 +58,8 @@ export function buildProjectMeta({ title, templateId, safeSlug, mode, authorName
       templateId: templateId || null,
       mode,
       authorName: authorName || null,
-      exeFileName: `${EXE_BINARY_NAME}.exe`,
+      exeFileName: `${exeName}.exe`,
+      exeBinaryName: exeName,
       buildScript: "build_windows.bat",
       runScript: "run_with_python.bat",
       exportedAt: new Date().toISOString(),

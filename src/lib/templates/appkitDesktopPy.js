@@ -1,4 +1,4 @@
-/** نسخة سطح المكتب من appkit — Tkinter — للتصدير و PyInstaller */
+/** نسخة سطح المكتب من appkit — Tkinter — متوافقة مع Skulpt والتصدير */
 export const APPKIT_DESKTOP_PY = `# -*- coding: utf-8 -*-
 """appkit — واجهة Tkinter متوافقة مع مختبر برمجة الحاسب (تصدير سطح المكتب)"""
 import tkinter as tk
@@ -12,6 +12,7 @@ _canvas_ops = {}
 _widgets = {}
 _output_labels = {}
 _canvas_widgets = {}
+_placeholders = {}
 _root = None
 
 
@@ -24,14 +25,32 @@ def text(content):
     _elements.append({"type": "text", "content": str(content)})
 
 
-def input(id, label, defaultVal=""):
-    _elements.append({"type": "input", "id": str(id), "label": str(label), "inputType": "text"})
-    _values[str(id)] = str(defaultVal)
+def input(id, label, defaultVal="", placeholder=""):
+    i = str(id)
+    _elements.append(
+        {
+            "type": "input",
+            "id": i,
+            "label": str(label),
+            "inputType": "text",
+            "placeholder": str(placeholder or ""),
+        }
+    )
+    _values[i] = str(defaultVal)
 
 
-def number_input(id, label, defaultVal="0"):
-    _elements.append({"type": "input", "id": str(id), "label": str(label), "inputType": "number"})
-    _values[str(id)] = str(defaultVal)
+def number_input(id, label, defaultVal="0", placeholder=""):
+    i = str(id)
+    _elements.append(
+        {
+            "type": "input",
+            "id": i,
+            "label": str(label),
+            "inputType": "number",
+            "placeholder": str(placeholder or ""),
+        }
+    )
+    _values[i] = str(defaultVal)
 
 
 def output(id, label):
@@ -48,7 +67,11 @@ def get(id):
     i = str(id)
     w = _widgets.get(i)
     if isinstance(w, tk.StringVar):
-        return w.get()
+        val = w.get()
+        ph = _placeholders.get(i, "")
+        if ph and val == ph:
+            return ""
+        return val
     return _values.get(i, "")
 
 
@@ -57,7 +80,10 @@ def set(id, value):
     _values[i] = str(value)
     lbl = _output_labels.get(i)
     if lbl is not None:
-        lbl.config(text=str(value))
+        lbl.config(text=str(value) if str(value) else "—")
+    var = _widgets.get(i)
+    if isinstance(var, tk.StringVar):
+        var.set(str(value))
 
 
 def on_click(id, handler):
@@ -88,6 +114,14 @@ def draw_text(canvasId, x, y, txt, color="#1e1b4b"):
     )
 
 
+def clear_canvas(canvasId):
+    cid = str(canvasId)
+    _canvas_ops[cid] = []
+    cv = _canvas_widgets.get(cid)
+    if cv is not None:
+        _render_canvas(cv, cid)
+
+
 def _render_canvas(cv, cid):
     cv.delete("all")
     cv.config(bg="#f8fafc")
@@ -109,16 +143,65 @@ def _refresh_ui():
 
 def _make_handler(handler):
     def wrapped():
-        handler()
+        try:
+            handler()
+        except Exception:
+            import traceback
+            import sys
+            from datetime import datetime
+
+            try:
+                with open("debug_log.txt", "w", encoding="utf-8") as f:
+                    f.write(datetime.now().isoformat() + "\\n")
+                    f.write(traceback.format_exc())
+            except OSError:
+                pass
+            try:
+                from tkinter import messagebox
+
+                messagebox.showerror(
+                    "خطأ أثناء التشغيل",
+                    "حدث خطأ أثناء تنفيذ الإجراء.\\nراجع debug_log.txt للتفاصيل.",
+                )
+            except Exception:
+                traceback.print_exc()
+                sys.exit(1)
         _refresh_ui()
+
     return wrapped
+
+
+def _make_entry(parent, el):
+    i = el["id"]
+    ph = el.get("placeholder", "")
+    initial = _values.get(i, "")
+    var = tk.StringVar(value=initial if initial else (ph if ph else ""))
+    if ph:
+        _placeholders[i] = ph
+
+        def on_in(_ev, v=var, p=ph):
+            if v.get() == p:
+                v.set("")
+
+        def on_out(_ev, v=var, p=ph):
+            if not v.get().strip():
+                v.set(p)
+
+        entry = ttk.Entry(parent, textvariable=var)
+        if not initial:
+            var.set(ph)
+        entry.bind("<FocusIn>", on_in)
+        entry.bind("<FocusOut>", on_out)
+        return entry, var
+
+    return ttk.Entry(parent, textvariable=var), var
 
 
 def build():
     global _root
     _root = tk.Tk()
     _root.title(_title or "مشروع برمجة الحاسب")
-    _root.minsize(360, 400)
+    _root.minsize(380, 420)
 
     outer = ttk.Frame(_root, padding=12)
     outer.pack(fill=tk.BOTH, expand=True)
@@ -129,21 +212,36 @@ def build():
     for el in _elements:
         t = el["type"]
         if t == "text":
-            ttk.Label(outer, text=el["content"], wraplength=380).pack(anchor="w", pady=4)
+            ttk.Label(outer, text=el["content"], wraplength=400).pack(anchor="w", pady=4)
         elif t == "input":
             i = el["id"]
-            ttk.Label(outer, text=el["label"]).pack(anchor="w")
-            var = tk.StringVar(value=_values.get(i, ""))
+            ttk.Label(outer, text=el["label"], font=("Segoe UI", 9, "bold")).pack(anchor="w")
             if el["inputType"] == "number":
-                w = ttk.Spinbox(outer, textvariable=var, from_=0, to=99999)
-            else:
+                var = tk.StringVar(value=_values.get(i, ""))
                 w = ttk.Entry(outer, textvariable=var)
+                ph = el.get("placeholder", "")
+                if ph and not _values.get(i):
+                    _placeholders[i] = ph
+                    var.set(ph)
+
+                    def on_in_n(_ev, v=var, p=ph):
+                        if v.get() == p:
+                            v.set("")
+
+                    def on_out_n(_ev, v=var, p=ph):
+                        if not v.get().strip():
+                            v.set(p)
+
+                    w.bind("<FocusIn>", on_in_n)
+                    w.bind("<FocusOut>", on_out_n)
+            else:
+                w, var = _make_entry(outer, el)
             w.pack(fill=tk.X, pady=4)
             _widgets[i] = var
         elif t == "output":
             i = el["id"]
-            ttk.Label(outer, text=el["label"], font=("Segoe UI", 9, "bold")).pack(anchor="w")
-            lbl = ttk.Label(outer, text=_values.get(i, "") or "—", wraplength=380)
+            ttk.Label(outer, text=el["label"], font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(6, 0))
+            lbl = ttk.Label(outer, text=_values.get(i, "") or "—", wraplength=400, justify="right")
             lbl.pack(anchor="w", pady=4)
             _output_labels[i] = lbl
         elif t == "button":
