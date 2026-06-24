@@ -518,6 +518,55 @@ body {
 
 /* ─── حركات وتفاعلات دقيقة (موحّدة) ─── */
 @media (prefers-reduced-motion: no-preference) {
+  /* تفاعلات موحّدة — أزرار، روابط تعليمية، عناصر المختبر */
+  button:not(:disabled),
+  a.edu-btn,
+  .interactive-press,
+  .lab-tool-btn,
+  input[type="submit"],
+  input[type="button"],
+  label.quiz-option {
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.2s ease,
+      filter 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  button:not(:disabled):hover,
+  a.edu-btn:hover,
+  .interactive-press:hover:not(:disabled),
+  .lab-tool-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+
+  button:not(:disabled):active,
+  a.edu-btn:active,
+  .interactive-press:active:not(:disabled),
+  .lab-tool-btn:active:not(:disabled) {
+    transform: scale(0.97);
+    filter: brightness(0.98);
+  }
+
+  select,
+  .edu-select,
+  textarea,
+  input[type="text"],
+  input[type="number"] {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  }
+
+  select:hover,
+  .edu-select:hover,
+  textarea:hover,
+  input[type="text"]:hover,
+  input[type="number"]:hover {
+    border-color: #a78bfa;
+  }
+
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -583,9 +632,25 @@ body {
   .nav-link-interactive:active {
     transform: scale(0.98);
   }
+
+  .python-lab-page button:not(:disabled):hover {
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.22);
+  }
+
+  .python-lab-page button:not(:disabled):active {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  button:not(:disabled):hover,
+  a.edu-btn:hover,
+  .interactive-press:hover,
+  .lab-tool-btn:hover {
+    transform: none;
+    filter: none;
+  }
+
   .animate-fade-in,
   .animate-slide-up,
   .page-enter,

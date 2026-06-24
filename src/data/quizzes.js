@@ -4,7 +4,7 @@
  */
 
 import { dayQuizzes } from "./dayQuizzes";
-import { PRE_TEST_QUESTION_BANK, POST_TEST_QUESTION_BANK } from "./prePostQuestionBank.js";
+import { buildPrePostBanks } from "./buildPrePostBanks.js";
 import { UNIT_QUIZ_EXTRAS } from "./unitQuizExtras.js";
 
 /** @typedef {'mcq'|'truefalse'|'fill'} QuestionType */
@@ -531,28 +531,6 @@ export const quizzes = [
     ],
   },
   ...dayQuizzes,
-  {
-    id: "quiz-pre",
-    unitId: null,
-    titleAr: "التقويم القبلي — قبل دراسة الوحدة",
-    descriptionAr:
-      "يُستخدم لقياس مستواك قبل البدء في وحدة برمجة الحاسب. يُختار 12 سؤالاً من بنك أسئلة متنوع — النتيجة تُحفظ في حسابك وللمعلم.",
-    passPercent: 0,
-    questionPool: PRE_TEST_QUESTION_BANK,
-    drawCount: 12,
-    shuffle: true,
-  },
-  {
-    id: "quiz-post",
-    unitId: null,
-    titleAr: "التقويم البعدي — بعد إتمام الوحدة",
-    descriptionAr:
-      "يُقيس مدى تطورك بعد دراسة المنهج. يُختار 12 سؤالاً مختلفاً عن المحاولة السابقة عند الإمكان — قارن نتيجتك مع التقويم القبلي.",
-    passPercent: 60,
-    questionPool: POST_TEST_QUESTION_BANK,
-    drawCount: 12,
-    shuffle: true,
-  },
 ];
 
 for (const quiz of quizzes) {
@@ -562,6 +540,33 @@ for (const quiz of quizzes) {
     quiz.shuffle = true;
   }
 }
+
+const { PRE_TEST_QUESTION_BANK, POST_TEST_QUESTION_BANK } = buildPrePostBanks(quizzes);
+
+export { PRE_TEST_QUESTION_BANK, POST_TEST_QUESTION_BANK };
+
+quizzes.push(
+  {
+    id: "quiz-pre",
+    unitId: null,
+    titleAr: "التقويم القبلي — قبل دراسة الوحدة",
+    descriptionAr: `يُستخدم لقياس مستواك قبل البدء في وحدة برمجة الحاسب. يتضمن ${PRE_TEST_QUESTION_BANK.length} سؤالاً يغطي جميع محاور المنهج — النتيجة تُحفظ في حسابك وللمعلم.`,
+    passPercent: 0,
+    questionPool: PRE_TEST_QUESTION_BANK,
+    drawCount: PRE_TEST_QUESTION_BANK.length,
+    shuffle: true,
+  },
+  {
+    id: "quiz-post",
+    unitId: null,
+    titleAr: "التقويم البعدي — بعد إتمام الوحدة",
+    descriptionAr: `يُقيس مدى تطورك بعد دراسة المنهج. يتضمن ${POST_TEST_QUESTION_BANK.length} سؤالاً مختلفاً عن القبلي — قارن نتيجتك مع التقويم القبلي.`,
+    passPercent: 60,
+    questionPool: POST_TEST_QUESTION_BANK,
+    drawCount: POST_TEST_QUESTION_BANK.length,
+    shuffle: true,
+  },
+);
 
 export function getQuizById(id) {
   return quizzes.find((q) => q.id === id) ?? null;

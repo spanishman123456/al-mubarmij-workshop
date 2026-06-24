@@ -324,7 +324,7 @@ export default function PythonLab() {
   ) : null;
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] pb-16 pt-24 font-ar text-white">
+    <div className="python-lab-page min-h-screen animate-fade-in bg-[#0a0e1a] pb-16 pt-24 font-ar text-white">
       <div className="mx-auto max-w-6xl px-4">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold sm:text-4xl">مختبر بايثون</h1>

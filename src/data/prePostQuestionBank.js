@@ -4,8 +4,9 @@
 
 /** @typedef {'mcq'|'truefalse'|'fill'} QuestionType */
 
+/** أسئلة تأسيسية إضافية للقبلي — تُدمج مع أسئلة الوحدات (بدون تكرار نص السؤال). */
 /** @type {import('./quizzes.js').QuizQuestion[]} */
-export const PRE_TEST_QUESTION_BANK = [
+export const PRE_LEGACY_SUPPLEMENT = [
   {
     id: "pre-m1",
     type: "mcq",
@@ -149,10 +150,107 @@ export const PRE_TEST_QUESTION_BANK = [
     correctIndex: 1,
     explainAr: "ASCII ترميز حروف إنجليزية؛ Unicode أوسع.",
   },
+  {
+    id: "pre-x01",
+    type: "mcq",
+    questionAr: "ما الهدف من المخطط الانسيابي في المقرر؟",
+    optionsAr: ["تزيين العرض", "تمثيل خطوات الحل بصرياً", "حذف الكود", "تشغيل الإنترنت"],
+    correctIndex: 1,
+    explainAr: "المخططات تربط التفكير الخوارزمي بالبرمجة.",
+  },
+  {
+    id: "pre-x02",
+    type: "mcq",
+    questionAr: "ما وظيفة الذاكرة العشوائية RAM تقريباً؟",
+    optionsAr: ["تخزين دائم للملفات", "تخزين مؤقت أثناء تشغيل البرامج", "طباعة الأوراق", "توليد الصوت فقط"],
+    correctIndex: 1,
+    explainAr: "RAM تُستخدم أثناء التشغيل؛ التخزين الدائم على القرص.",
+  },
+  {
+    id: "pre-x03",
+    type: "truefalse",
+    questionAr: "النظام الست عشري يُستخدم أحياناً لتمثيل البيانات بشكل مختصر.",
+    optionsAr: ["صح", "خطأ"],
+    correctIndex: 0,
+    explainAr: "Hex شائع في ترميز الألوان والذاكرة.",
+  },
+  {
+    id: "pre-x04",
+    type: "mcq",
+    questionAr: "ما فكرة التشفير Encryption باختصار؟",
+    optionsAr: ["حذف الرسالة", "إخفاء المعنى لحماية المحتوى", "تكبير الخط", "إيقاف الحاسب"],
+    correctIndex: 1,
+    explainAr: "التشفير يحمي السرية عند النقل أو التخزين.",
+  },
+  {
+    id: "pre-x05",
+    type: "fill",
+    questionAr: "أكمل: جدول الحقيقة يوضح مخرجات العمليات _____",
+    correctAnswer: "المنطقية",
+    acceptAnswers: ["المنطقية", "المنطق", "logic", "البوابات المنطقية"],
+    explainAr: "Truth tables جزء من المنطق الرقمي.",
+  },
+  {
+    id: "pre-x06",
+    type: "mcq",
+    questionAr: "ما المقصود بـ «الملف File» في الحاسب؟",
+    optionsAr: ["شاشة العرض", "وحدة تخزين بيانات باسم على القرص", "كابل الشبكة", "المعالج"],
+    correctIndex: 1,
+    explainAr: "الملفات تحفظ النصوص والصور والبرامج.",
+  },
+  {
+    id: "pre-x07",
+    type: "truefalse",
+    questionAr: "الحلقة Loop تعني تكرار خطوات أكثر من مرة.",
+    optionsAr: ["صح", "خطأ"],
+    correctIndex: 0,
+    explainAr: "for و while نماذج تكرار في بايثون.",
+  },
+  {
+    id: "pre-x08",
+    type: "mcq",
+    questionAr: "أي مما يلي يصف «البحث الثنائي» قبل الدراسة بشكل مبسط؟",
+    optionsAr: ["فحص عشوائي", "تقسيم نطاق البحث في قائمة مرتبة", "حذف العناصر", "طباعة فقط"],
+    correctIndex: 1,
+    explainAr: "الثنائي يستفيد من الترتيب — يُعمّق في المنهج.",
+  },
+  {
+    id: "pre-x09",
+    type: "mcq",
+    questionAr: "ما دور «شبه الكود Pseudocode»؟",
+    optionsAr: ["تشغيل البرنامج مباشرة", "وصف الخطوات بلغة قريبة من الطبيعية قبل الكود", "رسم الشبكة", "تغيير لغة النظام"],
+    correctIndex: 1,
+    explainAr: "شبه الكود جسر بين الفكرة وبايثون.",
+  },
+  {
+    id: "pre-x10",
+    type: "truefalse",
+    questionAr: "الذكاء الاصطناعي في المقرر يعني أحياناً أن النظام يتعرّف على أنماط في البيانات.",
+    optionsAr: ["صح", "خطأ"],
+    correctIndex: 0,
+    explainAr: "مقدمة ML ضمن مسار الأسبوع الثالث.",
+  },
+  {
+    id: "pre-x11",
+    type: "mcq",
+    questionAr: "في نظرية المخططات Graph، الحافة Edge تربط عادةً:",
+    optionsAr: ["رأسين", "ملفين", "شاشتين", "لا شيء"],
+    correctIndex: 0,
+    explainAr: "Vertices و Edges مفاهيم أساسية في اليوم 13.",
+  },
+  {
+    id: "pre-x12",
+    type: "fill",
+    questionAr: "أكمل: الآلة الحتمية المحدودة الحالات تُختصر أحياناً بـ _____",
+    correctAnswer: "FSM",
+    acceptAnswers: ["FSM", "fsm", "Finite State Machine"],
+    explainAr: "FSM نموذج حالات وانتقالات في المنهج.",
+  },
 ];
 
+/** أسئلة ختامية إضافية للبعدي — تُدمج مع أسئلة الأيام والمراجعة الشاملة. */
 /** @type {import('./quizzes.js').QuizQuestion[]} */
-export const POST_TEST_QUESTION_BANK = [
+export const POST_LEGACY_SUPPLEMENT = [
   {
     id: "post-m1",
     type: "mcq",

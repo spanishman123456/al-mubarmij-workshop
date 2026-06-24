@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { curriculumUnits } from "../data/curriculum";
-import { quizzes } from "../data/quizzes";
+import { quizzes, PRE_TEST_QUESTION_BANK, POST_TEST_QUESTION_BANK } from "../data/quizzes";
 import { curriculumDays } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell } from "../components/layout/PageShell";
@@ -41,7 +41,8 @@ export default function QuizzesPage() {
         <section className="mb-10">
           <h2 className="text-xl font-bold text-slate-900">التقويم القبلي والبعدي</h2>
           <p className="mt-1 text-sm text-slate-600">
-            القبلي يقيس مستواك قبل البدء (12 سؤالاً متنوعاً)؛ البعدي بعد إتمام المنهج — للمقارنة مع المعلم.
+            القبلي يقيس مستواك قبل البدء ({PRE_TEST_QUESTION_BANK.length} سؤالاً تغطي محاور المنهج)؛ البعدي
+            بعد إتمام المنهج ({POST_TEST_QUESTION_BANK.length} سؤالاً مختلفاً) — للمقارنة مع المعلم.
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {prePost.map((q) => (
