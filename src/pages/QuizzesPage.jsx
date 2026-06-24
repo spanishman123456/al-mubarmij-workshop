@@ -3,7 +3,8 @@ import { curriculumUnits } from "../data/curriculum";
 import { quizzes } from "../data/quizzes";
 import { curriculumDays } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
-import { PageShell, EduCard } from "../components/layout/PageShell";
+import { PageShell } from "../components/layout/PageShell";
+import { getQuizQuestionCount } from "../lib/quizEngine";
 
 function unitTitle(unitId) {
   if (!unitId) return "جميع الوحدات";
@@ -23,7 +24,7 @@ export default function QuizzesPage() {
   );
   const prePost = quizzes.filter((q) => ["quiz-pre", "quiz-post"].includes(q.id));
   const dayQuizzes = curriculumDays
-    .filter((d) => d.quizId)
+    .filter((d) => d.quizId && !["quiz-pre", "quiz-post"].includes(d.quizId))
     .map((d) => ({
       day: d,
       quiz: quizzes.find((q) => q.id === d.quizId),
@@ -110,6 +111,9 @@ export default function QuizzesPage() {
 }
 
 function QuizCard({ quiz, score, variant, badge }) {
+  const questionCount = getQuizQuestionCount(quiz);
+  const passLabel =
+    quiz.passPercent > 0 ? `نجاح من ${quiz.passPercent}٪` : "بدون معيار نجاح إلزامي";
   const border =
     variant === "prepost"
       ? "border-emerald-300 bg-emerald-50"
@@ -127,7 +131,7 @@ function QuizCard({ quiz, score, variant, badge }) {
       <h3>{quiz.titleAr}</h3>
       <p>{quiz.descriptionAr}</p>
       <p className="mt-2 text-xs font-medium text-slate-500">
-        {quiz.questions.length} أسئلة · نجاح من {quiz.passPercent}٪
+        {questionCount} أسئلة · {passLabel}
         {score ? ` · نتيجتك: ${score.percent}%` : ""}
       </p>
       <Link to={`/quizzes/run/${quiz.id}`} className="edu-btn edu-btn-primary mt-4 w-fit text-sm">

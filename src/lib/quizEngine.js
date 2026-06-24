@@ -31,6 +31,15 @@ export function shuffleWithSeed(items, seed) {
   return arr;
 }
 
+/** عدد الأسئلة المعروض للمستخدم (بنك عشوائي أو قائمة ثابتة). */
+export function getQuizQuestionCount(quiz) {
+  if (!quiz) return 0;
+  if (quiz.questionPool?.length && quiz.drawCount > 0) {
+    return Math.min(quiz.drawCount, quiz.questionPool.length);
+  }
+  return quiz.questions?.length ?? 0;
+}
+
 export function prepareQuizForAttempt(quiz, attemptSeed = Date.now()) {
   if (!quiz) return null;
   const seed = `${quiz.id}-${attemptSeed}`;
