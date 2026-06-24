@@ -4,10 +4,13 @@
  */
 
 import { dayQuizzes } from "./dayQuizzes";
-import { buildPrePostBanks } from "./buildPrePostBanks.js";
+import {
+  OFFICIAL_PRE_TEST_QUESTIONS,
+  OFFICIAL_POST_TEST_QUESTIONS,
+} from "./officialPdfAssessments.js";
 import { UNIT_QUIZ_EXTRAS } from "./unitQuizExtras.js";
 
-/** @typedef {'mcq'|'truefalse'|'fill'} QuestionType */
+/** @typedef {'mcq'|'truefalse'|'fill'|'essay'|'code'} QuestionType */
 
 /** @typedef {{
  *   id: string,
@@ -17,6 +20,8 @@ import { UNIT_QUIZ_EXTRAS } from "./unitQuizExtras.js";
  *   correctIndex?: number,
  *   correctAnswer?: string,
  *   acceptAnswers?: string[],
+ *   codeSnippetAr?: string,
+ *   pdfOrder?: number,
  *   explainAr: string,
  * }} QuizQuestion */
 
@@ -541,7 +546,8 @@ for (const quiz of quizzes) {
   }
 }
 
-const { PRE_TEST_QUESTION_BANK, POST_TEST_QUESTION_BANK } = buildPrePostBanks(quizzes);
+const PRE_TEST_QUESTION_BANK = OFFICIAL_PRE_TEST_QUESTIONS;
+const POST_TEST_QUESTION_BANK = OFFICIAL_POST_TEST_QUESTIONS;
 
 export { PRE_TEST_QUESTION_BANK, POST_TEST_QUESTION_BANK };
 
@@ -550,21 +556,21 @@ quizzes.push(
     id: "quiz-pre",
     unitId: null,
     titleAr: "التقويم القبلي — قبل دراسة الوحدة",
-    descriptionAr: `يُستخدم لقياس مستواك قبل البدء في وحدة برمجة الحاسب. يتضمن ${PRE_TEST_QUESTION_BANK.length} سؤالاً يغطي جميع محاور المنهج — النتيجة تُحفظ في حسابك وللمعلم.`,
+    descriptionAr: `يُستخدم لقياس مستواك قبل البدء في وحدة برمجة الحاسب. يتضمن ${PRE_TEST_QUESTION_BANK.length} سؤالاً من ملف PDF الرسمي — النتيجة تُحفظ في حسابك وللمعلم.`,
     passPercent: 0,
     questionPool: PRE_TEST_QUESTION_BANK,
     drawCount: PRE_TEST_QUESTION_BANK.length,
-    shuffle: true,
+    shuffle: false,
   },
   {
     id: "quiz-post",
     unitId: null,
     titleAr: "التقويم البعدي — بعد إتمام الوحدة",
-    descriptionAr: `يُقيس مدى تطورك بعد دراسة المنهج. يتضمن ${POST_TEST_QUESTION_BANK.length} سؤالاً مختلفاً عن القبلي — قارن نتيجتك مع التقويم القبلي.`,
+    descriptionAr: `يُقيس مدى تطورك بعد دراسة المنهج. يتضمن ${POST_TEST_QUESTION_BANK.length} سؤالاً من ملف PDF الرسمي — قارن نتيجتك مع التقويم القبلي.`,
     passPercent: 60,
     questionPool: POST_TEST_QUESTION_BANK,
     drawCount: POST_TEST_QUESTION_BANK.length,
-    shuffle: true,
+    shuffle: false,
   },
 );
 

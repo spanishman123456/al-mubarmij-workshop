@@ -40,14 +40,25 @@ export function getQuizQuestionCount(quiz) {
   return quiz.questions?.length ?? 0;
 }
 
+export function isAutoGradable(question) {
+  const type = question.type || "mcq";
+  return type === "mcq" || type === "truefalse" || type === "fill";
+}
+
 export function prepareQuizForAttempt(quiz, attemptSeed = Date.now()) {
   if (!quiz) return null;
   const seed = `${quiz.id}-${attemptSeed}`;
 
   let questions;
   if (quiz.questionPool?.length && quiz.drawCount > 0) {
-    const pool = shuffleWithSeed(quiz.questionPool, seed);
-    questions = pool.slice(0, Math.min(quiz.drawCount, pool.length));
+    if (quiz.shuffle === false) {
+      questions = [...quiz.questionPool]
+        .sort((a, b) => (a.pdfOrder ?? 0) - (b.pdfOrder ?? 0))
+        .slice(0, Math.min(quiz.drawCount, quiz.questionPool.length));
+    } else {
+      const pool = shuffleWithSeed(quiz.questionPool, seed);
+      questions = pool.slice(0, Math.min(quiz.drawCount, pool.length));
+    }
   } else if (quiz.shuffle !== false && quiz.questions?.length) {
     questions = shuffleWithSeed(quiz.questions, seed);
   } else {
@@ -68,6 +79,10 @@ export function normalizeAnswerText(value) {
 export function isQuestionCorrect(question, userAnswer) {
   const type = question.type || "mcq";
 
+  if (!isAutoGradable(question)) {
+    return false;
+  }
+
   if (type === "fill") {
     const normalized = normalizeAnswerText(userAnswer);
     if (!normalized) return false;
@@ -82,12 +97,29 @@ export function isQuestionCorrect(question, userAnswer) {
 }
 
 export function computeQuizResult(quiz, answers) {
+  const gradable = quiz.questions.filter(isAutoGradable);
+  const manual = quiz.questions.filter((q) => !isAutoGradable(q));
+
   let correct = 0;
-  for (const q of quiz.questions) {
+  for (const q of gradable) {
     if (isQuestionCorrect(q, answers[q.id])) correct += 1;
   }
-  const total = quiz.questions.length;
+
+  let manualAnswered = 0;
+  for (const q of manual) {
+    if (String(answers[q.id] ?? "").trim().length > 0) manualAnswered += 1;
+  }
+
+  const total = gradable.length;
   const percent = total === 0 ? 0 : Math.round((correct / total) * 100);
   const passed = percent >= quiz.passPercent;
-  return { correct, total, percent, passed };
+  return {
+    correct,
+    total,
+    percent,
+    passed,
+    manualTotal: manual.length,
+    manualAnswered,
+    displayTotal: quiz.questions.length,
+  };
 }

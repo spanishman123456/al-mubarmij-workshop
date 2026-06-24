@@ -2,11 +2,13 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getQuizById } from "../data/quizzes";
 import { usePlatform } from "../context/PlatformContext";
-import { computeQuizResult, isQuestionCorrect, prepareQuizForAttempt } from "../lib/quizEngine";
+import { computeQuizResult, isAutoGradable, isQuestionCorrect, prepareQuizForAttempt } from "../lib/quizEngine";
 
 function questionTypeLabel(type) {
   if (type === "fill") return "إكمال فراغ";
   if (type === "truefalse") return "صح / خطأ";
+  if (type === "essay") return "سؤال مقالي / رسم";
+  if (type === "code") return "سؤال برمجي";
   return "اختيار من متعدد";
 }
 
@@ -93,7 +95,7 @@ export default function QuizTakePage() {
           <p className="mt-2 text-sm text-slate-300">{quiz.descriptionAr}</p>
           <p className="mt-3 text-xs text-emerald-300">
             معيار النجاح: {quiz.passPercent}٪ · عدد الأسئلة: {quiz.questions.length}
-            {quiz.shuffle || quiz.questionPool ? " · ترتيب عشوائي" : ""}
+            {quiz.shuffle === false ? " · ترتيب PDF الرسمي" : quiz.shuffle || quiz.questionPool ? " · ترتيب عشوائي" : ""}
           </p>
           {!submitted && (
             <div className="mt-4">
@@ -129,7 +131,16 @@ export default function QuizTakePage() {
                       ({questionTypeLabel(qType)})
                     </span>
                   </legend>
-                  <p className="mb-4 text-right leading-relaxed text-slate-200">{q.questionAr}</p>
+                  <p className="mb-4 whitespace-pre-wrap text-right leading-relaxed text-slate-200">{q.questionAr}</p>
+
+                  {q.codeSnippetAr && (
+                    <pre
+                      className="mb-4 overflow-x-auto rounded-xl border border-white/10 bg-black/50 p-4 text-left text-sm text-emerald-200"
+                      dir="ltr"
+                    >
+                      {q.codeSnippetAr}
+                    </pre>
+                  )}
 
                   {qType === "fill" ? (
                     <input
@@ -139,6 +150,18 @@ export default function QuizTakePage() {
                       value={answers[q.id] ?? ""}
                       onChange={(e) => setAnswer(q.id, e.target.value)}
                       dir="auto"
+                    />
+                  ) : qType === "essay" || qType === "code" ? (
+                    <textarea
+                      className="edu-input min-h-[140px] w-full resize-y bg-white/10 font-mono text-sm text-white placeholder:text-slate-500"
+                      placeholder={
+                        qType === "code"
+                          ? "اكتب الكود أو الخوارزمية هنا..."
+                          : "اكتب إجابتك أو ارسم في دفترك ثم صف الحل هنا..."
+                      }
+                      value={answers[q.id] ?? ""}
+                      onChange={(e) => setAnswer(q.id, e.target.value)}
+                      dir={qType === "code" ? "ltr" : "rtl"}
                     />
                   ) : (
                     <div className="space-y-2" dir="rtl">
@@ -195,7 +218,19 @@ export default function QuizTakePage() {
               </p>
               <p className="mt-3 text-4xl font-black text-white">{result.percent}٪</p>
               <p className="mt-2 text-slate-300">
-                صحيح: {result.correct} من {result.total} · مطلوب للنجاح: {quiz.passPercent}٪ على الأقل
+                صحيح (أسئلة تُصحَّح آلياً): {result.correct} من {result.total}
+                {result.manualTotal > 0 && (
+                  <>
+                    {" "}
+                    · أسئلة مفتوحة/برمجية: {result.manualAnswered} من {result.manualTotal} (تصحيح المعلم)
+                  </>
+                )}
+                {quiz.passPercent > 0 && (
+                  <>
+                    {" "}
+                    · مطلوب للنجاح: {quiz.passPercent}٪ على الأقل
+                  </>
+                )}
               </p>
               {!result.passed && (
                 <p className="mt-4 text-sm text-amber-200/90">
@@ -208,7 +243,7 @@ export default function QuizTakePage() {
                   onClick={handleRetry}
                   className="press-scale rounded-full border border-white/30 px-6 py-2 text-sm font-semibold hover:bg-white/10"
                 >
-                  إعادة الاختبار (أسئلة جديدة)
+                  إعادة الاختبار{quiz.shuffle === false ? "" : " (أسئلة جديدة)"}
                 </button>
                 <Link
                   to="/quizzes"
@@ -223,24 +258,32 @@ export default function QuizTakePage() {
             <ul className="space-y-4">
               {quiz.questions.map((q, idx) => {
                 const userAns = answers[q.id];
-                const ok = isQuestionCorrect(q, userAns);
+                const auto = isAutoGradable(q);
+                const ok = auto ? isQuestionCorrect(q, userAns) : String(userAns ?? "").trim().length > 0;
                 const qType = q.type || "mcq";
                 return (
                   <li
                     key={q.id}
                     className={`rounded-2xl border p-5 ${
-                      ok ? "border-emerald-500/30 bg-emerald-950/20" : "border-rose-500/30 bg-rose-950/20"
+                      !auto
+                        ? "border-violet-500/30 bg-violet-950/20"
+                        : ok
+                          ? "border-emerald-500/30 bg-emerald-950/20"
+                          : "border-rose-500/30 bg-rose-950/20"
                     }`}
                     dir="rtl"
                   >
                     <p className="font-bold text-white">
-                      {idx + 1}. {ok ? "✓" : "✗"} {q.questionAr}
+                      {idx + 1}. {auto ? (ok ? "✓" : "✗") : "◆"} {q.questionAr}
                     </p>
                     <p className="mt-2 text-sm text-slate-400">
                       إجابتك:{" "}
                       {userAns !== undefined && String(userAns).trim() !== "" ? (
-                        <span dir="ltr" className="text-slate-200">
-                          {qType === "fill"
+                        <span
+                          dir={qType === "fill" || qType === "code" ? "ltr" : "rtl"}
+                          className="whitespace-pre-wrap text-slate-200"
+                        >
+                          {qType === "fill" || qType === "essay" || qType === "code"
                             ? userAns
                             : q.optionsAr?.[userAns] ?? userAns}
                         </span>
@@ -248,7 +291,12 @@ export default function QuizTakePage() {
                         "لم تُجِب"
                       )}
                     </p>
-                    {!ok && (
+                    {!auto && (
+                      <p className="mt-1 text-sm text-violet-300/90">
+                        هذا السؤال يحتاج تصحيحاً يدوياً من المعلم (رسم، مقالي، أو برمجي).
+                      </p>
+                    )}
+                    {auto && !ok && (
                       <p className="mt-1 text-sm text-emerald-300/90">
                         الصحيح:{" "}
                         <span dir="ltr">
