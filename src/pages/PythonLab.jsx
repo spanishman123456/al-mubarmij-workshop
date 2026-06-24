@@ -4,7 +4,6 @@ import { pythonExercises } from "../data/pythonExercises";
 import { GRAPHIC_APP_PROJECTS } from "../data/graphicAppProjects";
 import { curriculumUnits } from "../data/curriculum";
 import { formatSkulptError } from "../lib/pythonErrorHelp";
-import { getExerciseGuidance } from "../lib/pythonExerciseGuidance";
 import { ensureSkulptLoaded, runPythonWithSkulpt } from "../lib/skulptRun";
 import { PythonAppSession } from "../lib/skulptAppRun";
 import { usePlatform } from "../context/PlatformContext";
@@ -12,6 +11,16 @@ import { GraphicProjectFrame } from "../components/python/GraphicProjectFrame";
 import { PyAppPreview } from "../components/python/PyAppPreview";
 import { ProjectExportPanel } from "../components/python/ProjectExportPanel";
 import { AppModeHelp } from "../components/python/AppModeHelp";
+import { StepLearningPanel } from "../components/python/StepLearningPanel";
+import { getStepPlan } from "../data/stepLearningPlans.js";
+import {
+  checkStep,
+  getAppendForStep,
+  getInitialCode,
+  isStepRunnable,
+  MIN_ATTEMPTS_BEFORE_SOLUTION,
+  resetStepState,
+} from "../lib/stepLearningEngine.js";
 
 const MODES = [
   { id: "console", label: "تشغيل نصي (Console)" },
@@ -41,20 +50,37 @@ export default function PythonLab() {
     [activeAppId],
   );
 
-  const [code, setCode] = useState(exercise.starter);
+  const [code, setCode] = useState(() =>
+    getInitialCode(getStepPlan("console", pythonExercises[0].id)),
+  );
   const [out, setOut] = useState("");
   const [feedback, setFeedback] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [hintLevel, setHintLevel] = useState(0);
-  const [checkResults, setCheckResults] = useState(null);
+  const [stepHintLevel, setStepHintLevel] = useState(0);
+  const [stepCheckResult, setStepCheckResult] = useState(null);
+  const [stepCheckAttempts, setStepCheckAttempts] = useState(0);
+  const [solutionRevealed, setSolutionRevealed] = useState(false);
 
   const sessionRef = useRef(null);
   const [appUi, setAppUi] = useState(null);
   const [appValues, setAppValues] = useState({});
   const [appConsole, setAppConsole] = useState("");
 
-  const guidance = useMemo(() => getExerciseGuidance(exercise.id), [exercise.id]);
+  const stepPlan = useMemo(
+    () => getStepPlan(runMode === "app" ? "app" : "console", runMode === "app" ? activeAppId : activeId),
+    [runMode, activeAppId, activeId],
+  );
   const myGraphicProjects = myProgress?.graphicProjects ?? [];
+
+  function applyStepReset(plan) {
+    const s = resetStepState();
+    setStepIndex(s.stepIndex);
+    setStepHintLevel(s.stepHintLevel);
+    setStepCheckResult(s.stepCheckResult);
+    setStepCheckAttempts(s.stepCheckAttempts);
+    setSolutionRevealed(s.solutionRevealed);
+    if (plan) setCode(getInitialCode(plan));
+  }
 
   const filteredExercises = useMemo(() => {
     if (unitFilter === "all") return pythonExercises;
@@ -71,11 +97,10 @@ export default function PythonLab() {
       const ex = pythonExercises.find((e) => e.id === id);
       if (!ex) return;
       setActiveId(id);
-      setCode(ex.starter);
+      const plan = getStepPlan("console", id);
+      applyStepReset(plan);
       setOut("");
       setFeedback(null);
-      setHintLevel(0);
-      setCheckResults(null);
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set("ex", id);
@@ -92,7 +117,8 @@ export default function PythonLab() {
       if (!tpl) return;
       stopAppSession();
       setActiveAppId(id);
-      setCode(tpl.starter);
+      const plan = getStepPlan("app", id);
+      applyStepReset(plan);
       setProjectTitle(tpl.titleAr);
       setSavedProjectId(null);
       setAppUi(null);
@@ -135,7 +161,8 @@ export default function PythonLab() {
     setFeedback(null);
     if (next === "console") {
       const ex = pythonExercises.find((e) => e.id === activeId) ?? pythonExercises[0];
-      setCode(ex.starter);
+      const plan = getStepPlan("console", ex.id);
+      applyStepReset(plan);
       setOut("");
     } else {
       pickApp(activeAppId);
@@ -159,12 +186,11 @@ export default function PythonLab() {
       setActiveId(exFromUrl);
       if (modeFromUrl !== "app") {
         setRunMode("console");
-        setCode(ex.starter);
+        const plan = getStepPlan("console", exFromUrl);
+        applyStepReset(plan);
       }
       setOut("");
       setFeedback(null);
-      setHintLevel(0);
-      setCheckResults(null);
       if (ex?.unitId) setUnitFilter(ex.unitId);
     }
     if (modeFromUrl === "app") {
@@ -172,7 +198,8 @@ export default function PythonLab() {
       if (appFromUrl && GRAPHIC_APP_PROJECTS.some((p) => p.id === appFromUrl)) {
         const tpl = GRAPHIC_APP_PROJECTS.find((p) => p.id === appFromUrl);
         setActiveAppId(appFromUrl);
-        setCode(tpl.starter);
+        const plan = getStepPlan("app", appFromUrl);
+        applyStepReset(plan);
         setProjectTitle(tpl.titleAr);
       }
     }
@@ -187,24 +214,61 @@ export default function PythonLab() {
     }
   }
 
-  function revealHint() {
-    setHintLevel((h) => Math.min(h + 1, guidance.hints.length));
+  function handleStepHint() {
+    const step = stepPlan?.steps[stepIndex];
+    if (!step) return;
+    setStepHintLevel((h) => Math.min(h + 1, step.hints.length));
   }
 
-  function checkProgress() {
-    const results = guidance.checks.map((ch) => ({
-      ...ch,
-      passed: ch.check(code),
-    }));
-    setCheckResults(results);
+  function handleStepCheck() {
+    if (!stepPlan) return;
+    setStepCheckAttempts((n) => n + 1);
+    const result = checkStep(stepPlan, stepIndex, code);
+    setStepCheckResult(result);
+    if (result.ok && stepIndex < stepPlan.steps.length - 1) {
+      const next = stepIndex + 1;
+      const append = getAppendForStep(stepPlan, next);
+      if (append.trim()) {
+        setCode((prev) => `${prev.trimEnd()}\n${append}`.trim());
+      }
+      setStepIndex(next);
+      setStepHintLevel(0);
+      setTimeout(() => setStepCheckResult(null), 2500);
+    }
+  }
+
+  function handleRevealSolution() {
+    if (!stepPlan) return;
+    if (stepCheckAttempts < MIN_ATTEMPTS_BEFORE_SOLUTION && !solutionRevealed) {
+      const ok = window.confirm(
+        "الأفضل أن تحاول بنفسك أولاً! هل تريد عرض الحل الكامل على أي حال؟",
+      );
+      if (!ok) return;
+    }
+    setSolutionRevealed(true);
+    setCode(stepPlan.fullSolution);
+    setStepCheckResult({
+      ok: true,
+      messageAr: "تم عرض الحل الكامل. حاول فهم كل سطر ثم اكتبه بنفسك في محاولة لاحقة.",
+    });
+  }
+
+  function clearStepCheck() {
+    setStepCheckResult(null);
   }
 
   async function runConsole() {
+    if (stepPlan && !isStepRunnable(stepPlan, stepIndex) && !solutionRevealed) {
+      setFeedback({
+        headlineAr: "أكمل الخطوات أولاً",
+        hintAr: "استخدم «تحقق من الحل» لإتمام الخطوة الحالية قبل التشغيل.",
+        detail: "",
+      });
+      return;
+    }
     setBusy(true);
     setOut("");
     setFeedback(null);
-    setHintLevel(0);
-    setCheckResults(null);
     try {
       const text = await runPythonWithSkulpt(code);
       setOut(text);
@@ -216,6 +280,14 @@ export default function PythonLab() {
   }
 
   async function runApp() {
+    if (stepPlan && !isStepRunnable(stepPlan, stepIndex) && !solutionRevealed) {
+      setFeedback({
+        headlineAr: "أكمل الخطوات أولاً",
+        hintAr: "أكمل بناء المشروع خطوة بخطوة ثم شغّله.",
+        detail: "",
+      });
+      return;
+    }
     stopAppSession();
     setBusy(true);
     setFeedback(null);
@@ -259,7 +331,10 @@ export default function PythonLab() {
     setFeedback(null);
     if (runMode === "app") {
       const tpl = GRAPHIC_APP_PROJECTS.find((p) => p.id === activeAppId);
-      if (tpl && !savedProjectId) setCode(tpl.starter);
+      if (tpl && !savedProjectId) {
+        const plan = getStepPlan("app", activeAppId);
+        applyStepReset(plan);
+      }
     }
   }
 
@@ -329,7 +404,7 @@ export default function PythonLab() {
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold sm:text-4xl">مختبر بايثون</h1>
           <p className="mt-2 text-slate-400">
-            تمارين نصية ومشاريع رسومية تفاعلية — صفوف 4–8. اختر وضع التشغيل ثم ابدأ البرمجة.
+            تمارين ومشاريع تفاعلية — اكتب الكود بنفسك خطوة بخطوة (مناسب للصف الأول متوسط).
           </p>
         </div>
 
@@ -540,55 +615,24 @@ export default function PythonLab() {
               </div>
             )}
 
-            {runMode === "console" ? (
-              <div className="mt-4 rounded-xl border border-violet-500/30 bg-violet-950/25 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm font-bold text-violet-200">تلميحات تعليمية</h3>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={revealHint}
-                      disabled={hintLevel >= guidance.hints.length}
-                      className="rounded-lg bg-violet-600/80 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40"
-                    >
-                      تلميح {hintLevel}/{guidance.hints.length}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={checkProgress}
-                      className="rounded-lg border border-cyan-500/40 px-3 py-1.5 text-xs font-bold text-cyan-200"
-                    >
-                      تحقق من تقدمي
-                    </button>
-                  </div>
-                </div>
-                {hintLevel > 0 ? (
-                  <ul className="mt-3 space-y-2 text-sm text-violet-100">
-                    {guidance.hints.slice(0, hintLevel).map((h, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="font-bold text-violet-400">{i + 1}.</span>
-                        <span>{h}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {checkResults ? (
-                  <ul className="mt-3 space-y-1 border-t border-white/10 pt-3 text-xs">
-                    {checkResults.map((r) => (
-                      <li key={r.id} className={r.passed ? "text-emerald-300" : "text-amber-200"}>
-                        {r.passed ? "✓" : "○"} {r.messageAr}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
+            {stepPlan && !savedProjectId ? (
+              <StepLearningPanel
+                plan={stepPlan}
+                stepIndex={stepIndex}
+                hintLevel={stepHintLevel}
+                checkResult={stepCheckResult}
+                checkAttempts={stepCheckAttempts}
+                solutionRevealed={solutionRevealed}
+                onHint={handleStepHint}
+                onCheck={handleStepCheck}
+                onRevealSolution={handleRevealSolution}
+                onClearCheck={clearStepCheck}
+              />
             ) : null}
 
-            {runMode === "console" ? (
-              <p className="mt-3 text-xs text-amber-200/90">{exercise.hintAr}</p>
-            ) : (
+            {runMode === "app" && !savedProjectId ? (
               <p className="mt-3 text-xs text-violet-200/90">{appTemplate.curriculumTopic}</p>
-            )}
+            ) : null}
           </div>
 
           <div>
