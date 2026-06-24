@@ -19,58 +19,139 @@ function escapeJs(s) {
     .replace(/\$/g, "\\$");
 }
 
-export function buildWebAppHtml({ title, code, mode }) {
+function buildEduHtml(edu, displayTitle) {
+  if (!edu) return "";
+  const parts = [];
+  if (edu.subtitle) parts.push(`<p class="edu-sub">${escapeHtml(edu.subtitle)}</p>`);
+  if (edu.description) parts.push(`<p class="edu-desc">${escapeHtml(edu.description)}</p>`);
+  if (edu.usageSteps?.length) {
+    parts.push(`<section class="edu-box"><h3>طريقة الاستخدام</h3><ul>${edu.usageSteps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul></section>`);
+  }
+  return parts.join("");
+}
+
+function buildEduFooterHtml(edu) {
+  if (!edu) return "";
+  const parts = [];
+  if (edu.learningObjectives?.length) {
+    parts.push(`<section class="edu-box edu-green"><h3>ماذا ستتعلم من هذا المشروع؟</h3><ul>${edu.learningObjectives.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul></section>`);
+  }
+  if (edu.curriculumLink) {
+    parts.push(`<section class="edu-box"><h3>ارتباط المشروع بمنهج برمجة الحاسب</h3><p>${escapeHtml(edu.curriculumLink)}</p></section>`);
+  }
+  if (edu.codeHowItWorks?.length) {
+    parts.push(`<section class="edu-box edu-amber"><h3>كيف يعمل الكود؟</h3><ul>${edu.codeHowItWorks.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul></section>`);
+  }
+  if (edu.reflectionQuestions?.length) {
+    parts.push(`<section class="edu-box"><h3>أسئلة تفكير بعد التجربة</h3><ul>${edu.reflectionQuestions.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul></section>`);
+  }
+  return parts.join("");
+}
+
+export function buildWebAppHtml({ title, code, mode, edu = null, displayTitle }) {
   const isApp = mode === "app" || /import\s+appkit/.test(code);
-  const safeTitle = escapeHtml(title || "مشروع برمجة الحاسب");
+  const safeTitle = escapeHtml(displayTitle || title || "مشروع برمجة الحاسب");
   const safeCode = escapeJs(code);
   const moduleSrcJson = JSON.stringify(APPKIT_SKULPT_MODULE_SRC);
+  const eduTop = buildEduHtml(edu, displayTitle);
+  const eduBottom = buildEduFooterHtml(edu);
 
   const previewSection = isApp
-    ? `<div id="app-root" class="app-shell"><p class="muted">جاري تشغيل المشروع…</p></div>`
+    ? `<div id="app-root" class="app-shell"><p class="muted">جاري تشغيل المشروع…</p></div>${eduBottom}`
     : `<pre id="console-out" class="console">جاري التشغيل…</pre>`;
 
   const runScript = isApp
     ? `
     function showErr(msg) {
-      document.getElementById("app-root").innerHTML = '<p class="err">' + msg + '</p>';
+      var root = document.getElementById("app-root");
+      root.innerHTML = "";
+      var p = document.createElement("p");
+      p.className = "err";
+      p.textContent = msg;
+      root.appendChild(p);
+    }
+    function outputClass(val) {
+      var t = String(val || "");
+      if (/رائع|صحيح|أحسنت|تم |نجح/i.test(t)) return "out out-success";
+      if (/الرجاء|خطأ|فارغ/i.test(t)) return "out out-error";
+      if (/أكبر|أصغر|حاول|انتهت/i.test(t)) return "out out-warn";
+      return "out";
     }
     function drawCanvas(cv, ops) {
-      const ctx = cv.getContext("2d");
+      var ctx = cv.getContext("2d");
       ctx.fillStyle = "#f8fafc";
       ctx.fillRect(0, 0, cv.width, cv.height);
       (ops || []).forEach(function(op) {
         if (op.op === "rect") { ctx.fillStyle = op.color; ctx.fillRect(op.x, op.y, op.w, op.h); }
-        else if (op.op === "text") { ctx.fillStyle = op.color; ctx.font = "14px sans-serif"; ctx.fillText(op.text, op.x, op.y); }
+        else if (op.op === "text") { ctx.fillStyle = op.color; ctx.font = "14px Tahoma,sans-serif"; ctx.fillText(op.text, op.x, op.y); }
       });
     }
     function renderApp() {
       var registry = window.__mubarmijAppKitRegistry;
       var root = document.getElementById("app-root");
+      root.innerHTML = "";
       if (!registry || !registry.elements.length) {
-        root.innerHTML = '<p class="muted">لا توجد واجهة بعد</p>';
+        var m = document.createElement("p");
+        m.className = "muted";
+        m.textContent = "لا توجد واجهة بعد";
+        root.appendChild(m);
         return;
       }
-      var html = registry.title ? '<h2>' + registry.title + '</h2>' : '';
+      if (registry.title) {
+        var h = document.createElement("h2");
+        h.textContent = registry.title;
+        root.appendChild(h);
+      }
       registry.elements.forEach(function(el) {
-        if (el.type === "text") html += '<p>' + el.content + '</p>';
-        else if (el.type === "input") {
-          html += '<label>' + el.label + '<input id="in-' + el.id + '" type="' + (el.inputType === "number" ? "number" : "text") + '" value="' + (registry.values[el.id] || "") + '"></label>';
+        if (el.type === "text") {
+          var p = document.createElement("p");
+          p.textContent = el.content;
+          root.appendChild(p);
+        } else if (el.type === "input") {
+          var lbl = document.createElement("label");
+          var span = document.createElement("span");
+          span.className = "lbl";
+          span.textContent = el.label || "";
+          lbl.appendChild(span);
+          var inp = document.createElement("input");
+          inp.id = "in-" + el.id;
+          inp.type = el.inputType === "number" ? "number" : "text";
+          inp.value = registry.values[el.id] || "";
+          if (el.placeholder) inp.placeholder = el.placeholder;
+          inp.addEventListener("input", function() { registry.values[el.id] = inp.value; });
+          lbl.appendChild(inp);
+          root.appendChild(lbl);
         } else if (el.type === "output") {
-          html += '<div class="out"><b>' + el.label + '</b><p id="out-' + el.id + '">' + (registry.values[el.id] || "—") + '</p></div>';
+          var box = document.createElement("div");
+          box.className = outputClass(registry.values[el.id]);
+          var b = document.createElement("b");
+          b.textContent = el.label || "النتيجة";
+          box.appendChild(b);
+          var op = document.createElement("p");
+          op.id = "out-" + el.id;
+          op.textContent = registry.values[el.id] || "انتظر إدخالك ثم اضغط الزر المناسب…";
+          box.appendChild(op);
+          root.appendChild(box);
         } else if (el.type === "button") {
-          html += '<button type="button" data-btn="' + el.id + '">' + el.label + '</button>';
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.setAttribute("data-btn", el.id);
+          btn.textContent = el.label || "زر";
+          var bid = (el.id + " " + (el.label || "")).toLowerCase();
+          if (/new|reset|محاولة|إعادة/.test(bid)) btn.className = "btn-secondary";
+          else btn.className = "btn-primary";
+          root.appendChild(btn);
         } else if (el.type === "canvas") {
-          html += '<canvas id="cv-' + el.id + '" width="' + el.width + '" height="' + el.height + '"></canvas>';
+          var cv = document.createElement("canvas");
+          cv.id = "cv-" + el.id;
+          cv.width = el.width;
+          cv.height = el.height;
+          root.appendChild(cv);
         }
       });
-      root.innerHTML = html;
       registry.elements.filter(function(e) { return e.type === "canvas"; }).forEach(function(el) {
         var cv = document.getElementById("cv-" + el.id);
         if (cv) drawCanvas(cv, registry.canvasOps[el.id]);
-      });
-      root.querySelectorAll("input").forEach(function(inp) {
-        var id = inp.id.replace("in-", "");
-        inp.addEventListener("input", function() { registry.values[id] = inp.value; });
       });
       root.querySelectorAll("button[data-btn]").forEach(function(btn) {
         btn.addEventListener("click", function() {
@@ -85,7 +166,11 @@ export function buildWebAppHtml({ title, code, mode }) {
           }).then(function() {
             registry.elements.filter(function(e) { return e.type === "output"; }).forEach(function(el) {
               var p = document.getElementById("out-" + el.id);
-              if (p) p.textContent = registry.values[el.id] || "—";
+              var box = p && p.parentElement;
+              if (p) {
+                p.textContent = registry.values[el.id] || "—";
+                if (box) box.className = outputClass(registry.values[el.id]);
+              }
             });
             registry.elements.filter(function(e) { return e.type === "canvas"; }).forEach(function(el) {
               var cv = document.getElementById("cv-" + el.id);
@@ -165,20 +250,33 @@ export function buildWebAppHtml({ title, code, mode }) {
     *{box-sizing:border-box}body{margin:0;font-family:"Segoe UI",Tahoma,sans-serif;background:linear-gradient(180deg,#0f172a,#1e1b4b);color:#f1f5f9;min-height:100vh}
     header{padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.1);text-align:center}
     main{max-width:520px;margin:0 auto;padding:1.25rem}
-    .app-shell{background:rgba(0,0,0,.35);border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:1rem}
-    .app-shell h2{margin:0 0 1rem;text-align:center;color:#6ee7b7}
-    .app-shell label{display:block;margin:.75rem 0;font-size:.85rem;color:#cbd5e1}
-    .app-shell input{width:100%;padding:.5rem;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#fff}
-    .app-shell button{width:100%;margin:.5rem 0;padding:.65rem;border:0;border-radius:8px;background:linear-gradient(90deg,#7c3aed,#4f46e5);color:#fff;font-weight:bold;cursor:pointer}
-    .app-shell .out{background:rgba(6,182,212,.15);border:1px solid rgba(6,182,212,.3);border-radius:8px;padding:.75rem;margin:.5rem 0}
+    .app-shell{background:rgba(0,0,0,.35);border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:1rem;margin-bottom:1rem}
+    .app-shell h2{margin:0 0 1rem;text-align:center;color:#6ee7b7;font-size:1.25rem}
+    .app-shell label{display:block;margin:.85rem 0}
+    .app-shell .lbl{display:block;margin-bottom:.4rem;font-weight:bold;font-size:.95rem;color:#e2e8f0}
+    .app-shell input{width:100%;padding:.75rem;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:1rem}
+    .btn-primary{width:100%;margin:.5rem 0;padding:.75rem;border:0;border-radius:10px;background:linear-gradient(90deg,#7c3aed,#4f46e5);color:#fff;font-weight:bold;font-size:1rem;cursor:pointer}
+    .btn-secondary{width:100%;margin:.5rem 0;padding:.75rem;border:1px solid #64748b;border-radius:10px;background:#334155;color:#fff;font-weight:bold;font-size:1rem;cursor:pointer}
+    .out{border-radius:8px;padding:.85rem;margin:.5rem 0;border:1px solid rgba(6,182,212,.3);background:rgba(6,182,212,.12)}
+    .out-success{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.15);color:#d1fae5}
+    .out-warn{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.12);color:#fde68a}
+    .out-error{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.12);color:#fecaca}
+    .out p{margin:.35rem 0 0;font-size:1rem;line-height:1.5}
     .app-shell canvas{width:100%;border-radius:8px;background:#f8fafc}
+    .edu-sub{font-size:1.05rem;color:#c4b5fd;margin:.5rem 0}
+    .edu-desc{color:#cbd5e1;margin-bottom:1rem;line-height:1.6}
+    .edu-box{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:1rem;margin:1rem 0}
+    .edu-box h3{margin:0 0 .5rem;font-size:1rem;color:#67e8f9}
+    .edu-green h3{color:#6ee7b7}
+    .edu-amber h3{color:#fcd34d}
+    .edu-box ul{margin:0;padding-right:1.2rem;line-height:1.7;color:#e2e8f0}
     .console{background:#000;border-radius:12px;padding:1rem;min-height:200px;white-space:pre-wrap;direction:ltr;text-align:left;color:#6ee7b7;font-family:monospace}
     .muted{color:#94a3b8;text-align:center}.err{color:#fca5a5;white-space:pre-wrap}
     footer{text-align:center;font-size:.75rem;color:#64748b;padding:2rem 1rem}
   </style>
 </head>
 <body>
-  <header><h1>${safeTitle}</h1><p>برمجة الحاسب — Web App</p></header>
+  <header><h1>${safeTitle}</h1><p>برمجة الحاسب — Web App</p>${eduTop}</header>
   <main>${previewSection}</main>
   <footer>يُشغَّل عبر Skulpt في المتصفح — للتشغيل الكامل استخدم خادمًا محليًا (python -m http.server)</footer>
   <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>

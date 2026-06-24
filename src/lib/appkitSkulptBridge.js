@@ -23,15 +23,21 @@ export const APPKIT_SKULPT_MODULE_SRC = `var $builtinmodule = function(name) {
     registry.elements.push({ type: "text", content: jsStr(content) });
     return pyNone();
   });
-  mod.input = new Sk.builtin.func(function(_self, id, label, defaultVal) {
+  mod.input = new Sk.builtin.func(function(_self, id, label, defaultVal, placeholder) {
     var i = jsStr(id);
-    registry.elements.push({ type: "input", id: i, label: jsStr(label), inputType: "text" });
+    registry.elements.push({
+      type: "input", id: i, label: jsStr(label), inputType: "text",
+      placeholder: jsStr(placeholder) || ""
+    });
     registry.values[i] = jsStr(defaultVal);
     return pyNone();
   });
-  mod.number_input = new Sk.builtin.func(function(_self, id, label, defaultVal) {
+  mod.number_input = new Sk.builtin.func(function(_self, id, label, defaultVal, placeholder) {
     var i = jsStr(id);
-    registry.elements.push({ type: "input", id: i, label: jsStr(label), inputType: "number" });
+    registry.elements.push({
+      type: "input", id: i, label: jsStr(label), inputType: "number",
+      placeholder: jsStr(placeholder) || ""
+    });
     registry.values[i] = jsStr(defaultVal) || "0";
     return pyNone();
   });

@@ -8,6 +8,7 @@ import { getExerciseGuidance } from "../lib/pythonExerciseGuidance";
 import { ensureSkulptLoaded, runPythonWithSkulpt } from "../lib/skulptRun";
 import { PythonAppSession } from "../lib/skulptAppRun";
 import { usePlatform } from "../context/PlatformContext";
+import { GraphicProjectFrame } from "../components/python/GraphicProjectFrame";
 import { PyAppPreview } from "../components/python/PyAppPreview";
 import { ProjectExportPanel } from "../components/python/ProjectExportPanel";
 import { AppModeHelp } from "../components/python/AppModeHelp";
@@ -607,13 +608,15 @@ export default function PythonLab() {
               <>
                 <label className="mb-2 block text-sm text-slate-400">معاينة المشروع (Preview)</label>
                 {errorPanel}
-                <PyAppPreview
-                  ui={appUi}
-                  values={appValues}
-                  onChange={(id, v) => setAppValues((prev) => ({ ...prev, [id]: v }))}
-                  onButton={onAppButton}
-                  loading={busy}
-                />
+                <GraphicProjectFrame project={appTemplate}>
+                  <PyAppPreview
+                    ui={appUi}
+                    values={appValues}
+                    onChange={(id, v) => setAppValues((prev) => ({ ...prev, [id]: v }))}
+                    onButton={onAppButton}
+                    loading={busy}
+                  />
+                </GraphicProjectFrame>
                 {appConsole ? (
                   <pre
                     dir="ltr"

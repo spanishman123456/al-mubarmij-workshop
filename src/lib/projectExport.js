@@ -1,6 +1,7 @@
 import { zipSync, strToU8 } from "fflate";
 import { validatePythonCode } from "./pyAppKit.js";
 import { APPKIT_DESKTOP_PY } from "./templates/appkitDesktopPy.js";
+import { getGraphicProject } from "../data/graphicAppProjects.js";
 import { EXE_BINARY_NAME, safeExportSlug, buildProjectMeta } from "./exportSlugs.js";
 import {
   buildWebAppHtml,
@@ -27,6 +28,18 @@ export { safeExportSlug, EXE_BINARY_NAME };
 
 export function usesAppkit(code) {
   return /import\s+appkit\b/.test(code);
+}
+
+function webAppBuildOpts({ title, code, mode, templateId }) {
+  const project = templateId ? getGraphicProject(templateId) : null;
+  const isApp = mode === "app" || usesAppkit(code);
+  return {
+    title,
+    code,
+    mode: isApp ? "app" : "console",
+    edu: project?.edu ?? null,
+    displayTitle: project?.titleAr || title,
+  };
 }
 
 export function analyzeExportCapabilities(code, mode = "app") {
@@ -280,7 +293,7 @@ function zipProjectFiles({
   }
 
   if (includeWebApp) {
-    const html = buildWebAppHtml({ title, code, mode: isApp ? "app" : "console" });
+    const html = buildWebAppHtml(webAppBuildOpts({ title, code, mode, templateId }));
     files[`${prefix}/webapp/index.html`] = strToU8(html);
     files[`${prefix}/webapp/manifest.webmanifest`] = strToU8(buildPwaManifest({ title }));
     files[`${prefix}/webapp/sw.js`] = strToU8(buildServiceWorker());
@@ -348,7 +361,7 @@ export function exportWebAppHtml({ title, code, mode, templateId }) {
   const caps = analyzeExportCapabilities(code, mode);
   if (!caps.webApp.ok) return { ok: false, message: caps.webApp.message };
   const safeSlug = safeExportSlug(title, templateId);
-  const html = buildWebAppHtml({ title, code, mode });
+  const html = buildWebAppHtml(webAppBuildOpts({ title, code, mode, templateId }));
   downloadBytes(strToU8(html), `${safeSlug}.html`, "text/html;charset=utf-8");
   return {
     ok: true,
@@ -363,7 +376,9 @@ export function exportPwaZip({ title, code, mode, templateId }) {
   const isApp = mode === "app" || usesAppkit(code);
   const webPrefix = `${safeSlug}-webapp`;
   const files = {};
-  files[`${webPrefix}/index.html`] = strToU8(buildWebAppHtml({ title, code, mode: isApp ? "app" : "console" }));
+  files[`${webPrefix}/index.html`] = strToU8(
+    buildWebAppHtml(webAppBuildOpts({ title, code, mode, templateId })),
+  );
   files[`${webPrefix}/manifest.webmanifest`] = strToU8(buildPwaManifest({ title }));
   files[`${webPrefix}/sw.js`] = strToU8(buildServiceWorker());
   files[`${webPrefix}/README.txt`] = strToU8(

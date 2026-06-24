@@ -2,7 +2,7 @@ export const APPKIT_COMMANDS = [
   { sig: 'appkit.title("العنوان")', desc: "عنوان البرنامج في أعلى الواجهة" },
   { sig: 'appkit.text("نص توضيحي")', desc: "سطر نصي للشرح" },
   { sig: 'appkit.input("id", "التسمية", "افتراضي")', desc: "مربع إدخال نص" },
-  { sig: 'appkit.number_input("id", "التسمية", "0")', desc: "مربع إدخال رقم" },
+  { sig: 'appkit.number_input("id", "التسمية", "0", "مثال: 10")', desc: "مربع إدخال رقم مع placeholder" },
   { sig: 'appkit.output("id", "التسمية")', desc: "منطقة عرض نتيجة" },
   { sig: 'appkit.button("id", "نص الزر")', desc: "زر تفاعلي" },
   { sig: 'appkit.get("id")', desc: "قراءة قيمة حقل إدخال" },

@@ -3,11 +3,9 @@ import { useEffect, useRef } from "react";
 function drawCanvas(canvas, ops) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.clearRect(0, 0, w, h);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#f8fafc";
-  ctx.fillRect(0, 0, w, h);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   for (const op of ops || []) {
     if (op.op === "rect") {
       ctx.fillStyle = op.color || "#7c3aed";
@@ -18,6 +16,32 @@ function drawCanvas(canvas, ops) {
       ctx.fillText(op.text, op.x, op.y);
     }
   }
+}
+
+function outputTone(text) {
+  const t = String(text || "");
+  if (/رائع|صحيح|أحسنت|تم |نجح/i.test(t)) return "success";
+  if (/الرجاء|خطأ|فارغ|غير صحيح/i.test(t)) return "error";
+  if (/أكبر|أصغر|حاول|تلميح|انتهت/i.test(t)) return "warn";
+  return "neutral";
+}
+
+const OUTPUT_STYLES = {
+  success: "border-emerald-500/40 bg-emerald-950/40 text-emerald-50",
+  error: "border-red-500/40 bg-red-950/35 text-red-50",
+  warn: "border-amber-500/40 bg-amber-950/35 text-amber-50",
+  neutral: "border-cyan-500/25 bg-cyan-950/30 text-cyan-50",
+};
+
+function buttonClass(id, label) {
+  const key = `${id} ${label}`.toLowerCase();
+  if (/new|reset|restart|محاولة|إعادة|جديدة/.test(key)) {
+    return "bg-slate-700 hover:bg-slate-600 text-white border border-white/20";
+  }
+  if (/help|تعليمات|طريقة/.test(key)) {
+    return "bg-cyan-800 hover:bg-cyan-700 text-white";
+  }
+  return "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md hover:opacity-95";
 }
 
 export function PyAppPreview({ ui, values, onChange, onButton, loading }) {
@@ -31,29 +55,29 @@ export function PyAppPreview({ ui, values, onChange, onButton, loading }) {
         drawCanvas(canvas, ui.canvasOps?.[el.id]);
       }
     }
-  }, [ui]);
+  }, [ui, values]);
 
   if (!ui || !ui.elements?.length) {
     return (
-      <div className="flex min-h-[280px] items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/30 p-6 text-center text-sm text-slate-400">
-        {loading ? "جاري بناء الواجهة..." : "شغّل المشروع لعرض الواجهة الرسومية هنا"}
+      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/30 p-6 text-center text-sm text-slate-400">
+        {loading ? "جاري بناء الواجهة..." : "اضغط «تشغيل المشروع» لعرض اللعبة هنا"}
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-b from-slate-900 to-slate-950 p-5 shadow-inner">
+    <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-b from-slate-900 to-slate-950 p-4 shadow-inner sm:p-5">
       {ui.title ? (
-        <h3 className="mb-4 border-b border-white/10 pb-3 text-center text-lg font-bold text-emerald-200">
+        <h3 className="mb-3 border-b border-white/10 pb-3 text-center text-lg font-bold text-emerald-200 sm:text-xl">
           {ui.title}
         </h3>
       ) : null}
 
       <div className="space-y-4">
-        {ui.elements.map((el) => {
+        {ui.elements.map((el, idx) => {
           if (el.type === "text") {
             return (
-              <p key={`t-${el.content}`} className="text-sm leading-relaxed text-slate-200">
+              <p key={`text-${idx}`} className="text-sm leading-relaxed text-slate-200 sm:text-base">
                 {el.content}
               </p>
             );
@@ -61,10 +85,13 @@ export function PyAppPreview({ ui, values, onChange, onButton, loading }) {
           if (el.type === "input") {
             return (
               <label key={el.id} className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-400">{el.label}</span>
+                <span className="mb-1.5 block text-sm font-bold text-slate-200">{el.label}</span>
                 <input
                   type={el.inputType === "number" ? "number" : "text"}
-                  className="w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500"
+                  min={el.inputType === "number" ? 1 : undefined}
+                  max={el.inputType === "number" ? 99999 : undefined}
+                  placeholder={el.placeholder || ""}
+                  className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-3 text-base text-white outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50"
                   value={values[el.id] ?? ""}
                   onChange={(e) => onChange(el.id, e.target.value)}
                   dir="ltr"
@@ -73,11 +100,15 @@ export function PyAppPreview({ ui, values, onChange, onButton, loading }) {
             );
           }
           if (el.type === "output") {
+            const val = values[el.id] || "";
+            const tone = outputTone(val);
             return (
-              <div key={el.id} className="rounded-lg border border-cyan-500/25 bg-cyan-950/30 p-3">
-                {el.label ? <p className="mb-1 text-xs font-bold text-cyan-300">{el.label}</p> : null}
-                <p className="min-h-[2rem] whitespace-pre-wrap text-sm text-cyan-50" dir="auto">
-                  {values[el.id] || "—"}
+              <div key={el.id} className={`rounded-lg border p-4 ${OUTPUT_STYLES[tone]}`}>
+                {el.label ? (
+                  <p className="mb-2 text-sm font-bold opacity-90">{el.label}</p>
+                ) : null}
+                <p className="min-h-[2.5rem] whitespace-pre-wrap text-base font-medium leading-relaxed" dir="auto">
+                  {val || "انتظر إدخالك ثم اضغط الزر المناسب…"}
                 </p>
               </div>
             );
@@ -89,9 +120,9 @@ export function PyAppPreview({ ui, values, onChange, onButton, loading }) {
                 type="button"
                 disabled={loading}
                 onClick={() => onButton(el.id)}
-                className="w-full rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 py-2.5 text-sm font-bold text-white shadow disabled:opacity-50"
+                className={`w-full rounded-xl py-3 text-base font-bold transition disabled:opacity-50 ${buttonClass(el.id, el.label)}`}
               >
-                {el.label}
+                {el.label || "زر"}
               </button>
             );
           }

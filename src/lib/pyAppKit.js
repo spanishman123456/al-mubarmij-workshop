@@ -44,18 +44,30 @@ export function buildAppKitExports(Sk, registry) {
     return pyNone(Sk);
   });
 
-  exp.input = new Sk.builtin.func(function (_self, id, label, defaultVal) {
+  exp.input = new Sk.builtin.func(function (_self, id, label, defaultVal, placeholder) {
     const i = jsStr(Sk, id);
     const d = jsStr(Sk, defaultVal);
-    registry.elements.push({ type: "input", id: i, label: jsStr(Sk, label), inputType: "text" });
+    registry.elements.push({
+      type: "input",
+      id: i,
+      label: jsStr(Sk, label),
+      inputType: "text",
+      placeholder: jsStr(Sk, placeholder) || "",
+    });
     registry.values[i] = d;
     return pyNone(Sk);
   });
 
-  exp.number_input = new Sk.builtin.func(function (_self, id, label, defaultVal) {
+  exp.number_input = new Sk.builtin.func(function (_self, id, label, defaultVal, placeholder) {
     const i = jsStr(Sk, id);
     const d = jsStr(Sk, defaultVal) || "0";
-    registry.elements.push({ type: "input", id: i, label: jsStr(Sk, label), inputType: "number" });
+    registry.elements.push({
+      type: "input",
+      id: i,
+      label: jsStr(Sk, label),
+      inputType: "number",
+      placeholder: jsStr(Sk, placeholder) || "",
+    });
     registry.values[i] = d;
     return pyNone(Sk);
   });
