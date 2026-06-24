@@ -3,6 +3,8 @@
  * كل ورقة: مهام يدوية في الدفتر أو للطباعة من المتصفح.
  */
 
+import { WORKSHEET_UNIT_EXTRAS } from "./worksheetUnitExtras.js";
+
 export const worksheetsIntroAr =
   "هذه الأوراق تغطي موضوعات الورشة كما في المسار الدراسي. يمكن للطالب كتابة الإجابات في دفتره أو طباعة الصفحة من المتصفح (زر طباعة).";
 
@@ -16,7 +18,6 @@ export const worksheetsIntroAr =
  *   tasks: WorksheetTask[],
  * }} Worksheet */
 
-/** @type {Worksheet[]} */
 export const worksheets = [
   {
     id: "ws-intro",
@@ -236,6 +237,11 @@ export const worksheets = [
     ],
   },
 ];
+
+for (const ws of worksheets) {
+  const extra = WORKSHEET_UNIT_EXTRAS[ws.id];
+  if (extra) ws.tasks.push(extra);
+}
 
 export function getWorksheetById(id) {
   return worksheets.find((w) => w.id === id) ?? null;

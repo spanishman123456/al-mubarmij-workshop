@@ -74,7 +74,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-2 text-sm font-medium text-violet-300"
           >
-            برنامج موهبة الأكاديمي · برمجة الحاسب · صفوف 6–8
+            برنامج موهبة الإثرائي · برمجة الحاسب · صفوف 6–8
           </Motion.p>
           <Motion.h1
             initial={{ opacity: 0, y: 14 }}

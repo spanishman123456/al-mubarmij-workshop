@@ -52,7 +52,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="mt-8 text-center">
-            <SiteTitle subtitle="منصة تعليمية تفاعلية لطلاب موهبة" light />
+            <SiteTitle subtitle="منصة تعليمية تفاعلية — برنامج موهبة الإثرائي" light />
             <p className="mx-auto mt-3 max-w-xl text-sm text-violet-100/90">
               سجّل الدخول برقم الهوية لمتابعة دروسك، محاكياتك، وأوراق عملك في وحدة برمجة الحاسب
             </p>

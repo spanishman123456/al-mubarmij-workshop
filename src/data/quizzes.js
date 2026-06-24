@@ -4,12 +4,19 @@
  */
 
 import { dayQuizzes } from "./dayQuizzes";
+import { PRE_TEST_QUESTION_BANK, POST_TEST_QUESTION_BANK } from "./prePostQuestionBank.js";
+import { UNIT_QUIZ_EXTRAS } from "./unitQuizExtras.js";
+
+/** @typedef {'mcq'|'truefalse'|'fill'} QuestionType */
 
 /** @typedef {{
  *   id: string,
+ *   type?: QuestionType,
  *   questionAr: string,
- *   optionsAr: string[],
- *   correctIndex: number,
+ *   optionsAr?: string[],
+ *   correctIndex?: number,
+ *   correctAnswer?: string,
+ *   acceptAnswers?: string[],
  *   explainAr: string,
  * }} QuizQuestion */
 
@@ -19,7 +26,10 @@ import { dayQuizzes } from "./dayQuizzes";
  *   titleAr: string,
  *   descriptionAr: string,
  *   passPercent: number,
- *   questions: QuizQuestion[],
+ *   questions?: QuizQuestion[],
+ *   questionPool?: QuizQuestion[],
+ *   drawCount?: number,
+ *   shuffle?: boolean,
  * }} Quiz */
 
 /** @type {Quiz[]} */
@@ -526,63 +536,32 @@ export const quizzes = [
     unitId: null,
     titleAr: "التقويم القبلي — قبل دراسة الوحدة",
     descriptionAr:
-      "يُستخدم لقياس مستواك قبل البدء في وحدة برمجة الحاسب. النتيجة تُحفظ في حسابك وللمعلم.",
+      "يُستخدم لقياس مستواك قبل البدء في وحدة برمجة الحاسب. يُختار 12 سؤالاً من بنك أسئلة متنوع — النتيجة تُحفظ في حسابك وللمعلم.",
     passPercent: 0,
-    questions: [
-      {
-        id: "pre-q1",
-        questionAr: "ما النظام الذي يستخدم الرقمين 0 و 1 فقط؟",
-        optionsAr: ["العشري", "الثنائي", "الست عشري", "الروماني"],
-        correctIndex: 1,
-        explainAr: "النظام الثنائي أساس تمثيل البيانات في الحاسب.",
-      },
-      {
-        id: "pre-q2",
-        questionAr: "ما هي الخوارزمية؟",
-        optionsAr: ["لعبة حاسوب", "خطوات واضحة لحل مسألة", "نوع شاشة", "برنامج مضاد للفيروسات"],
-        correctIndex: 1,
-        explainAr: "الخوارزمية سلسلة خطوات منظمة.",
-      },
-      {
-        id: "pre-q3",
-        questionAr: "أي لغة نستخدمها في هذه الورشة للبرمجة؟",
-        optionsAr: ["Java", "Python", "HTML", "SQL"],
-        correctIndex: 1,
-        explainAr: "المقرر يعتمد بايثون كأداة تعلم.",
-      },
-    ],
+    questionPool: PRE_TEST_QUESTION_BANK,
+    drawCount: 12,
+    shuffle: true,
   },
   {
     id: "quiz-post",
     unitId: null,
     titleAr: "التقويم البعدي — بعد إتمام الوحدة",
-    descriptionAr: "يُقيس مدى تطورك بعد دراسة المنهج. قارن نتيجتك مع التقويم القبلي.",
+    descriptionAr:
+      "يُقيس مدى تطورك بعد دراسة المنهج. يُختار 12 سؤالاً مختلفاً عن المحاولة السابقة عند الإمكان — قارن نتيجتك مع التقويم القبلي.",
     passPercent: 60,
-    questions: [
-      {
-        id: "post-q1",
-        questionAr: "أي بوابة تعطي 1 فقط عندما يكون كلا المدخلين 1؟",
-        optionsAr: ["OR", "AND", "NOT", "XOR"],
-        correctIndex: 1,
-        explainAr: "بوابة AND تتطلب 1 و1.",
-      },
-      {
-        id: "post-q2",
-        questionAr: "أي بحث أسرع على قائمة مرتبة؟",
-        optionsAr: ["البحث الخطي", "البحث الثنائي", "الفرز الفقاعي", "العشوائي"],
-        correctIndex: 1,
-        explainAr: "البحث الثنائي يقسم المجال كل مرة.",
-      },
-      {
-        id: "post-q3",
-        questionAr: "شيفرة قيصر تعتمد على ماذا؟",
-        optionsAr: ["حذف الحروف", "إزاحة الحروف", "عكس الجملة", "تبديل الكلمات"],
-        correctIndex: 1,
-        explainAr: "الإزاحة Shift هي فكرة التشفير الأساسية.",
-      },
-    ],
+    questionPool: POST_TEST_QUESTION_BANK,
+    drawCount: 12,
+    shuffle: true,
   },
 ];
+
+for (const quiz of quizzes) {
+  const extra = UNIT_QUIZ_EXTRAS[quiz.id];
+  if (extra && Array.isArray(quiz.questions)) {
+    quiz.questions.push(extra);
+    quiz.shuffle = true;
+  }
+}
 
 export function getQuizById(id) {
   return quizzes.find((q) => q.id === id) ?? null;

@@ -16,14 +16,14 @@ export function PageShell({ title, subtitle, badge, children, hero, className = 
           {hero ? <div className="mt-6">{hero}</div> : null}
         </div>
       </div>
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</div>
+      <div className="mx-auto max-w-6xl animate-slide-up px-4 py-8 sm:px-6">{children}</div>
     </div>
   );
 }
 
 export function EduCard({ title, subtitle, children, className = "", accent }) {
   return (
-    <article className={`edu-card ${className}`}>
+    <article className={`edu-card press-scale ${className}`}>
       {accent ? (
         <div className={`edu-card-accent edu-card-accent--${accent}`} aria-hidden />
       ) : null}
@@ -35,7 +35,7 @@ export function EduCard({ title, subtitle, children, className = "", accent }) {
 }
 
 export function EduButton({ children, variant = "primary", className = "", ...props }) {
-  const base = "edu-btn";
+  const base = "edu-btn press-scale";
   const v =
     variant === "secondary"
       ? "edu-btn-secondary"

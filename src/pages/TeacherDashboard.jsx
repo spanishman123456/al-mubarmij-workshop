@@ -48,7 +48,7 @@ export default function TeacherDashboard() {
     <PageShell
       title="لوحة المعلم"
       subtitle={`${user.nameAr} — متابعة تقدم ونشاط طلاب برمجة الحاسب`}
-      badge="برنامج موهبة"
+      badge="برنامج موهبة الإثرائي"
       hero={
         <button
           type="button"

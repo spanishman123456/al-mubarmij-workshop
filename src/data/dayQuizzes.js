@@ -1,7 +1,9 @@
 /**
  * اختبارات قصيرة مرتبطة بأيام مسار 15 يومًا
  */
-export const dayQuizzes = [
+import { DAY_QUIZ_EXTRAS } from "./dayQuizExtras.js";
+
+const baseDayQuizzes = [
   {
     id: "quiz-day-01",
     unitId: null,
@@ -325,3 +327,9 @@ export const dayQuizzes = [
     ],
   },
 ];
+
+export const dayQuizzes = baseDayQuizzes.map((quiz) => ({
+  ...quiz,
+  shuffle: true,
+  questions: [...quiz.questions, ...(DAY_QUIZ_EXTRAS[quiz.id] || [])],
+}));

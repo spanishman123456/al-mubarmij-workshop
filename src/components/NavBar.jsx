@@ -38,7 +38,7 @@ export function NavBar() {
           <img src="/images/mawhiba/mawhiba-logo.png" alt="موهبة" className="h-9 w-auto object-contain" />
           <div>
             <p className="font-ar text-base font-bold text-white">برمجة الحاسب</p>
-            <p className="text-[10px] text-violet-300">برنامج موهبة — صفوف 6-8</p>
+            <p className="text-[10px] text-violet-300">برنامج موهبة الإثرائي — صفوف 6-8</p>
           </div>
         </Link>
 
@@ -68,7 +68,7 @@ export function NavBar() {
                 to={link.to}
                 end={link.end}
                 onClick={() => setOpen(false)}
-                className={`rounded-full px-3 py-2 font-ar text-sm font-medium transition ${
+                className={`nav-link-interactive press-scale rounded-full px-3 py-2 font-ar text-sm font-medium transition ${
                   active
                     ? `${link.active} text-white shadow-md`
                     : "text-slate-300 hover:bg-white/10 hover:text-white"

@@ -40,7 +40,7 @@ export default function QuizzesPage() {
         <section className="mb-10">
           <h2 className="text-xl font-bold text-slate-900">التقويم القبلي والبعدي</h2>
           <p className="mt-1 text-sm text-slate-600">
-            القبلي يقيس مستواك قبل البدء؛ البعدي بعد إتمام المنهج — للمقارنة مع المعلم.
+            القبلي يقيس مستواك قبل البدء (12 سؤالاً متنوعاً)؛ البعدي بعد إتمام المنهج — للمقارنة مع المعلم.
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {prePost.map((q) => (

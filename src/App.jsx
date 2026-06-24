@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { NavBar } from "./components/NavBar";
 import { PlatformProvider, usePlatform } from "./context/PlatformContext";
@@ -31,6 +31,7 @@ function NotFoundRedirect() {
 
 function AppRoutes() {
   const { user, authReady } = usePlatform();
+  const location = useLocation();
 
   return (
     <div className="min-h-screen font-ar">
@@ -41,7 +42,8 @@ function AppRoutes() {
         </>
       ) : null}
 
-      <Routes>
+      <div key={location.pathname} className="page-enter">
+      <Routes location={location}>
         <Route
           path="/login"
           element={
@@ -204,6 +206,7 @@ function AppRoutes() {
 
         <Route path="*" element={<NotFoundRedirect />} />
       </Routes>
+      </div>
     </div>
   );
 }

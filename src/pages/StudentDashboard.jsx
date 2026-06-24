@@ -82,7 +82,7 @@ export default function StudentDashboard() {
   return (
     <PageShell
       title={`مرحبًا، ${user.nameAr}`}
-      subtitle="منصة برمجة الحاسب — برنامج موهبة الأكاديمي"
+      subtitle="منصة برمجة الحاسب — برنامج موهبة الإثرائي"
       badge="لوحة الطالب"
       hero={
         <button

@@ -55,7 +55,7 @@ export function MawhibaHeaderStrip({ className = "" }) {
         <img src="/images/mawhiba/mawhiba-logo.png" alt="موهبة" className="h-10 w-auto object-contain" />
         <div>
           <p className="font-ar text-base font-bold text-white">برمجة الحاسب</p>
-          <p className="text-xs text-violet-200">منصة موهبة — صفوف 6-8</p>
+          <p className="text-xs text-violet-200">برنامج موهبة الإثرائي — صفوف 6-8</p>
         </div>
       </Link>
     </div>
