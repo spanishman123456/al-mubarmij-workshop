@@ -10,6 +10,7 @@ import { PythonAppSession } from "../lib/skulptAppRun";
 import { usePlatform } from "../context/PlatformContext";
 import { PyAppPreview } from "../components/python/PyAppPreview";
 import { ProjectExportPanel } from "../components/python/ProjectExportPanel";
+import { AppModeHelp } from "../components/python/AppModeHelp";
 
 const MODES = [
   { id: "console", label: "تشغيل نصي (Console)" },
@@ -207,7 +208,7 @@ export default function PythonLab() {
       const text = await runPythonWithSkulpt(code);
       setOut(text);
     } catch (e) {
-      setFeedback(e?.feedback ?? formatSkulptError(e));
+      setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
     } finally {
       setBusy(false);
     }
@@ -227,7 +228,7 @@ export default function PythonLab() {
       setAppValues(result.ui.values || {});
       if (result.console) setAppConsole(result.console);
     } catch (e) {
-      setFeedback(e?.feedback ?? formatSkulptError(e));
+      setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
     } finally {
       setBusy(false);
     }
@@ -243,7 +244,7 @@ export default function PythonLab() {
       setAppValues(result.ui.values || {});
       if (result.console) setAppConsole((prev) => prev + result.console);
     } catch (e) {
-      setFeedback(e?.feedback ?? formatSkulptError(e));
+      setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
     } finally {
       setBusy(false);
     }
@@ -386,10 +387,11 @@ export default function PythonLab() {
             <div className="mb-4 rounded-xl border border-violet-500/30 bg-violet-950/20 p-4 text-sm text-violet-100">
               <p className="font-bold text-violet-200">وضع المشروع الرسومي</p>
               <p className="mt-1 text-slate-300">
-                استخدم <span dir="ltr" className="font-mono text-cyan-300">import appkit</span> لبناء واجهة: أزرار،
-                مدخلات، نصوص، ورسم Canvas — بديل عملي لـ Tkinter داخل المتصفح.
+                استخدم <span dir="ltr" className="font-mono text-cyan-300">import appkit</span> — وحدة مدمجة
+                في المختبر لبناء واجهات تفاعلية (أزرار، مدخلات، Canvas).
               </p>
             </div>
+            <AppModeHelp variant="dark" onInsertExample={(ex) => setCode(ex)} />
             <div className="mb-4 flex flex-wrap gap-2">
               {GRAPHIC_APP_PROJECTS.map((p) => (
                 <button

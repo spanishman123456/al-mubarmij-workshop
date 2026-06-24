@@ -39,7 +39,7 @@ function guessLineNumber(text) {
   return null;
 }
 
-function classifyAndHint(text) {
+function classifyAndHint(text, opts = {}) {
   const t = text.toLowerCase();
 
   if (/expected an indented block/i.test(t)) {
@@ -117,6 +117,20 @@ function classifyAndHint(text) {
     };
   }
   if (/importerror|modulenotfound|no module named/i.test(t)) {
+    if (opts.appMode && /appkit/i.test(text)) {
+      return {
+        headlineAr: "وحدة appkit غير متوفرة — أعد تشغيل المشروع",
+        hintAr:
+          "في وضع المشروع الرسومي استخدم import appkit فقط. إذا استمر الخطأ، أعد تحميل الصفحة ثم اضغط «تشغيل المشروع» مجددًا.",
+      };
+    }
+    if (opts.appMode) {
+      return {
+        headlineAr: "هذه المكتبة غير مدعومة داخل المتصفح",
+        hintAr:
+          "في App Mode استخدم import appkit لبناء الواجهة. مكتبات مثل tkinter و pygame و numpy غير متوفرة. راجع قائمة الأوامر المدعومة أسفل المحرر.",
+      };
+    }
     return {
       headlineAr: "استيراد غير متوفر في هذا المختبر",
       hintAr:
@@ -141,10 +155,10 @@ function classifyAndHint(text) {
  * @param {unknown} err — ما يرجعه Skulpt في catch
  * @returns {{ headlineAr: string, detail: string, line: number | null, hintAr: string }}
  */
-export function formatSkulptError(err) {
+export function formatSkulptError(err, opts = {}) {
   const detail = extractErrorText(err).trim();
   const line = guessLineNumber(detail);
-  const { headlineAr, hintAr } = classifyAndHint(detail);
+  const { headlineAr, hintAr } = classifyAndHint(detail, opts);
 
   return {
     headlineAr,

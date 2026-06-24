@@ -37,7 +37,7 @@ function TeacherProjectRunner({ code }) {
       setValues(result.ui.values || {});
       if (result.console) setConsoleOut(result.console);
     } catch (e) {
-      setFeedback(e?.feedback ?? formatSkulptError(e));
+      setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
       setUi(null);
     } finally {
       setBusy(false);
@@ -54,7 +54,7 @@ function TeacherProjectRunner({ code }) {
       setValues(result.ui.values || {});
       if (result.console) setConsoleOut((prev) => prev + result.console);
     } catch (e) {
-      setFeedback(e?.feedback ?? formatSkulptError(e));
+      setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
     } finally {
       setBusy(false);
     }
