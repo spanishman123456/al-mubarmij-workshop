@@ -395,6 +395,132 @@ export function PlatformProvider({ children }) {
     [persist, user],
   );
 
+  const saveGraphicProject = useCallback(
+    (title, code, existingId = null) => {
+      if (!user || user.role !== "student") return null;
+      let savedId = existingId;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const analytics = recordPythonRun(getStudentAnalytics(prev, user.id));
+        const list = [...(current.graphicProjects || [])];
+        const now = new Date().toISOString();
+        if (existingId) {
+          const idx = list.findIndex((p) => p.id === existingId);
+          if (idx >= 0) {
+            list[idx] = { ...list[idx], title: title || list[idx].title, code, updatedAt: now };
+            savedId = existingId;
+          } else {
+            savedId = `gpy-${Date.now()}`;
+            list.unshift({
+              id: savedId,
+              title: title || "مشروع رسومي",
+              code,
+              status: "draft",
+              at: now,
+              updatedAt: now,
+              submittedAt: null,
+              teacherNote: "",
+              teacherScore: null,
+            });
+          }
+        } else {
+          savedId = `gpy-${Date.now()}`;
+          list.unshift({
+            id: savedId,
+            title: title || "مشروع رسومي",
+            code,
+            status: "draft",
+            at: now,
+            updatedAt: now,
+            submittedAt: null,
+            teacherNote: "",
+            teacherScore: null,
+          });
+        }
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: {
+              ...current,
+              graphicProjects: list,
+              updatedAt: now,
+            },
+          },
+          analyticsByStudent: {
+            ...prev.analyticsByStudent,
+            [user.id]: analytics,
+          },
+        };
+      });
+      return savedId;
+    },
+    [persist, user],
+  );
+
+  const submitGraphicProject = useCallback(
+    (projectId) => {
+      if (!user || user.role !== "student") return false;
+      let ok = false;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const list = (current.graphicProjects || []).map((p) => {
+          if (p.id !== projectId) return p;
+          ok = true;
+          return {
+            ...p,
+            status: "submitted",
+            submittedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+        });
+        if (!ok) return prev;
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: {
+              ...current,
+              graphicProjects: list,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
+      });
+      return ok;
+    },
+    [persist, user],
+  );
+
+  const teacherUpdateGraphicProject = useCallback(
+    (studentId, projectId, patch) => {
+      persist((prev) => {
+        const current = getStudentProgress(prev, studentId);
+        const list = (current.graphicProjects || []).map((p) => {
+          if (p.id !== projectId) return p;
+          return {
+            ...p,
+            ...patch,
+            status: patch.status || (patch.teacherScore != null ? "reviewed" : p.status),
+            updatedAt: new Date().toISOString(),
+          };
+        });
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [studentId]: {
+              ...current,
+              graphicProjects: list,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
+      });
+    },
+    [persist],
+  );
+
   const saveProject = useCallback(
     (projectPatch) => {
       if (!user || user.role !== "student") return;
@@ -478,8 +604,11 @@ export function PlatformProvider({ children }) {
       saveDrillResult,
       saveMicrobitProgress,
       savePythonSnippet,
+      saveGraphicProject,
+      submitGraphicProject,
       saveProject,
       teacherUpdateStudent,
+      teacherUpdateGraphicProject,
       teacherSetNote,
       allStudentsProgress,
       trackPageView,
@@ -505,8 +634,11 @@ export function PlatformProvider({ children }) {
       saveDrillResult,
       saveMicrobitProgress,
       savePythonSnippet,
+      saveGraphicProject,
+      submitGraphicProject,
       saveProject,
       teacherUpdateStudent,
+      teacherUpdateGraphicProject,
       teacherSetNote,
       allStudentsProgress,
       trackPageView,

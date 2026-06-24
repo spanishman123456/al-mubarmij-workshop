@@ -17,6 +17,7 @@ function defaultProgressForStudent(studentId) {
     preTest: null,
     postTest: null,
     pythonSnippets: [],
+    graphicProjects: [],
     project: {
       status: "not_started",
       title: "",

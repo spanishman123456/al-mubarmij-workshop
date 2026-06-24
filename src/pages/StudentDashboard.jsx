@@ -8,7 +8,7 @@ import { getAttendanceStatus, maskNationalId } from "../lib/platformAnalytics";
 
 const QUICK_LINKS = [
   { to: "/path", title: "المسار الدراسي", desc: "15 يومًا من الدروس والأنشطة" },
-  { to: "/python", title: "مختبر بايثون", desc: "اكتب واحفظ أكوادك" },
+  { to: "/python", title: "مختبر بايثون", desc: "تمارين نصية ومشاريع رسومية" },
   { to: "/worksheets", title: "أوراق العمل", desc: "تمارين نظرية وتطبيقية" },
   { to: "/quizzes", title: "الاختبارات", desc: "قبلي، قصير، وبعدي" },
   { to: "/simulations", title: "المحاكاة", desc: "معمل تفاعلي للمفاهيم" },
@@ -130,6 +130,7 @@ export default function StudentDashboard() {
           <Stat label="أوراق العمل المنجزة" value={myStats?.worksheetsDone ?? 0} />
           <Stat label="أوراق معلّقة" value={wsPending} />
           <Stat label="أكواد بايثون" value={myProgress.pythonSnippets?.length ?? 0} />
+          <Stat label="مشاريع رسومية" value={myProgress.graphicProjects?.length ?? 0} />
           <Stat label="التقويم القبلي" value={pre != null ? `${pre}%` : "لم يُجرَ"} />
           <Stat label="التقويم البعدي" value={post != null ? `${post}%` : "لم يُجرَ"} />
           <Stat label="نمو الأداء" value={growth != null ? (growth >= 0 ? `+${growth}%` : `${growth}%`) : "—"} />

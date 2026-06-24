@@ -3,6 +3,7 @@ import { usePlatform } from "../context/PlatformContext";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { PrePostComparisonChart } from "../components/charts/PrePostComparisonChart";
+import { TeacherGraphicProjects } from "../components/teacher/TeacherGraphicProjects";
 import { MawhibaBrand } from "../components/branding/MawhibaBrand";
 import { maskNationalId, getAccountStatus, getAttendanceStatus } from "../lib/platformAnalytics";
 
@@ -16,7 +17,7 @@ function formatDate(iso) {
 }
 
 export default function TeacherDashboard() {
-  const { user, allStudentsProgress, logout, teacherSetNote } = usePlatform();
+  const { user, allStudentsProgress, logout, teacherSetNote, teacherUpdateGraphicProject } = usePlatform();
 
   if (!user || user.role !== "teacher") {
     return (
@@ -76,6 +77,11 @@ export default function TeacherDashboard() {
       </div>
 
       <PrePostComparisonChart className="mt-8" students={allStudentsProgress} />
+
+      <TeacherGraphicProjects
+        students={allStudentsProgress}
+        onUpdate={teacherUpdateGraphicProject}
+      />
 
       <section className="mt-10 space-y-5">
         <h2 className="text-xl font-bold text-slate-900">متابعة الطلاب — {allStudentsProgress.length} طالب</h2>
