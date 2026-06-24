@@ -1,6 +1,8 @@
 /**
  * وحدة appkit لـ Skulpt — تُحقَن في Sk.builtinFiles.files['src/lib/appkit.js']
  * Skulpt يحمّل الوحدات عبر Sk.read وليس عبر window.$builtinmodule
+ *
+ * ملاحظة: دوال الوحدة لا تستقبل self — الوسيط الأول هو أول وسيط بايثون.
  */
 
 export const APPKIT_SKULPT_MODULE_SRC = `var $builtinmodule = function(name) {
@@ -15,15 +17,15 @@ export const APPKIT_SKULPT_MODULE_SRC = `var $builtinmodule = function(name) {
   }
   function pyNone() { return Sk.builtin.none.none$; }
   var mod = {};
-  mod.title = new Sk.builtin.func(function(_self, t) {
+  mod.title = new Sk.builtin.func(function(t) {
     registry.title = jsStr(t);
     return pyNone();
   });
-  mod.text = new Sk.builtin.func(function(_self, content) {
+  mod.text = new Sk.builtin.func(function(content) {
     registry.elements.push({ type: "text", content: jsStr(content) });
     return pyNone();
   });
-  mod.input = new Sk.builtin.func(function(_self, id, label, defaultVal, placeholder) {
+  mod.input = new Sk.builtin.func(function(id, label, defaultVal, placeholder) {
     var i = jsStr(id);
     registry.elements.push({
       type: "input", id: i, label: jsStr(label), inputType: "text",
@@ -32,7 +34,7 @@ export const APPKIT_SKULPT_MODULE_SRC = `var $builtinmodule = function(name) {
     registry.values[i] = jsStr(defaultVal);
     return pyNone();
   });
-  mod.number_input = new Sk.builtin.func(function(_self, id, label, defaultVal, placeholder) {
+  mod.number_input = new Sk.builtin.func(function(id, label, defaultVal, placeholder) {
     var i = jsStr(id);
     registry.elements.push({
       type: "input", id: i, label: jsStr(label), inputType: "number",
@@ -41,30 +43,30 @@ export const APPKIT_SKULPT_MODULE_SRC = `var $builtinmodule = function(name) {
     registry.values[i] = jsStr(defaultVal) || "0";
     return pyNone();
   });
-  mod.output = new Sk.builtin.func(function(_self, id, label) {
+  mod.output = new Sk.builtin.func(function(id, label) {
     var i = jsStr(id);
     registry.elements.push({ type: "output", id: i, label: jsStr(label) });
     registry.values[i] = "";
     return pyNone();
   });
-  mod.button = new Sk.builtin.func(function(_self, id, label) {
+  mod.button = new Sk.builtin.func(function(id, label) {
     registry.elements.push({ type: "button", id: jsStr(id), label: jsStr(label) });
     return pyNone();
   });
-  mod.get = new Sk.builtin.func(function(_self, id) {
+  mod.get = new Sk.builtin.func(function(id) {
     var v = registry.values[jsStr(id)];
     if (v === undefined) v = "";
     return new Sk.builtin.str(String(v));
   });
-  mod.set = new Sk.builtin.func(function(_self, id, value) {
+  mod.set = new Sk.builtin.func(function(id, value) {
     registry.values[jsStr(id)] = jsStr(value);
     return pyNone();
   });
-  mod.on_click = new Sk.builtin.func(function(_self, id, handler) {
+  mod.on_click = new Sk.builtin.func(function(id, handler) {
     registry.handlers[jsStr(id)] = handler;
     return pyNone();
   });
-  mod.canvas = new Sk.builtin.func(function(_self, id, w, h) {
+  mod.canvas = new Sk.builtin.func(function(id, w, h) {
     var cid = jsStr(id);
     registry.elements.push({
       type: "canvas", id: cid,
@@ -74,7 +76,7 @@ export const APPKIT_SKULPT_MODULE_SRC = `var $builtinmodule = function(name) {
     registry.canvasOps[cid] = [];
     return pyNone();
   });
-  mod.draw_rect = new Sk.builtin.func(function(_self, canvasId, x, y, w, h, color) {
+  mod.draw_rect = new Sk.builtin.func(function(canvasId, x, y, w, h, color) {
     var cid = jsStr(canvasId);
     if (!registry.canvasOps[cid]) registry.canvasOps[cid] = [];
     registry.canvasOps[cid].push({
@@ -85,7 +87,7 @@ export const APPKIT_SKULPT_MODULE_SRC = `var $builtinmodule = function(name) {
     });
     return pyNone();
   });
-  mod.draw_text = new Sk.builtin.func(function(_self, canvasId, x, y, txt, color) {
+  mod.draw_text = new Sk.builtin.func(function(canvasId, x, y, txt, color) {
     var cid = jsStr(canvasId);
     if (!registry.canvasOps[cid]) registry.canvasOps[cid] = [];
     registry.canvasOps[cid].push({
@@ -93,6 +95,11 @@ export const APPKIT_SKULPT_MODULE_SRC = `var $builtinmodule = function(name) {
       x: Number(jsStr(x)), y: Number(jsStr(y)),
       text: jsStr(txt), color: jsStr(color) || "#1e1b4b"
     });
+    return pyNone();
+  });
+  mod.clear_canvas = new Sk.builtin.func(function(canvasId) {
+    var cid = jsStr(canvasId);
+    registry.canvasOps[cid] = [];
     return pyNone();
   });
   mod.build = new Sk.builtin.func(function() {

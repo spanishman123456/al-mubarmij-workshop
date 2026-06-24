@@ -72,9 +72,9 @@ export function buildWebAppHtml({ title, code, mode, edu = null, displayTitle })
     }
     function outputClass(val) {
       var t = String(val || "");
-      if (/رائع|صحيح|أحسنت|تم |نجح/i.test(t)) return "out out-success";
-      if (/الرجاء|خطأ|فارغ/i.test(t)) return "out out-error";
-      if (/أكبر|أصغر|حاول|انتهت/i.test(t)) return "out out-warn";
+      if (/مبروك|فزت|صحيح|أحسنت|نجح|اكتمل|تم التحويل|تم التشفير|تم فك|تم العثور/i.test(t)) return "out out-success";
+      if (/خسرت|خطأ|فارغ|غير صحيح|الرجاء/i.test(t)) return "out out-error";
+      if (/أكبر|أصغر|حاول|انتهت|بانتظار/i.test(t)) return "out out-warn";
       return "out";
     }
     function drawCanvas(cv, ops) {
@@ -125,10 +125,11 @@ export function buildWebAppHtml({ title, code, mode, edu = null, displayTitle })
           var box = document.createElement("div");
           box.className = outputClass(registry.values[el.id]);
           var b = document.createElement("b");
-          b.textContent = el.label || "النتيجة";
+          b.textContent = el.label || "مخرجات";
           box.appendChild(b);
           var op = document.createElement("p");
           op.id = "out-" + el.id;
+          op.style.whiteSpace = "pre-wrap";
           op.textContent = registry.values[el.id] || "انتظر إدخالك ثم اضغط الزر المناسب…";
           box.appendChild(op);
           root.appendChild(box);
@@ -136,9 +137,10 @@ export function buildWebAppHtml({ title, code, mode, edu = null, displayTitle })
           var btn = document.createElement("button");
           btn.type = "button";
           btn.setAttribute("data-btn", el.id);
-          btn.textContent = el.label || "زر";
+          btn.textContent = el.label || "تنفيذ الإجراء";
           var bid = (el.id + " " + (el.label || "")).toLowerCase();
-          if (/new|reset|محاولة|إعادة/.test(bid)) btn.className = "btn-secondary";
+          if (/new|reset|restart|محاولة|إعادة|مسح|clear|retry/.test(bid)) btn.className = "btn-secondary";
+          else if (/start|begin|ابدأ|بدء/.test(bid)) btn.className = "btn-start";
           else btn.className = "btn-primary";
           root.appendChild(btn);
         } else if (el.type === "canvas") {
@@ -169,6 +171,7 @@ export function buildWebAppHtml({ title, code, mode, edu = null, displayTitle })
               var box = p && p.parentElement;
               if (p) {
                 p.textContent = registry.values[el.id] || "—";
+                p.style.whiteSpace = "pre-wrap";
                 if (box) box.className = outputClass(registry.values[el.id]);
               }
             });
@@ -256,6 +259,7 @@ export function buildWebAppHtml({ title, code, mode, edu = null, displayTitle })
     .app-shell .lbl{display:block;margin-bottom:.4rem;font-weight:bold;font-size:.95rem;color:#e2e8f0}
     .app-shell input{width:100%;padding:.75rem;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:1rem}
     .btn-primary{width:100%;margin:.5rem 0;padding:.75rem;border:0;border-radius:10px;background:linear-gradient(90deg,#7c3aed,#4f46e5);color:#fff;font-weight:bold;font-size:1rem;cursor:pointer}
+    .btn-start{width:100%;margin:.5rem 0;padding:.75rem;border:0;border-radius:10px;background:linear-gradient(90deg,#059669,#0d9488);color:#fff;font-weight:bold;font-size:1rem;cursor:pointer}
     .btn-secondary{width:100%;margin:.5rem 0;padding:.75rem;border:1px solid #64748b;border-radius:10px;background:#334155;color:#fff;font-weight:bold;font-size:1rem;cursor:pointer}
     .out{border-radius:8px;padding:.85rem;margin:.5rem 0;border:1px solid rgba(6,182,212,.3);background:rgba(6,182,212,.12)}
     .out-success{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.15);color:#d1fae5}

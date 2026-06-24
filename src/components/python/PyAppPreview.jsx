@@ -20,9 +20,9 @@ function drawCanvas(canvas, ops) {
 
 function outputTone(text) {
   const t = String(text || "");
-  if (/رائع|صحيح|أحسنت|تم |نجح/i.test(t)) return "success";
-  if (/الرجاء|خطأ|فارغ|غير صحيح/i.test(t)) return "error";
-  if (/أكبر|أصغر|حاول|تلميح|انتهت/i.test(t)) return "warn";
+  if (/مبروك|فزت|صحيح|أحسنت|نجح|اكتمل|تم التحويل|تم التشفير|تم فك|تم العثور/i.test(t)) return "success";
+  if (/خسرت|خطأ|فارغ|غير صحيح|الرجاء/i.test(t)) return "error";
+  if (/أكبر|أصغر|حاول|تلميح|انتهت|بانتظار/i.test(t)) return "warn";
   return "neutral";
 }
 
@@ -35,8 +35,11 @@ const OUTPUT_STYLES = {
 
 function buttonClass(id, label) {
   const key = `${id} ${label}`.toLowerCase();
-  if (/new|reset|restart|محاولة|إعادة|جديدة/.test(key)) {
+  if (/new|reset|restart|محاولة|إعادة|مسح|clear|retry/.test(key)) {
     return "bg-slate-700 hover:bg-slate-600 text-white border border-white/20";
+  }
+  if (/start|begin|ابدأ|بدء/.test(key)) {
+    return "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md hover:opacity-95";
   }
   if (/help|تعليمات|طريقة/.test(key)) {
     return "bg-cyan-800 hover:bg-cyan-700 text-white";
@@ -122,7 +125,7 @@ export function PyAppPreview({ ui, values, onChange, onButton, loading }) {
                 onClick={() => onButton(el.id)}
                 className={`w-full rounded-xl py-3 text-base font-bold transition disabled:opacity-50 ${buttonClass(el.id, el.label)}`}
               >
-                {el.label || "زر"}
+                {el.label || "تنفيذ الإجراء"}
               </button>
             );
           }

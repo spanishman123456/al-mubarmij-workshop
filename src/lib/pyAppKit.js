@@ -34,17 +34,17 @@ function pyNone(Sk) {
 export function buildAppKitExports(Sk, registry) {
   const exp = {};
 
-  exp.title = new Sk.builtin.func(function (_self, t) {
+  exp.title = new Sk.builtin.func(function (t) {
     registry.title = jsStr(Sk, t);
     return pyNone(Sk);
   });
 
-  exp.text = new Sk.builtin.func(function (_self, content) {
+  exp.text = new Sk.builtin.func(function (content) {
     registry.elements.push({ type: "text", content: jsStr(Sk, content) });
     return pyNone(Sk);
   });
 
-  exp.input = new Sk.builtin.func(function (_self, id, label, defaultVal, placeholder) {
+  exp.input = new Sk.builtin.func(function (id, label, defaultVal, placeholder) {
     const i = jsStr(Sk, id);
     const d = jsStr(Sk, defaultVal);
     registry.elements.push({
@@ -58,7 +58,7 @@ export function buildAppKitExports(Sk, registry) {
     return pyNone(Sk);
   });
 
-  exp.number_input = new Sk.builtin.func(function (_self, id, label, defaultVal, placeholder) {
+  exp.number_input = new Sk.builtin.func(function (id, label, defaultVal, placeholder) {
     const i = jsStr(Sk, id);
     const d = jsStr(Sk, defaultVal) || "0";
     registry.elements.push({
@@ -72,34 +72,34 @@ export function buildAppKitExports(Sk, registry) {
     return pyNone(Sk);
   });
 
-  exp.output = new Sk.builtin.func(function (_self, id, label) {
+  exp.output = new Sk.builtin.func(function (id, label) {
     const i = jsStr(Sk, id);
     registry.elements.push({ type: "output", id: i, label: jsStr(Sk, label) });
     registry.values[i] = "";
     return pyNone(Sk);
   });
 
-  exp.button = new Sk.builtin.func(function (_self, id, label) {
+  exp.button = new Sk.builtin.func(function (id, label) {
     registry.elements.push({ type: "button", id: jsStr(Sk, id), label: jsStr(Sk, label) });
     return pyNone(Sk);
   });
 
-  exp.get = new Sk.builtin.func(function (_self, id) {
+  exp.get = new Sk.builtin.func(function (id) {
     const v = registry.values[jsStr(Sk, id)] ?? "";
     return new Sk.builtin.str(String(v));
   });
 
-  exp.set = new Sk.builtin.func(function (_self, id, value) {
+  exp.set = new Sk.builtin.func(function (id, value) {
     registry.values[jsStr(Sk, id)] = jsStr(Sk, value);
     return pyNone(Sk);
   });
 
-  exp.on_click = new Sk.builtin.func(function (_self, id, handler) {
+  exp.on_click = new Sk.builtin.func(function (id, handler) {
     registry.handlers[jsStr(Sk, id)] = handler;
     return pyNone(Sk);
   });
 
-  exp.canvas = new Sk.builtin.func(function (_self, id, w, h) {
+  exp.canvas = new Sk.builtin.func(function (id, w, h) {
     const cid = jsStr(Sk, id);
     registry.elements.push({
       type: "canvas",
@@ -111,7 +111,7 @@ export function buildAppKitExports(Sk, registry) {
     return pyNone(Sk);
   });
 
-  exp.draw_rect = new Sk.builtin.func(function (_self, canvasId, x, y, w, h, color) {
+  exp.draw_rect = new Sk.builtin.func(function (canvasId, x, y, w, h, color) {
     const cid = jsStr(Sk, canvasId);
     if (!registry.canvasOps[cid]) registry.canvasOps[cid] = [];
     registry.canvasOps[cid].push({
@@ -125,7 +125,7 @@ export function buildAppKitExports(Sk, registry) {
     return pyNone(Sk);
   });
 
-  exp.draw_text = new Sk.builtin.func(function (_self, canvasId, x, y, text, color) {
+  exp.draw_text = new Sk.builtin.func(function (canvasId, x, y, text, color) {
     const cid = jsStr(Sk, canvasId);
     if (!registry.canvasOps[cid]) registry.canvasOps[cid] = [];
     registry.canvasOps[cid].push({
@@ -135,6 +135,12 @@ export function buildAppKitExports(Sk, registry) {
       text: jsStr(Sk, text),
       color: jsStr(Sk, color) || "#1e1b4b",
     });
+    return pyNone(Sk);
+  });
+
+  exp.clear_canvas = new Sk.builtin.func(function (canvasId) {
+    const cid = jsStr(Sk, canvasId);
+    registry.canvasOps[cid] = [];
     return pyNone(Sk);
   });
 
