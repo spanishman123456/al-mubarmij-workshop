@@ -56,6 +56,7 @@ export default function PythonLab() {
   const [out, setOut] = useState("");
   const [feedback, setFeedback] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
   const [stepHintLevel, setStepHintLevel] = useState(0);
   const [stepCheckResult, setStepCheckResult] = useState(null);
   const [stepCheckAttempts, setStepCheckAttempts] = useState(0);

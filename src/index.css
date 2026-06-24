@@ -790,6 +790,142 @@ body {
   }
 }
 
+/* ─── micro:bit — تباين ثابت (WCAG AA) على خلفية edu-card البيضاء ─── */
+.microbit-card .microbit-topic-box {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: #1e1b4b;
+}
+
+.microbit-card .microbit-topic-box strong,
+.microbit-card .microbit-topic-box .microbit-label {
+  color: #312e81;
+  font-weight: 700;
+}
+
+.microbit-card .microbit-flash-steps {
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  color: #3b0764;
+}
+
+.microbit-card .microbit-flash-steps .microbit-section-title {
+  color: #4c1d95;
+  font-weight: 700;
+}
+
+.microbit-card .microbit-flash-steps ol {
+  color: #5b21b6;
+}
+
+.microbit-card .microbit-section-label {
+  color: #334155;
+  font-weight: 700;
+}
+
+.microbit-card .microbit-body-text {
+  color: #334155;
+}
+
+.microbit-card .microbit-info-emerald {
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #064e3b;
+}
+
+.microbit-card .microbit-info-emerald .microbit-section-title {
+  color: #047857;
+}
+
+.microbit-card .microbit-info-violet {
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+  color: #4c1d95;
+}
+
+.microbit-card .microbit-info-violet .microbit-section-title {
+  color: #5b21b6;
+}
+
+.microbit-card .microbit-quiz-box {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #78350f;
+}
+
+.microbit-card .microbit-quiz-box .microbit-section-title {
+  color: #92400e;
+}
+
+.microbit-card .microbit-quiz-box label span {
+  color: #451a03;
+}
+
+.microbit-card .microbit-solution-warn {
+  background: #fff1f2;
+  border: 1px solid #fda4af;
+  color: #881337;
+}
+
+.microbit-card .microbit-solution-code {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+.microbit-card .microbit-reflection {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.microbit-card .microbit-export-ok {
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+}
+
+.microbit-card .microbit-export-err {
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  color: #78350f;
+}
+
+.microbit-card .microbit-day-link {
+  background: #f1f5f9;
+  color: #5b21b6;
+  border: 1px solid #e2e8f0;
+}
+
+.microbit-card .microbit-day-link:hover,
+.microbit-card .microbit-day-link:focus-visible {
+  background: #ede9fe;
+  color: #4c1d95;
+  border-color: #c4b5fd;
+}
+
+.microbit-card .microbit-related-link {
+  background: #ecfeff;
+  color: #0e7490;
+  border: 1px solid #a5f3fc;
+}
+
+.microbit-card .microbit-related-link:hover,
+.microbit-card .microbit-related-link:focus-visible {
+  background: #cffafe;
+  color: #155e75;
+}
+
+.microbit-card .edu-btn-primary:disabled,
+.microbit-card .edu-btn-outline:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 @media (prefers-reduced-motion: reduce) {
   button:not(:disabled):hover,
   a.edu-btn:hover,
