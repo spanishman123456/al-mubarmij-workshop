@@ -318,6 +318,50 @@ export function PlatformProvider({ children }) {
     [persist, user],
   );
 
+  const saveMicrobitProgress = useCallback(
+    (projectId, patch) => {
+      if (!user || user.role !== "student") return;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const existing = current.microbitProjects?.[projectId] || {
+          status: "not_started",
+          studentCode: "",
+          quizScore: null,
+        };
+        let analytics = getStudentAnalytics(prev, user.id);
+        if (patch.status === "completed") {
+          analytics = recordActivityComplete(analytics, `microbit-${projectId}`);
+        } else if (patch.status === "in_progress") {
+          analytics = recordActivityStart(analytics);
+        }
+        const nextEntry = {
+          ...existing,
+          ...patch,
+          updatedAt: new Date().toISOString(),
+        };
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: {
+              ...current,
+              microbitProjects: {
+                ...(current.microbitProjects || {}),
+                [projectId]: nextEntry,
+              },
+              updatedAt: new Date().toISOString(),
+            },
+          },
+          analyticsByStudent: {
+            ...prev.analyticsByStudent,
+            [user.id]: analytics,
+          },
+        };
+      });
+    },
+    [persist, user],
+  );
+
   const savePythonSnippet = useCallback(
     (title, code) => {
       if (!user || user.role !== "student") return;
@@ -432,6 +476,7 @@ export function PlatformProvider({ children }) {
       saveWorksheetAnswers,
       saveQuizResult,
       saveDrillResult,
+      saveMicrobitProgress,
       savePythonSnippet,
       saveProject,
       teacherUpdateStudent,
@@ -458,6 +503,7 @@ export function PlatformProvider({ children }) {
       saveWorksheetAnswers,
       saveQuizResult,
       saveDrillResult,
+      saveMicrobitProgress,
       savePythonSnippet,
       saveProject,
       teacherUpdateStudent,

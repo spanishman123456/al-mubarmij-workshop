@@ -13,7 +13,7 @@ const QUICK_LINKS = [
   { to: "/quizzes", title: "الاختبارات", desc: "قبلي، قصير، وبعدي" },
   { to: "/simulations", title: "المحاكاة", desc: "معمل تفاعلي للمفاهيم" },
   { to: "/projects", title: "المشروع النهائي", desc: "مخرج الأسبوع الثالث" },
-  { to: "/microbit", title: "مشاريع micro:bit", desc: "وحدة إثرائية تطبيقية" },
+  { to: "/microbit", title: "مشاريع micro:bit", desc: "تطبيق المنهج على micro:bit" },
 ];
 
 function formatDate(iso) {
@@ -134,6 +134,7 @@ export default function StudentDashboard() {
           <Stat label="التقويم البعدي" value={post != null ? `${post}%` : "لم يُجرَ"} />
           <Stat label="نمو الأداء" value={growth != null ? (growth >= 0 ? `+${growth}%` : `${growth}%`) : "—"} />
           <Stat label="المشروع النهائي" value={myProgress.project?.status ?? "لم يبدأ"} />
+          <Stat label="مشاريع micro:bit" value={`${myStats?.microbitDone ?? 0} / 9`} />
           <Stat label="عدد الدخول" value={myAnalytics.loginCount ?? 0} />
         </div>
       </EduCard>

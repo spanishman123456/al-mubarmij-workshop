@@ -13,6 +13,7 @@ function defaultProgressForStudent(studentId) {
     worksheetAnswers: {},
     quizScores: {},
     drillResults: {},
+    microbitProjects: {},
     preTest: null,
     postTest: null,
     pythonSnippets: [],
@@ -124,12 +125,16 @@ export function computeProgressStats(progress) {
   const worksheetsDone = worksheets.filter((s) => s === "completed").length;
   const quizCount = Object.keys(progress.quizScores || {}).length;
   const drillsDone = Object.values(progress.drillResults || {}).filter((d) => d?.completed).length;
+  const microbitDone = Object.values(progress.microbitProjects || {}).filter(
+    (p) => p?.status === "completed",
+  ).length;
   const percent = Math.round(
-    ((completedDays / totalDays) * 0.4 +
+    ((completedDays / totalDays) * 0.35 +
       (worksheetsDone / Math.max(worksheets.length, 1)) * 0.2 +
       (quizCount / 5) * 0.15 +
       (drillsDone / 10) * 0.1 +
-      (progress.project?.status === "submitted" || progress.project?.status === "reviewed" ? 0.15 : 0)) *
+      (microbitDone / 9) * 0.1 +
+      (progress.project?.status === "submitted" || progress.project?.status === "reviewed" ? 0.1 : 0)) *
       100,
   );
   return {
@@ -139,6 +144,7 @@ export function computeProgressStats(progress) {
     worksheetsDone,
     quizCount,
     drillsDone,
+    microbitDone,
     overallPercent: Math.min(100, percent),
     preTest: progress.preTest,
     postTest: progress.postTest,

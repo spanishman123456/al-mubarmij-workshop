@@ -1,72 +1,93 @@
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { MawhibaBrand } from "../components/branding/MawhibaBrand";
-import { MICROBIT_PROJECTS } from "../data/microbitProjects";
+import { MicrobitProjectCard } from "../components/microbit/MicrobitProjectCard";
+import { MICROBIT_CATEGORIES, getProjectsByCategory } from "../data/microbitProjects";
+import { usePlatform } from "../context/PlatformContext";
 
 export default function MicrobitPage() {
+  const { user, myProgress, saveMicrobitProgress } = usePlatform();
+  const [category, setCategory] = useState("all");
+
+  const projects = useMemo(() => getProjectsByCategory(category), [category]);
+  const microbitData = myProgress?.microbitProjects || {};
+
+  const completedCount = Object.values(microbitData).filter((p) => p?.status === "completed").length;
+  const totalCount = 9;
+
+  function handleSave(projectId, patch) {
+    saveMicrobitProgress(projectId, patch);
+  }
+
   return (
     <PageShell
-      title="مشاريع micro:bit الإثرائية"
-      subtitle="أفكار مشاريع قابلة للتنفيذ بـ Python/MicroPython — للطلاب المتقدمين في وحدة برمجة الحاسب"
-      badge="وحدة إثرائية — موهبة"
+      title="مشاريع micro:bit المرتبطة بالمنهج"
+      subtitle="تطبيق عملي لمفاهيم برمجة الحاسب — أنظمة العد، بايثون، الخوارزميات، التشفير، المنطق، والمتتاليات"
+      badge="وحدة إثرائية — مرتبطة بملف PDF"
     >
-      <EduCard className="mb-8 flex flex-wrap items-center justify-center gap-6" accent="violet">
-        <MawhibaBrand variant="vertical" />
+      <EduCard className="mb-6 flex flex-wrap items-center justify-between gap-4" accent="violet">
+        <MawhibaBrand variant="horizontal" />
+        {user?.role === "student" ? (
+          <div className="text-center sm:text-right">
+            <p className="text-sm font-bold text-slate-800">تقدمك في مشاريع micro:bit</p>
+            <p className="text-2xl font-extrabold text-violet-700">
+              {completedCount} / {totalCount} مكتمل
+            </p>
+          </div>
+        ) : null}
       </EduCard>
 
-      <EduCard accent="amber" title="ما هي micro:bit؟">
+      <EduCard accent="amber" title="لماذا micro:bit في منهج برمجة الحاسب؟">
         <p className="edu-text mt-2">
-          لوحة تعليمية صغيرة تحتوي أزرارًا، حساسات، وشبكة LED — مثالية لربط البرمجة بالعالم الحقيقي
-          بعد إتقان أساسيات بايثون في المنصة.
+          كل مشروع أدناه مربوط بموضوع علمي من مقرر «برمجة الحاسب»: ليس مجرد أفكار عامة، بل امتداد لما
+          درسته في المسار الدراسي، المحاكاة، وأوراق العمل. ابدأ بالدرس المرتبط، ثم نفّذ المشروع على
+          micro:bit، ثم اختبر فهمك داخل المنصة.
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link to="/path" className="edu-btn edu-btn-outline text-sm">
+            المسار الدراسي
+          </Link>
+          <Link to="/simulations" className="edu-btn edu-btn-outline text-sm">
+            معمل المحاكاة
+          </Link>
+          <Link to="/projects" className="edu-btn edu-btn-outline text-sm">
+            المشروع النهائي
+          </Link>
+        </div>
       </EduCard>
 
-      <div className="mt-8 space-y-6">
-        {MICROBIT_PROJECTS.map((p) => (
-          <EduCard key={p.id} accent="cyan">
-            <h2 className="edu-card-title text-lg">{p.title}</h2>
-            <p className="edu-card-subtitle mt-1">{p.idea}</p>
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-bold text-slate-500">الأدوات</p>
-                <ul className="mt-1 list-inside list-disc text-sm text-slate-700">
-                  {p.tools.map((t) => (
-                    <li key={t}>{t}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-500">خطوات التنفيذ</p>
-                <ol className="mt-1 list-inside list-decimal text-sm text-slate-700">
-                  {p.steps.map((s, i) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-
-            <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <summary className="cursor-pointer text-sm font-bold text-slate-800">الكود المقترح</summary>
-              <pre className="code-editor mt-3 text-xs">{p.code}</pre>
-            </details>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
-              <div className="rounded-lg bg-emerald-50 p-3">
-                <p className="font-bold text-emerald-900">الاختبار</p>
-                <p className="mt-1 text-emerald-800">{p.test}</p>
-              </div>
-              <div className="rounded-lg bg-violet-50 p-3">
-                <p className="font-bold text-violet-900">تطوير لمستوى أعلى</p>
-                <p className="mt-1 text-violet-800">{p.extend}</p>
-              </div>
-            </div>
-          </EduCard>
+      <nav className="sim-nav no-print mt-8" aria-label="تصنيف المشاريع">
+        {MICROBIT_CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            className={`sim-nav-btn ${category === cat.id ? "sim-nav-btn--active" : ""}`}
+            onClick={() => setCategory(cat.id)}
+          >
+            <span className="ml-1">{cat.icon}</span>
+            {cat.label}
+          </button>
         ))}
+      </nav>
+
+      <div className="mt-8 space-y-8">
+        {projects.length ? (
+          projects.map((p) => (
+            <MicrobitProjectCard
+              key={p.id}
+              project={p}
+              progress={microbitData[p.id]}
+              onSave={handleSave}
+            />
+          ))
+        ) : (
+          <EduCard className="text-center text-slate-600">لا توجد مشاريع في هذا التصنيف.</EduCard>
+        )}
       </div>
 
-      <Link to="/projects" className="mt-8 inline-block font-semibold text-violet-700 hover:underline">
-        ← العودة لصفحة المشروعات
+      <Link to="/student" className="mt-8 inline-block font-semibold text-violet-700 hover:underline">
+        ← العودة للوحة الطالب
       </Link>
     </PageShell>
   );
