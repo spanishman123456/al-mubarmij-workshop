@@ -149,6 +149,7 @@ export function TeacherGraphicProjects({ students, onUpdate }) {
               title={project.title}
               code={project.code}
               mode="app"
+              templateId={project.templateId || null}
               authorName={student.nameAr}
               variant="light"
               compact

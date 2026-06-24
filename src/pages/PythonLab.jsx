@@ -522,6 +522,7 @@ export default function PythonLab() {
                   title={projectTitle.trim() || appTemplate.titleAr}
                   code={code}
                   mode="app"
+                  templateId={activeAppId}
                   authorName={user?.nameAr}
                   variant="dark"
                 />

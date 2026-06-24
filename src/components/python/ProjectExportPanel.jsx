@@ -8,13 +8,32 @@ import {
 } from "../../lib/projectExport";
 
 const EXPORT_ACTIONS = [
-  { id: "zip", label: "تصدير ZIP", sub: "الكود + README + Web App + بناء EXE", fn: exportProjectZip, capKey: "zip" },
-  { id: "exe", label: "تصدير EXE (Windows)", sub: "حزمة PyInstaller — يُبنى على Windows", fn: exportWindowsExeKit, capKey: "exe" },
+  { id: "zip", label: "تصدير ZIP", sub: "الحل المضمون — كود + تشغيل + Web App", fn: exportProjectZip, capKey: "zip" },
+  {
+    id: "exe",
+    label: "حزمة بناء EXE",
+    sub: "build_windows.bat → project_runner.exe",
+    fn: exportWindowsExeKit,
+    capKey: "exe",
+  },
   { id: "web", label: "تصدير Web App", sub: "ملف HTML للمتصفح", fn: exportWebAppHtml, capKey: "webApp" },
   { id: "pwa", label: "تصدير PWA", sub: "حزمة للجوال والتابلت", fn: exportPwaZip, capKey: "pwa" },
 ];
 
-export function ProjectExportPanel({ title, code, mode, authorName, variant = "dark", compact = false }) {
+function exportPayload(props) {
+  const { title, code, mode, authorName, templateId } = props;
+  return { title, code, mode, authorName, templateId };
+}
+
+export function ProjectExportPanel({
+  title,
+  code,
+  mode,
+  authorName,
+  templateId = null,
+  variant = "dark",
+  compact = false,
+}) {
   const [busy, setBusy] = useState(null);
   const [toast, setToast] = useState(null);
 
@@ -28,15 +47,26 @@ export function ProjectExportPanel({ title, code, mode, authorName, variant = "d
   async function handleExport(action) {
     const cap = caps[action.capKey];
     if (!cap?.ok) {
-      showToast({ ok: false, message: cap?.message || "التصدير غير متاح لهذا المشروع." });
+      showToast({
+        ok: false,
+        message:
+          action.id === "exe"
+            ? `${cap?.message || "تعذر إنشاء حزمة EXE."} جرّب تصدير ZIP أو Web App.`
+            : cap?.message || "التصدير غير متاح لهذا المشروع.",
+        note: action.id === "exe" ? "للمشاريع غير المدعومة، ZIP هو البديل الموصى به." : undefined,
+      });
       return;
     }
     setBusy(action.id);
     try {
-      const result = action.fn({ title, code, mode, authorName });
+      const result = action.fn(exportPayload({ title, code, mode, authorName, templateId }));
       showToast(result);
     } catch (e) {
-      showToast({ ok: false, message: e?.message || "فشل التصدير — حاول مجددًا." });
+      showToast({
+        ok: false,
+        message: "تعذر إنشاء ملف التصدير. يرجى مراجعة الكود أو استخدام خيار ZIP.",
+        note: e?.message || undefined,
+      });
     } finally {
       setBusy(null);
     }
@@ -107,7 +137,8 @@ export function ProjectExportPanel({ title, code, mode, authorName, variant = "d
 
       <div className={`mt-3 rounded-lg p-2 text-xs ${isDark ? "bg-black/30 text-slate-400" : "bg-white text-slate-500"}`}>
         <p>📱 <strong>الجوال:</strong> استخدم Web App أو PWA — ملف exe لا يعمل على Android/iOS.</p>
-        <p className="mt-1">🖥️ <strong>Windows:</strong> حمّل حزمة EXE وشغّل <span dir="ltr">build_windows.bat</span></p>
+        <p className="mt-1">🖥️ <strong>Windows:</strong> حمّل ZIP → شغّل <span dir="ltr">build_windows.bat</span> → الناتج <span dir="ltr">project_runner.exe</span></p>
+        <p className="mt-1 opacity-90">أسماء الملفات التنفيذية إنجليزية دائمًا لتجنب أخطاء CMD مع الأسماء العربية.</p>
         <p className="mt-1 opacity-80">📦 APK: {caps.apk.message}</p>
       </div>
 

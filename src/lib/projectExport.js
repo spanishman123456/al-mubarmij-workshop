@@ -1,6 +1,7 @@
 import { zipSync, strToU8 } from "fflate";
 import { validatePythonCode } from "./pyAppKit.js";
 import { APPKIT_DESKTOP_PY } from "./templates/appkitDesktopPy.js";
+import { EXE_BINARY_NAME, safeExportSlug, buildProjectMeta } from "./exportSlugs.js";
 import {
   buildWebAppHtml,
   buildPwaManifest,
@@ -22,14 +23,7 @@ const EXE_BLOCKERS = [
   /import\s+django\b/i,
 ];
 
-export function slugifyTitle(title) {
-  const base = (title || "project")
-    .trim()
-    .replace(/[^\w\u0600-\u06FF\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .slice(0, 40);
-  return base || "project";
-}
+export { safeExportSlug, EXE_BINARY_NAME };
 
 export function usesAppkit(code) {
   return /import\s+appkit\b/.test(code);
@@ -42,34 +36,36 @@ export function analyzeExportCapabilities(code, mode = "app") {
     ? security
     : EXE_BLOCKERS.find((re) => re.test(code))
       ? "المشروع يستخدم مكتبة غير مدعومة في حزمة Windows الحالية."
-      : null;
+      : !isApp
+        ? "التصدير كـ EXE متاح للمشاريع الرسومية (appkit) فقط. استخدم ZIP أو Web App."
+        : null;
 
   return {
     zip: {
       ok: true,
-      message: "متاح دائمًا — يحتوي الكود وملفات التشغيل والتعليمات.",
+      message: "متاح دائمًا — كود + README + Web App + سكربتات بناء آمنة.",
     },
     webApp: {
       ok: true,
       message: isApp
-        ? "صفحة HTML تعمل في المتصفح — مناسبة للجوال والتابلت."
+        ? "صفحة HTML للمتصفح — مناسبة للجوال والتابلت."
         : "صفحة HTML لتشغيل الكود النصي في المتصفح.",
     },
     pwa: {
       ok: true,
-      message: "حزمة Web App مع manifest — يمكن إضافتها لشاشة الجوال الرئيسية.",
+      message: "حزمة Web App مع manifest — أضفها لشاشة الجوال.",
     },
     exe: {
       ok: !exeBlockedReason,
       message: exeBlockedReason
         ? exeBlockedReason
-        : "حزمة بناء EXE لنظام Windows — شغّل build_windows.bat على جهاز Windows.",
-      note: "ملف .exe لا يُنشأ داخل المتصفح مباشرة؛ يُبنى محليًا عبر PyInstaller.",
+        : `حزمة بناء Windows — شغّل build_windows.bat ثم افتح dist\\${EXE_BINARY_NAME}.exe`,
+      note: "ملف EXE الحقيقي يُنشأ على Windows عبر PyInstaller. اسم الملف الإنجليزي: project_runner.exe",
     },
     apk: {
       ok: false,
       future: true,
-      message: "تصدير APK مخطط للإصدارات القادمة — استخدم Web App / PWA حاليًا.",
+      message: "تصدير APK مخطط لاحقًا — استخدم Web App / PWA حاليًا.",
     },
   };
 }
@@ -84,34 +80,37 @@ export function downloadBytes(bytes, filename, mime = "application/octet-stream"
   URL.revokeObjectURL(url);
 }
 
-function buildReadme({ title, mode, authorName, slug }) {
+function buildReadme({ title, mode, authorName, safeSlug }) {
   const isApp = mode === "app";
   return `# ${title || "مشروع برمجة الحاسب"}
 
 مشروع طالب — منصة برمجة الحاسب (موهبة)
 
 ${authorName ? `**الطالب:** ${authorName}\n` : ""}
-**النوع:** ${isApp ? "مشروع رسومي (appkit)" : "برنامج نصي (Console)"}
+**معرّف التصدير (إنجليزي):** \`${safeSlug}\`
+**النوع:** ${isApp ? "مشروع رسومي (appkit → Tkinter)" : "برنامج نصي (Console)"}
 
-## التشغيل السريع (Python)
-
-\`\`\`bash
-python main.py
-\`\`\`
-
-${isApp ? "يتطلب ملف `appkit.py` المرفق (واجهة Tkinter).\n" : ""}
-
-## بناء ملف Windows (.exe)
-
-> **ملاحظة:** ملف exe يعمل على **Windows فقط** — للجوال استخدم مجلد webapp أو ملف HTML.
+## التشغيل السريع بدون بناء EXE
 
 1. ثبّت Python 3.10+ من https://python.org
-2. افتح موجه الأوامر في هذا المجلد
-3. شغّل:
+2. انقر مرتين على **run_with_python.bat**
+   أو من موجه الأوامر:
+   \`\`\`bash
+   python main.py
    \`\`\`
-   build_windows.bat
-   \`\`\`
-4. ستجد الملف في مجلد \`dist/${slug}.exe\`
+
+${isApp ? "يتطلب ملف `appkit.py` المرفق (واجهة Tkinter على سطح المكتب).\n" : ""}
+
+## بناء ملف Windows (.exe) — واجهة رسومية مستقلة
+
+> ملف exe يعمل على **Windows فقط**. للجوال استخدم مجلد **webapp/**.
+
+1. ثبّت Python 3.10+ (فعّل "Add to PATH")
+2. انقر مرتين على **build_windows.bat** (نص إنجليزي فقط — متوافق مع CMD)
+3. بعد النجاح شغّل **launch_app.bat** أو افتح:
+   \`dist/${EXE_BINARY_NAME}.exe\`
+
+> **مهم:** اسم الملف التنفيذي دائمًا \`${EXE_BINARY_NAME}.exe\` (إنجليزي) لتجنب مشاكل الأحرف العربية في CMD.
 
 ## المتطلبات
 
@@ -121,9 +120,8 @@ pip install -r requirements.txt
 
 ## Web App / الجوال
 
-- افتح \`webapp/index.html\` في المتصفح
-- أو شغّل خادمًا محليًا: \`python -m http.server 8080\`
-- على الجوال: أضف الصفحة إلى الشاشة الرئيسية
+- افتح \`webapp/index.html\` في المتصفح (يفضّل: \`python -m http.server 8080\`)
+- أو استخدم ملف HTML المُصدَّر من المختبر مباشرة
 
 ## Android APK (مستقبلي)
 
@@ -135,73 +133,150 @@ pip install -r requirements.txt
 }
 
 function buildRequirements(isApp) {
-  const lines = ["# متطلبات مشروع برمجة الحاسب", "pyinstaller>=6.0"];
-  if (isApp) lines.push("# appkit مدمج محليًا — لا حاجة لتثبيت إضافي");
+  const lines = ["# Mubarmij project requirements", "pyinstaller>=6.0"];
+  if (isApp) lines.push("# appkit.py is bundled locally");
   return lines.join("\n") + "\n";
 }
 
-function buildWindowsBat(slug) {
+/** ملفات BAT — ASCII فقط — لا تضع نصًا عربيًا هنا أبدًا */
+function buildWindowsBat() {
   return `@echo off
-chcp 65001 >nul
+setlocal EnableExtensions
+cd /d "%~dp0"
 echo ========================================
-echo  بناء ملف EXE — برمجة الحاسب
-echo  المشروع: ${slug}
+echo  Mubarmij - Build Windows EXE
+echo  Output: dist\\${EXE_BINARY_NAME}.exe
 echo ========================================
 python --version >nul 2>&1
 if errorlevel 1 (
-  echo خطأ: Python غير مثبت. ثبّته من https://python.org
+  echo ERROR: Python not found. Install from https://python.org
+  echo Enable "Add Python to PATH" during install.
   pause
   exit /b 1
 )
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python build_windows.py
-if exist "dist\\${slug}.exe" (
+if exist "dist\\${EXE_BINARY_NAME}.exe" (
   echo.
-  echo نجح البناء! الملف: dist\\${slug}.exe
+  echo SUCCESS: dist\\${EXE_BINARY_NAME}.exe
+  echo Run launch_app.bat to start the app.
 ) else (
   echo.
-  echo لم يُعثر على الملف — راجع رسائل الخطأ أعلاه.
+  echo BUILD FAILED. Read the error messages above.
+  echo You can still run: run_with_python.bat
 )
 pause
 `;
 }
 
-function buildWindowsPy(slug, isApp, windowed) {
-  const args = ["main.py", "--onefile", "--name", slug, "--clean", "--noconfirm"];
-  if (windowed) args.push("--windowed");
-  else args.push("--console");
-  if (isApp) args.push("--hidden-import", "tkinter");
+function buildLaunchAppBat() {
+  return `@echo off
+setlocal EnableExtensions
+cd /d "%~dp0"
+if exist "dist\\${EXE_BINARY_NAME}.exe" (
+  start "" "dist\\${EXE_BINARY_NAME}.exe"
+) else (
+  echo EXE not built yet. Run build_windows.bat first.
+  echo Or use run_with_python.bat to test with Python.
+  pause
+)
+`;
+}
+
+function buildRunWithPythonBat() {
+  return `@echo off
+setlocal EnableExtensions
+cd /d "%~dp0"
+python --version >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: Python not found.
+  pause
+  exit /b 1
+)
+python main.py
+pause
+`;
+}
+
+function buildWindowsPy(isApp) {
+  const windowed = isApp;
+  const args = [
+    "main.py",
+    "--onefile",
+    "--name",
+    EXE_BINARY_NAME,
+    "--clean",
+    "--noconfirm",
+    windowed ? "--windowed" : "--console",
+    "--hidden-import",
+    "tkinter",
+    "--hidden-import",
+    "tkinter.ttk",
+  ];
   return `# -*- coding: utf-8 -*-
-"""سكربت PyInstaller — يُنشئ dist/${slug}.exe"""
+"""Build ${EXE_BINARY_NAME}.exe with PyInstaller (run via build_windows.bat)"""
+import os
 import PyInstaller.__main__
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 PyInstaller.__main__.run(${JSON.stringify(args)})
 `;
 }
 
-function zipProjectFiles({ title, code, mode, authorName, includeWebApp = true, includeExeKit = true }) {
-  const slug = slugifyTitle(title);
+function buildExeReadmeTxt(title) {
+  return [
+    "Mubarmij - Windows EXE build kit",
+    "================================",
+    "",
+    `Project title (display): ${title || "Mubarmij Project"}`,
+    `EXE file name (always): ${EXE_BINARY_NAME}.exe`,
+    "",
+    "Steps:",
+    "1. Install Python 3.10+ with PATH enabled",
+    "2. Double-click build_windows.bat",
+    "3. Double-click launch_app.bat",
+    "",
+    "If build fails, use run_with_python.bat or webapp/index.html",
+    "",
+  ].join("\r\n");
+}
+
+function zipProjectFiles({
+  title,
+  code,
+  mode,
+  authorName,
+  templateId,
+  includeWebApp = true,
+  includeExeKit = true,
+}) {
+  const safeSlug = safeExportSlug(title, templateId);
   const isApp = mode === "app" || usesAppkit(code);
-  const windowed = isApp;
-  const prefix = slug;
+  const prefix = safeSlug;
   const files = {};
 
   files[`${prefix}/main.py`] = strToU8(code);
-  files[`${prefix}/README.md`] = strToU8(buildReadme({ title, mode: isApp ? "app" : "console", authorName, slug }));
+  files[`${prefix}/project_meta.json`] = strToU8(
+    buildProjectMeta({ title, templateId, safeSlug, mode: isApp ? "app" : "console", authorName }),
+  );
+  files[`${prefix}/README.md`] = strToU8(
+    buildReadme({ title, mode: isApp ? "app" : "console", authorName, safeSlug }),
+  );
   files[`${prefix}/requirements.txt`] = strToU8(buildRequirements(isApp));
   files[`${prefix}/ANDROID_FUTURE.md`] = strToU8(ANDROID_FUTURE_README);
+  files[`${prefix}/run_with_python.bat`] = strToU8(buildRunWithPythonBat());
 
   if (isApp) {
     files[`${prefix}/appkit.py`] = strToU8(APPKIT_DESKTOP_PY);
   }
 
-  if (includeExeKit) {
-    files[`${prefix}/build_windows.bat`] = strToU8(buildWindowsBat(slug));
-    files[`${prefix}/build_windows.py`] = strToU8(buildWindowsPy(slug, isApp, windowed));
-    files[`${prefix}/EXE_README.txt`] = strToU8(
-      `بناء ملف EXE لنظام Windows فقط\r\n\r\n1. افتح build_windows.bat\r\n2. انتظر حتى ينتهي البناء\r\n3. شغّل dist\\${slug}.exe\r\n\r\nللجوال: استخدم مجلد webapp\r\n`,
-    );
+  if (includeExeKit && isApp) {
+    files[`${prefix}/build_windows.bat`] = strToU8(buildWindowsBat());
+    files[`${prefix}/build_windows.py`] = strToU8(buildWindowsPy(isApp));
+    files[`${prefix}/launch_app.bat`] = strToU8(buildLaunchAppBat());
+    files[`${prefix}/EXE_README.txt`] = strToU8(buildExeReadmeTxt(title));
   }
 
   if (includeWebApp) {
@@ -210,74 +285,89 @@ function zipProjectFiles({ title, code, mode, authorName, includeWebApp = true, 
     files[`${prefix}/webapp/manifest.webmanifest`] = strToU8(buildPwaManifest({ title }));
     files[`${prefix}/webapp/sw.js`] = strToU8(buildServiceWorker());
     files[`${prefix}/webapp/README.txt`] = strToU8(
-      "افتح index.html في المتصفح.\r\nللتجربة الكاملة: python -m http.server 8080\r\nثم افتح http://localhost:8080/webapp/\r\n",
+      "Open index.html in a browser.\r\nRecommended: python -m http.server 8080\r\n",
     );
   }
 
-  return { slug, bytes: zipSync(files), isApp };
+  return { safeSlug, bytes: zipSync(files), isApp };
 }
 
-export function exportProjectZip({ title, code, mode, authorName }) {
+export function exportProjectZip({ title, code, mode, authorName, templateId }) {
   const caps = analyzeExportCapabilities(code, mode);
   if (!caps.zip.ok) return { ok: false, message: caps.zip.message };
-  const { slug, bytes } = zipProjectFiles({ title, code, mode, authorName, includeWebApp: true, includeExeKit: true });
-  downloadBytes(bytes, `${slug}-project.zip`, "application/zip");
+  const { safeSlug, bytes } = zipProjectFiles({
+    title,
+    code,
+    mode,
+    authorName,
+    templateId,
+    includeWebApp: true,
+    includeExeKit: true,
+  });
+  downloadBytes(bytes, `${safeSlug}-project.zip`, "application/zip");
   return {
     ok: true,
-    message: `تم تحميل ${slug}-project.zip — يحتوي الكود وREADME وWeb App وحزمة بناء EXE.`,
+    message: `تم تحميل ${safeSlug}-project.zip — افتح run_with_python.bat أو build_windows.bat داخل المجلد.`,
+    note: `اسم المشروع العربي محفوظ في README — الملفات الداخلية باسم إنجليزي: ${safeSlug}`,
   };
 }
 
-export function exportWindowsExeKit({ title, code, mode, authorName }) {
+export function exportWindowsExeKit({ title, code, mode, authorName, templateId }) {
   const caps = analyzeExportCapabilities(code, mode);
   if (!caps.exe.ok) {
-    return { ok: false, message: caps.exe.message, note: caps.exe.note };
+    return {
+      ok: false,
+      message: caps.exe.message,
+      note: "استخدم تصدير ZIP أو Web App كبديل موثوق.",
+    };
   }
-  const slug = slugifyTitle(title);
+  const safeSlug = safeExportSlug(title, templateId);
   const isApp = mode === "app" || usesAppkit(code);
-  const windowed = isApp;
-  const prefix = `${slug}-windows-build`;
+  const prefix = `${safeSlug}-windows-build`;
   const files = {};
   files[`${prefix}/main.py`] = strToU8(code);
+  files[`${prefix}/project_meta.json`] = strToU8(
+    buildProjectMeta({ title, templateId, safeSlug, mode: "app", authorName }),
+  );
   if (isApp) files[`${prefix}/appkit.py`] = strToU8(APPKIT_DESKTOP_PY);
   files[`${prefix}/requirements.txt`] = strToU8(buildRequirements(isApp));
-  files[`${prefix}/build_windows.bat`] = strToU8(buildWindowsBat(slug));
-  files[`${prefix}/build_windows.py`] = strToU8(buildWindowsPy(slug, isApp, windowed));
-  files[`${prefix}/README.txt`] = strToU8(
-    `حزمة بناء EXE — Windows فقط\r\n\r\nشغّل build_windows.bat\r\nالناتج: dist\\${slug}.exe\r\n\r\n${caps.exe.note}\r\n`,
-  );
-  downloadBytes(zipSync(files), `${slug}-windows-build.zip`, "application/zip");
+  files[`${prefix}/build_windows.bat`] = strToU8(buildWindowsBat());
+  files[`${prefix}/build_windows.py`] = strToU8(buildWindowsPy(isApp));
+  files[`${prefix}/launch_app.bat`] = strToU8(buildLaunchAppBat());
+  files[`${prefix}/run_with_python.bat`] = strToU8(buildRunWithPythonBat());
+  files[`${prefix}/README.txt`] = strToU8(buildExeReadmeTxt(title));
+  downloadBytes(zipSync(files), `${safeSlug}-windows-build.zip`, "application/zip");
   return {
     ok: true,
-    message: `تم تحميل حزمة بناء EXE. افتح build_windows.bat على Windows لإنشاء ${slug}.exe`,
+    message: `تم تحميل حزمة البناء. شغّل build_windows.bat ثم launch_app.bat — الناتج: ${EXE_BINARY_NAME}.exe`,
     note: caps.exe.note,
   };
 }
 
-export function exportWebAppHtml({ title, code, mode }) {
+export function exportWebAppHtml({ title, code, mode, templateId }) {
   const caps = analyzeExportCapabilities(code, mode);
   if (!caps.webApp.ok) return { ok: false, message: caps.webApp.message };
-  const slug = slugifyTitle(title);
+  const safeSlug = safeExportSlug(title, templateId);
   const html = buildWebAppHtml({ title, code, mode });
-  downloadBytes(strToU8(html), `${slug}.html`, "text/html;charset=utf-8");
+  downloadBytes(strToU8(html), `${safeSlug}.html`, "text/html;charset=utf-8");
   return {
     ok: true,
-    message: `تم تحميل ${slug}.html — افتحه في المتصفح (يفضّل عبر خادم محلي لتحميل Skulpt).`,
+    message: `تم تحميل ${safeSlug}.html — للتشغيل الكامل استخدم خادمًا محليًا مع إنترنت.`,
   };
 }
 
-export function exportPwaZip({ title, code, mode }) {
+export function exportPwaZip({ title, code, mode, templateId }) {
   const caps = analyzeExportCapabilities(code, mode);
   if (!caps.pwa.ok) return { ok: false, message: caps.pwa.message };
-  const slug = slugifyTitle(title);
+  const safeSlug = safeExportSlug(title, templateId);
   const isApp = mode === "app" || usesAppkit(code);
+  const webPrefix = `${safeSlug}-webapp`;
   const files = {};
-  const webPrefix = `${slug}-webapp`;
   files[`${webPrefix}/index.html`] = strToU8(buildWebAppHtml({ title, code, mode: isApp ? "app" : "console" }));
   files[`${webPrefix}/manifest.webmanifest`] = strToU8(buildPwaManifest({ title }));
   files[`${webPrefix}/sw.js`] = strToU8(buildServiceWorker());
   files[`${webPrefix}/README.txt`] = strToU8(
-    "Web App / PWA — برمجة الحاسب\r\n\r\n1. python -m http.server 8080\r\n2. افتح http://localhost:8080\r\n3. على الجوال: Add to Home Screen\r\n",
+    "Web App / PWA\r\n1. python -m http.server 8080\r\n2. open http://localhost:8080\r\n",
   );
   files[`${webPrefix}/ANDROID_FUTURE.md`] = strToU8(ANDROID_FUTURE_README);
 
@@ -288,9 +378,14 @@ export function exportPwaZip({ title, code, mode }) {
     /* optional */
   }
 
-  downloadBytes(zipSync(files), `${slug}-webapp.zip`, "application/zip");
+  downloadBytes(zipSync(files), `${safeSlug}-webapp.zip`, "application/zip");
   return {
     ok: true,
-    message: `تم تحميل ${slug}-webapp.zip — مناسب للجوال والتابلت (PWA).`,
+    message: `تم تحميل ${safeSlug}-webapp.zip — مناسب للجوال والتابلت.`,
   };
+}
+
+// Legacy alias
+export function slugifyTitle(title, templateId) {
+  return safeExportSlug(title, templateId);
 }
