@@ -1,8 +1,4 @@
-# Render Blueprint — Static SPA + Node API (two services)
-# https://render.com/docs/blueprint-spec
-#
-# The static site keeps the public URL and rewrites /api/* to the API service.
-# This avoids Blueprint sync failure from changing runtime on an existing static service.
+# Render Blueprint — Static SPA + Docker API
 services:
   - type: web
     name: al-mubarmij-workshop
@@ -12,21 +8,18 @@ services:
     routes:
       - type: rewrite
         source: /api/*
-        destination: https://al-mubarmij-workshop-api.onrender.com/api/*
+        destination: https://al-mubarmij-workshop-server.onrender.com/api/*
       - type: rewrite
         source: /*
         destination: /index.html
 
   - type: web
-    name: al-mubarmij-workshop-api
-    runtime: node
-    plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    name: al-mubarmij-workshop-server
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /api/health/live
     envVars:
-      - key: NODE_VERSION
-        value: "20.18.0"
       - key: NODE_ENV
         value: production
       - key: SESSION_SECRET
