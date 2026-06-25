@@ -11,18 +11,21 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [helpText, setHelpText] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (!authReady) return null;
 
-  function submitStudent(e) {
+  async function submitStudent(e) {
     e.preventDefault();
     setError("");
+    setHelpText("");
     setLoading(true);
-    const res = loginStudentByNationalId(nationalId);
+    const res = await loginStudentByNationalId(nationalId);
     setLoading(false);
     if (!res.ok) {
       setError(res.message);
+      if (res.helpAr) setHelpText(res.helpAr);
       return;
     }
     navigate("/student", { replace: true });
@@ -31,6 +34,7 @@ export default function LoginPage() {
   async function submitTeacher(e) {
     e.preventDefault();
     setError("");
+    setHelpText("");
     setLoading(true);
     const res = await loginTeacher(username, password);
     setLoading(false);
@@ -72,6 +76,7 @@ export default function LoginPage() {
               onClick={() => {
                 setTab("student");
                 setError("");
+                setHelpText("");
               }}
               className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
                 tab === "student" ? "bg-violet-700 text-white shadow" : "text-slate-600 hover:text-slate-900"
@@ -84,6 +89,7 @@ export default function LoginPage() {
               onClick={() => {
                 setTab("teacher");
                 setError("");
+                setHelpText("");
               }}
               className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
                 tab === "teacher" ? "bg-violet-700 text-white shadow" : "text-slate-600 hover:text-slate-900"
@@ -94,9 +100,10 @@ export default function LoginPage() {
           </div>
 
           {error ? (
-            <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700">
-              {error}
-            </p>
+            <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-center text-sm">
+              <p className="font-semibold text-red-700">{error}</p>
+              {helpText ? <p className="mt-2 text-red-600">{helpText}</p> : null}
+            </div>
           ) : null}
 
           {tab === "student" ? (
@@ -122,7 +129,7 @@ export default function LoginPage() {
                 {loading ? "جاري التحقق..." : "دخول"}
               </button>
               <p className="text-center text-xs text-slate-500">
-                يُسمح بالدخول فقط للطلاب المسجلين في النظام الرسمي
+                يُسمح بالدخول فقط للطلاب المسجلين في النظام الرسمي. جلسة واحدة نشطة لكل حساب.
               </p>
             </form>
           ) : (

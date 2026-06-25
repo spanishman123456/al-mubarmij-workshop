@@ -1,8 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { findTeacher } from "../data/demoUsers";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   findStudentByNationalId,
-  rosterStudentToUser,
   getAllRosterStudents,
 } from "../data/studentsRoster";
 import {
@@ -24,85 +22,135 @@ import {
 } from "../lib/platformAnalytics";
 import {
   loadValidatedPlatformState,
-  resolveSessionUser,
-  createSessionPatch,
-  clearSessionPatch,
   hardRedirectToLogin,
+  stripLegacySessionFields,
 } from "../lib/session";
+import {
+  fetchAuthMe,
+  heartbeatSession,
+  loginStudentApi,
+  loginTeacherApi,
+  logoutApi,
+} from "../lib/authApi";
 
 const PlatformContext = createContext(null);
 
 export function PlatformProvider({ children }) {
   const [state, setState] = useState(() => loadValidatedPlatformState());
+  const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
-
-  useEffect(() => {
-    setAuthReady(true);
-
-    function onPageShow(event) {
-      if (!event.persisted) return;
-      const fresh = loadValidatedPlatformState();
-      if (!fresh.sessionUserId) {
-        hardRedirectToLogin();
-        return;
-      }
-      setState(fresh);
-    }
-
-    window.addEventListener("pageshow", onPageShow);
-    return () => window.removeEventListener("pageshow", onPageShow);
-  }, []);
+  const [sessionInfo, setSessionInfo] = useState(null);
+  const bootstrapped = useRef(false);
 
   const persist = useCallback((updater) => {
     setState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      savePlatformState(next);
+      savePlatformState(stripLegacySessionFields(next));
       return next;
     });
   }, []);
 
-  const user = useMemo(
-    () => (state.sessionUserId ? resolveSessionUser(state.sessionUserId) : null),
-    [state.sessionUserId],
+  const applyServerUser = useCallback(
+    (serverUser, session = null, { recordLoginEvent = false } = {}) => {
+      setUser(serverUser);
+      setSessionInfo(session);
+      if (serverUser?.role === "student") {
+        persist((prev) => {
+          let next = ensureStudentRecords(prev, serverUser.id);
+          if (recordLoginEvent) {
+            const current = next.analyticsByStudent[serverUser.id];
+            next.analyticsByStudent = {
+              ...next.analyticsByStudent,
+              [serverUser.id]: recordLogin(current),
+            };
+          }
+          return next;
+        });
+      }
+    },
+    [persist],
   );
 
-  const sessionUserId = state.sessionUserId;
+  const refreshAuth = useCallback(async () => {
+    try {
+      const data = await fetchAuthMe();
+      if (data.user) {
+        applyServerUser(data.user, data.session);
+      } else {
+        setUser(null);
+        setSessionInfo(null);
+      }
+      return data.user;
+    } catch {
+      setUser(null);
+      setSessionInfo(null);
+      return null;
+    }
+  }, [applyServerUser]);
+
+  useEffect(() => {
+    if (bootstrapped.current) return;
+    bootstrapped.current = true;
+    refreshAuth().finally(() => setAuthReady(true));
+
+    function onPageShow(event) {
+      if (!event.persisted) return;
+      refreshAuth().then((u) => {
+        if (!u) hardRedirectToLogin();
+      });
+    }
+
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [refreshAuth]);
+
+  const sessionUserId = user?.id ?? null;
   const isStudentSession = Boolean(user?.role === "student");
 
   const loginTeacher = useCallback(
     async (username, password) => {
-      const found = await findTeacher(username, password);
-      if (!found) return { ok: false, message: "بيانات الدخول غير صحيحة." };
-      persist((prev) => ({ ...prev, ...createSessionPatch(found.id) }));
-      return { ok: true, user: found };
+      try {
+        const data = await loginTeacherApi(username, password);
+        applyServerUser(data.user, data.session);
+        return { ok: true, user: data.user };
+      } catch (err) {
+        return { ok: false, message: err.message || "بيانات الدخول غير صحيحة." };
+      }
     },
-    [persist],
+    [applyServerUser],
   );
 
   const loginStudentByNationalId = useCallback(
-    (nationalId) => {
+    async (nationalId) => {
       const row = findStudentByNationalId(nationalId);
       if (!row) {
         return { ok: false, message: "رقم الهوية غير مسجل في النظام." };
       }
-      const student = rosterStudentToUser(row);
-      persist((prev) => {
-        let next = { ...prev, ...createSessionPatch(student.id) };
-        next = ensureStudentRecords(next, student.id);
-        const current = next.analyticsByStudent[student.id];
-        next.analyticsByStudent = {
-          ...next.analyticsByStudent,
-          [student.id]: recordLogin(current),
+      try {
+        const data = await loginStudentApi(nationalId);
+        applyServerUser(data.user, data.session, { recordLoginEvent: true });
+        return { ok: true, user: data.user };
+      } catch (err) {
+        return {
+          ok: false,
+          message: err.message,
+          code: err.code,
+          helpAr: err.helpAr,
         };
-        return next;
-      });
-      return { ok: true, user: student };
+      }
     },
-    [persist],
+    [applyServerUser],
   );
 
-  const logout = useCallback(() => {
-    persist((prev) => ({ ...prev, ...clearSessionPatch() }));
+  const logout = useCallback(async () => {
+    try {
+      await logoutApi();
+    } catch {
+      /* still clear client state */
+    }
+    setUser(null);
+    setSessionInfo(null);
+    persist((prev) => stripLegacySessionFields(prev));
     try {
       sessionStorage.clear();
     } catch {
@@ -111,13 +159,25 @@ export function PlatformProvider({ children }) {
     hardRedirectToLogin();
   }, [persist]);
 
+  const pingSession = useCallback(async () => {
+    if (!user) return true;
+    try {
+      const data = await heartbeatSession();
+      setSessionInfo((prev) => ({ ...prev, ...data.session }));
+      return true;
+    } catch {
+      setUser(null);
+      setSessionInfo(null);
+      hardRedirectToLogin();
+      return false;
+    }
+  }, [user]);
+
   const trackPageView = useCallback(
     (path) => {
       persist((prev) => {
-        const uid = prev.sessionUserId;
-        if (!uid) return prev;
-        const resolved = resolveSessionUser(uid);
-        if (!resolved || resolved.role !== "student") return prev;
+        const uid = user?.id;
+        if (!uid || user?.role !== "student") return prev;
         const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
         return {
           ...prev,
@@ -128,16 +188,14 @@ export function PlatformProvider({ children }) {
         };
       });
     },
-    [persist],
+    [persist, user],
   );
 
   const trackSimRun = useCallback(
     (simId) => {
       persist((prev) => {
-        const uid = prev.sessionUserId;
-        if (!uid) return prev;
-        const resolved = resolveSessionUser(uid);
-        if (!resolved || resolved.role !== "student") return prev;
+        const uid = user?.id;
+        if (!uid || user?.role !== "student") return prev;
         const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
         return {
           ...prev,
@@ -148,15 +206,13 @@ export function PlatformProvider({ children }) {
         };
       });
     },
-    [persist],
+    [persist, user],
   );
 
   const trackPythonRun = useCallback(() => {
     persist((prev) => {
-      const uid = prev.sessionUserId;
-      if (!uid) return prev;
-      const resolved = resolveSessionUser(uid);
-      if (!resolved || resolved.role !== "student") return prev;
+      const uid = user?.id;
+      if (!uid || user?.role !== "student") return prev;
       const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
       return {
         ...prev,
@@ -166,7 +222,7 @@ export function PlatformProvider({ children }) {
         },
       };
     });
-  }, [persist]);
+  }, [persist, user]);
 
   const myProgress = useMemo(() => {
     if (!sessionUserId || !isStudentSession) return null;
@@ -591,9 +647,12 @@ export function PlatformProvider({ children }) {
     () => ({
       user,
       authReady,
+      sessionInfo,
       loginTeacher,
       loginStudentByNationalId,
       logout,
+      pingSession,
+      refreshAuth,
       myProgress,
       myAnalytics,
       myStats,
@@ -621,9 +680,12 @@ export function PlatformProvider({ children }) {
     [
       user,
       authReady,
+      sessionInfo,
       loginTeacher,
       loginStudentByNationalId,
       logout,
+      pingSession,
+      refreshAuth,
       myProgress,
       myAnalytics,
       myStats,
