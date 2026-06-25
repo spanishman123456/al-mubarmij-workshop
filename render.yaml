@@ -1,19 +1,31 @@
-# Render Blueprint — Node API + Vite SPA
+# Render Blueprint — Static SPA + Node API (two services)
 # https://render.com/docs/blueprint-spec
+#
+# The static site keeps the public URL and rewrites /api/* to the API service.
+# This avoids Blueprint sync failure from changing runtime on an existing static service.
 services:
   - type: web
     name: al-mubarmij-workshop
-    runtime: node
+    runtime: static
     buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://al-mubarmij-workshop-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  - type: web
+    name: al-mubarmij-workshop-api
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
       - key: SESSION_SECRET
         generateValue: true
-      - key: DATABASE_PATH
-        value: /var/data/sessions.db
-    disk:
-      name: session-data
-      mountPath: /var/data
-      sizeGB: 1

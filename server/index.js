@@ -4,8 +4,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config.js";
 import { attachSession } from "./auth/middleware.js";
+import { sendError, sendSuccess } from "./lib/apiResponse.js";
+import { runStartupChecks } from "./lib/startup.js";
 import { purgeExpiredSessions } from "./auth/sessionService.js";
-import { sendError } from "./lib/apiResponse.js";
 import authRoutes from "./routes/auth.js";
 import teacherRoutes from "./routes/teacher.js";
 
@@ -15,20 +16,27 @@ app.set("trust proxy", 1);
 app.use(express.json({ limit: "64kb" }));
 app.use(cookieParser(config.sessionSecret));
 
+app.get("/api/health", (_req, res) => {
+  const startup = runStartupChecks();
+  if (!startup.ok) {
+    console.error("[health] startup checks failed", startup);
+    return sendError(res, 503, {
+      code: "SERVER_CONFIGURATION_ERROR",
+      messageAr: "خدمة المصادقة غير جاهزة. يرجى التواصل مع مسؤول المنصة.",
+    });
+  }
+  return sendSuccess(res, {
+    service: "al-mubarmij-workshop",
+    auth: "ready",
+    database: "ok",
+    checks: startup.checks,
+  });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/teacher", teacherRoutes);
 
-/** التحقق من الجلسة لأي طلب API محمي مستقبلي */
-app.use("/api", attachSession, (req, res, next) => {
-  if (req.method === "GET" && req.path === "/health") return next();
-  next();
-});
-
-app.get("/api/health", (_req, res) => {
-  res.json({ success: true, ok: true, service: "al-mubarmij-workshop" });
-});
-
-app.use("/api", (_req, res) => {
+app.use("/api", attachSession, (_req, res) => {
   sendError(res, 404, { code: "NOT_FOUND", messageAr: "المسار المطلوب غير موجود." });
 });
 
@@ -37,6 +45,8 @@ if (fs.existsSync(config.distPath)) {
   app.get(/^(?!\/api).*/, (_req, res) => {
     res.sendFile(path.join(config.distPath, "index.html"));
   });
+} else {
+  console.warn("[startup] dist folder missing — API only mode");
 }
 
 /** @type {import("express").ErrorRequestHandler} */
@@ -55,6 +65,14 @@ app.use((err, _req, res, next) => {
   });
 });
 
+const startup = runStartupChecks();
+if (!startup.ok) {
+  console.error("[startup] FATAL", startup.error, startup.checks);
+  process.exit(1);
+}
+
+console.log("[startup] ready", startup.checks);
+
 setInterval(() => {
   try {
     purgeExpiredSessions();
@@ -63,7 +81,6 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-app.listen(config.port, () => {
-  console.log(`Server listening on http://localhost:${config.port}`);
-  purgeExpiredSessions();
+app.listen(config.port, config.host, () => {
+  console.log(`[startup] listening on http://${config.host}:${config.port}`);
 });

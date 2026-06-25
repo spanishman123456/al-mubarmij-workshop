@@ -57,6 +57,9 @@ router.post("/heartbeat", requireAuth, (req, res) => {
 router.post("/student/login", (req, res) => {
   try {
     const nationalId = String(req.body?.nationalId || "").replace(/\D/g, "");
+    const masked = nationalId.length >= 4 ? `***${nationalId.slice(-4)}` : "****";
+    console.log("[auth/student/login] attempt", masked);
+
     if (!nationalId) {
       return sendError(res, 400, {
         code: "INVALID_INPUT",
@@ -66,8 +69,9 @@ router.post("/student/login", (req, res) => {
 
     const row = findStudentByNationalId(nationalId);
     if (!row) {
+      console.log("[auth/student/login] rejected STUDENT_NOT_FOUND", masked);
       return sendError(res, 401, {
-        code: "INVALID_CREDENTIALS",
+        code: "STUDENT_NOT_FOUND",
         messageAr: "رقم الهوية غير مسجل في النظام.",
       });
     }
@@ -77,6 +81,7 @@ router.post("/student/login", (req, res) => {
 
     if (!result.ok) {
       const status = result.code === SESSION_CONFLICT ? 409 : 400;
+      console.log("[auth/student/login] rejected", result.code, masked);
       return sendError(res, status, {
         code: result.code === SESSION_CONFLICT ? "ACTIVE_SESSION_EXISTS" : result.code,
         messageAr: result.messageAr,
@@ -86,6 +91,7 @@ router.post("/student/login", (req, res) => {
     }
 
     setSessionCookie(res, result.token);
+    console.log("[auth/student/login] success", student.id);
     return sendSuccess(res, {
       message: "تم تسجيل الدخول بنجاح",
       messageAr: "تم تسجيل الدخول بنجاح",
@@ -98,10 +104,10 @@ router.post("/student/login", (req, res) => {
       },
     });
   } catch (err) {
-    console.error("[auth/student/login]", err);
+    console.error("[auth/student/login] SESSION_CREATION_FAILED", err);
     return sendError(res, 500, {
-      code: "SERVER_ERROR",
-      messageAr: "تعذر تسجيل الدخول حاليًا. يرجى إعادة المحاولة.",
+      code: "SESSION_CREATION_FAILED",
+      messageAr: "تعذر إنشاء الجلسة. يرجى إعادة المحاولة.",
     });
   }
 });

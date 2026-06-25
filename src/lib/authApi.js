@@ -107,6 +107,13 @@ async function apiFetch(path, options = {}) {
   }
 
   if (!contentType.includes("application/json") || data == null) {
+    if (contentType.includes("text/html")) {
+      console.error("[authApi] API returned HTML instead of JSON — static site or misconfigured deploy", path);
+      throw new AuthApiError(
+        "خدمة تسجيل الدخول غير متوفرة على الخادم الحالي. يرجى التواصل مع مسؤول المنصة لإكمال إعداد النشر.",
+        "SERVER_CONFIGURATION_ERROR",
+      );
+    }
     throw new AuthApiError(GENERIC_AR, "INVALID_RESPONSE");
   }
 
