@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import fs from "node:fs";
 import path from "node:path";
 import { config } from "./config.js";
+import { initDb } from "./db.js";
 import { attachSession } from "./auth/middleware.js";
 import { sendError, sendSuccess } from "./lib/apiResponse.js";
 import { runStartupChecks } from "./lib/startup.js";
@@ -65,22 +66,36 @@ app.use((err, _req, res, next) => {
   });
 });
 
-const startup = runStartupChecks();
-if (!startup.ok) {
-  console.error("[startup] FATAL", startup.error, startup.checks);
-  process.exit(1);
+async function main() {
+  try {
+    await initDb();
+  } catch (err) {
+    console.error("[startup] database init failed", err);
+    process.exit(1);
+  }
+
+  const startup = runStartupChecks();
+  if (!startup.ok) {
+    console.error("[startup] FATAL", startup.error, startup.checks);
+    process.exit(1);
+  }
+
+  console.log("[startup] ready", startup.checks);
+
+  setInterval(() => {
+    try {
+      purgeExpiredSessions();
+    } catch (err) {
+      console.error("[sessions] purge failed", err);
+    }
+  }, 5 * 60 * 1000);
+
+  app.listen(config.port, config.host, () => {
+    console.log(`[startup] listening on http://${config.host}:${config.port}`);
+  });
 }
 
-console.log("[startup] ready", startup.checks);
-
-setInterval(() => {
-  try {
-    purgeExpiredSessions();
-  } catch (err) {
-    console.error("[sessions] purge failed", err);
-  }
-}, 5 * 60 * 1000);
-
-app.listen(config.port, config.host, () => {
-  console.log(`[startup] listening on http://${config.host}:${config.port}`);
+main().catch((err) => {
+  console.error("[startup] unhandled", err);
+  process.exit(1);
 });

@@ -1,7 +1,21 @@
 import fs from "node:fs";
-import { getDb } from "../db.js";
+import { getDb, initDb } from "../db.js";
 import { config, validateServerConfig } from "../config.js";
 import { purgeExpiredSessions } from "../auth/sessionService.js";
+
+/** @returns {Promise<{ ok: boolean, checks: Record<string, string>, error?: string }>} */
+export async function runStartupChecksAsync() {
+  try {
+    await initDb();
+  } catch (err) {
+    return {
+      ok: false,
+      checks: { database: "failed" },
+      error: err instanceof Error ? err.message : "Database initialization failed",
+    };
+  }
+  return runStartupChecks();
+}
 
 /** @returns {{ ok: boolean, checks: Record<string, string>, error?: string }} */
 export function runStartupChecks() {

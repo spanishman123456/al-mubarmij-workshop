@@ -14,6 +14,19 @@ export class AuthApiError extends Error {
 const GENERIC_AR =
   "تعذر تسجيل الدخول حاليًا. يرجى إعادة المحاولة، وإذا استمرت المشكلة فتواصل مع مسؤول المنصة.";
 
+const API_TIMEOUT_MS = 20_000;
+
+/** @param {RequestInit & { timeoutMs?: number }} options */
+function withTimeoutSignal(options = {}) {
+  const { timeoutMs = API_TIMEOUT_MS, signal: _ignored, ...rest } = options;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return {
+    fetchOptions: { ...rest, signal: controller.signal },
+    clearTimer: () => clearTimeout(timer),
+  };
+}
+
 /** @param {unknown} message */
 function isTechnicalMessage(message) {
   const msg = String(message || "");
@@ -59,24 +72,30 @@ export function assertAuthSuccess(data, { requireUser = false } = {}) {
  * @returns {Promise<T>}
  */
 async function apiFetch(path, options = {}) {
-  const { requireUser = false, ...fetchOptions } = options;
+  const { requireUser = false, timeoutMs, ...restOptions } = options;
   let res;
 
+  const { fetchOptions: timedOptions, clearTimer } = withTimeoutSignal({ ...restOptions, timeoutMs });
   try {
     res = await fetch(`${API_BASE}${path}`, {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        ...(fetchOptions.headers || {}),
+        ...(timedOptions.headers || {}),
       },
-      ...fetchOptions,
+      ...timedOptions,
     });
-  } catch {
+  } catch (err) {
+    const aborted = err instanceof DOMException && err.name === "AbortError";
     throw new AuthApiError(
-      "تعذر الاتصال بالخادم. تحقق من الإنترنت ثم أعد المحاولة.",
-      "NETWORK_ERROR",
+      aborted
+        ? "تعذر الاتصال بخادم تسجيل الدخول في الوقت المحدد. قد يكون الخادم قيد التشغيل — أعد المحاولة بعد لحظات."
+        : "تعذر الاتصال بالخادم. تحقق من الإنترنت ثم أعد المحاولة.",
+      aborted ? "SERVER_TIMEOUT" : "NETWORK_ERROR",
     );
+  } finally {
+    clearTimer();
   }
 
   const contentType = res.headers.get("content-type") || "";
@@ -167,10 +186,13 @@ export function fetchSecurityLog(limit = 50) {
 }
 
 export async function checkAuthServiceAvailable() {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
   try {
     const res = await fetch(`${API_BASE}/api/health`, {
       credentials: "include",
       headers: { Accept: "application/json" },
+      signal: controller.signal,
     });
     if (!res.ok) return false;
     const ct = res.headers.get("content-type") || "";
@@ -179,5 +201,7 @@ export async function checkAuthServiceAvailable() {
     return data?.ok === true || data?.success === true;
   } catch {
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }

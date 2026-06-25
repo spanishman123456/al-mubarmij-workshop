@@ -1,24 +1,74 @@
 import fs from "node:fs";
 import path from "node:path";
-import Database from "better-sqlite3";
+import { fileURLToPath } from "node:url";
+import initSqlJs from "sql.js";
 import { config } from "./config.js";
 
-let db;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SQLJS_DIST = path.join(__dirname, "..", "node_modules", "sql.js", "dist");
 
-export function getDb() {
-  if (!db) {
-    const dir = path.dirname(config.databasePath);
-    fs.mkdirSync(dir, { recursive: true });
-    db = new Database(config.databasePath);
-    db.pragma("journal_mode = WAL");
-    migrate(db);
-  }
-  return db;
+/** @type {ReturnType<typeof createAdapter> | undefined} */
+let adapter;
+/** @type {Promise<ReturnType<typeof createAdapter>> | undefined} */
+let initPromise;
+
+function persistDatabase(rawDb) {
+  const dir = path.dirname(config.databasePath);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(config.databasePath, Buffer.from(rawDb.export()));
 }
 
-/** @param {import("better-sqlite3").Database} database */
+/**
+ * @param {import("sql.js").Database} rawDb
+ * @param {() => void} persist
+ */
+function createAdapter(rawDb, persist) {
+  return {
+    prepare(sql) {
+      return {
+        run(...params) {
+          rawDb.run(sql, params);
+          persist();
+          return { changes: rawDb.getRowsModified() };
+        },
+        get(...params) {
+          const stmt = rawDb.prepare(sql);
+          try {
+            if (params.length) stmt.bind(params);
+            if (stmt.step()) return stmt.getAsObject();
+            return undefined;
+          } finally {
+            stmt.free();
+          }
+        },
+        all(...params) {
+          const stmt = rawDb.prepare(sql);
+          const rows = [];
+          try {
+            if (params.length) stmt.bind(params);
+            while (stmt.step()) rows.push(stmt.getAsObject());
+            return rows;
+          } finally {
+            stmt.free();
+          }
+        },
+      };
+    },
+    exec(sql) {
+      rawDb.exec(sql);
+      persist();
+    },
+    close() {
+      rawDb.close();
+      adapter = undefined;
+      initPromise = undefined;
+    },
+  };
+}
+
+/** @param {import("sql.js").Database} database */
 function migrate(database) {
-  database.exec(`
+  database.run(`
     CREATE TABLE IF NOT EXISTS sessions (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -53,9 +103,39 @@ function migrate(database) {
   `);
 }
 
-export function closeDb() {
-  if (db) {
-    db.close();
-    db = undefined;
+export async function initDb() {
+  if (adapter) return adapter;
+  if (!initPromise) {
+    initPromise = (async () => {
+      const SQL = await initSqlJs({
+        locateFile: (file) => path.join(SQLJS_DIST, file),
+      });
+
+      const dir = path.dirname(config.databasePath);
+      fs.mkdirSync(dir, { recursive: true });
+
+      const rawDb = fs.existsSync(config.databasePath)
+        ? new SQL.Database(fs.readFileSync(config.databasePath))
+        : new SQL.Database();
+
+      const persist = () => persistDatabase(rawDb);
+      migrate(rawDb);
+      persist();
+
+      adapter = createAdapter(rawDb, persist);
+      return adapter;
+    })();
   }
+  return initPromise;
+}
+
+export function getDb() {
+  if (!adapter) {
+    throw new Error("Database not initialized. Call initDb() before getDb().");
+  }
+  return adapter;
+}
+
+export function closeDb() {
+  adapter?.close();
 }
