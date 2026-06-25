@@ -17,10 +17,16 @@ app.set("trust proxy", 1);
 app.use(express.json({ limit: "64kb" }));
 app.use(cookieParser(config.sessionSecret));
 
+let dbReady = false;
+
+app.get("/api/health/live", (_req, res) => {
+  res.json({ ok: true, service: "al-mubarmij-workshop-api", live: true });
+});
+
 app.get("/api/health", (_req, res) => {
   const startup = runStartupChecks();
-  if (!startup.ok) {
-    console.error("[health] startup checks failed", startup);
+  if (!startup.ok || !dbReady) {
+    console.error("[health] startup checks failed", startup, { dbReady });
     return sendError(res, 503, {
       code: "SERVER_CONFIGURATION_ERROR",
       messageAr: "خدمة المصادقة غير جاهزة. يرجى التواصل مع مسؤول المنصة.",
@@ -34,7 +40,15 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", (req, res, next) => {
+  if (!dbReady) {
+    return sendError(res, 503, {
+      code: "DATABASE_CONNECTION_FAILED",
+      messageAr: "خدمة تسجيل الدخول قيد التشغيل. أعد المحاولة بعد لحظات.",
+    });
+  }
+  next();
+}, authRoutes);
 app.use("/api/teacher", teacherRoutes);
 
 app.use("/api", attachSession, (_req, res) => {
@@ -67,32 +81,42 @@ app.use((err, _req, res, next) => {
 });
 
 async function main() {
+  console.log("[boot]", {
+    node: process.version,
+    port: config.port,
+    host: config.host,
+    render: config.isRender ? "yes" : "no",
+    nodeEnv: config.nodeEnv,
+  });
+
+  app.listen(config.port, config.host, () => {
+    console.log(`[startup] listening on http://${config.host}:${config.port}`);
+  });
+
   try {
     await initDb();
+    dbReady = true;
   } catch (err) {
     console.error("[startup] database init failed", err);
-    process.exit(1);
+    return;
   }
 
   const startup = runStartupChecks();
   if (!startup.ok) {
     console.error("[startup] FATAL", startup.error, startup.checks);
-    process.exit(1);
+    return;
   }
 
   console.log("[startup] ready", startup.checks);
 
   setInterval(() => {
+    if (!dbReady) return;
     try {
       purgeExpiredSessions();
     } catch (err) {
       console.error("[sessions] purge failed", err);
     }
   }, 5 * 60 * 1000);
-
-  app.listen(config.port, config.host, () => {
-    console.log(`[startup] listening on http://${config.host}:${config.port}`);
-  });
 }
 
 main().catch((err) => {
