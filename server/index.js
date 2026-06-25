@@ -5,6 +5,7 @@ import path from "node:path";
 import { config } from "./config.js";
 import { attachSession } from "./auth/middleware.js";
 import { purgeExpiredSessions } from "./auth/sessionService.js";
+import { sendError } from "./lib/apiResponse.js";
 import authRoutes from "./routes/auth.js";
 import teacherRoutes from "./routes/teacher.js";
 
@@ -24,7 +25,11 @@ app.use("/api", attachSession, (req, res, next) => {
 });
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, service: "al-mubarmij-workshop" });
+  res.json({ success: true, ok: true, service: "al-mubarmij-workshop" });
+});
+
+app.use("/api", (_req, res) => {
+  sendError(res, 404, { code: "NOT_FOUND", messageAr: "المسار المطلوب غير موجود." });
 });
 
 if (fs.existsSync(config.distPath)) {
@@ -33,6 +38,22 @@ if (fs.existsSync(config.distPath)) {
     res.sendFile(path.join(config.distPath, "index.html"));
   });
 }
+
+/** @type {import("express").ErrorRequestHandler} */
+app.use((err, _req, res, next) => {
+  if (res.headersSent) return next(err);
+  if (err instanceof SyntaxError && "body" in err) {
+    return sendError(res, 400, {
+      code: "INVALID_JSON",
+      messageAr: "طلب غير صالح. يرجى إعادة المحاولة.",
+    });
+  }
+  console.error("[server]", err);
+  sendError(res, 500, {
+    code: "SERVER_ERROR",
+    messageAr: "حدث خطأ في الخادم. يرجى إعادة المحاولة.",
+  });
+});
 
 setInterval(() => {
   try {

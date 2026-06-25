@@ -31,6 +31,7 @@ import {
   loginStudentApi,
   loginTeacherApi,
   logoutApi,
+  toFriendlyAuthMessage,
 } from "../lib/authApi";
 
 const PlatformContext = createContext(null);
@@ -74,13 +75,13 @@ export function PlatformProvider({ children }) {
   const refreshAuth = useCallback(async () => {
     try {
       const data = await fetchAuthMe();
-      if (data.user) {
-        applyServerUser(data.user, data.session);
+      if (data?.user?.id) {
+        applyServerUser(data.user, data.session ?? null);
       } else {
         setUser(null);
         setSessionInfo(null);
       }
-      return data.user;
+      return data?.user ?? null;
     } catch {
       setUser(null);
       setSessionInfo(null);
@@ -111,10 +112,13 @@ export function PlatformProvider({ children }) {
     async (username, password) => {
       try {
         const data = await loginTeacherApi(username, password);
-        applyServerUser(data.user, data.session);
+        if (!data?.user?.id) {
+          return { ok: false, message: "تعذر تسجيل الدخول. تحقق من البيانات وحاول مجدداً." };
+        }
+        applyServerUser(data.user, data.session ?? null);
         return { ok: true, user: data.user };
       } catch (err) {
-        return { ok: false, message: err.message || "بيانات الدخول غير صحيحة." };
+        return { ok: false, message: toFriendlyAuthMessage(err, "بيانات الدخول غير صحيحة.") };
       }
     },
     [applyServerUser],
@@ -128,14 +132,20 @@ export function PlatformProvider({ children }) {
       }
       try {
         const data = await loginStudentApi(nationalId);
-        applyServerUser(data.user, data.session, { recordLoginEvent: true });
+        if (!data?.user?.id) {
+          return {
+            ok: false,
+            message: "تعذر تسجيل الدخول حاليًا. يرجى إعادة المحاولة.",
+          };
+        }
+        applyServerUser(data.user, data.session ?? null, { recordLoginEvent: true });
         return { ok: true, user: data.user };
       } catch (err) {
         return {
           ok: false,
-          message: err.message,
-          code: err.code,
-          helpAr: err.helpAr,
+          message: toFriendlyAuthMessage(err),
+          code: err?.code,
+          helpAr: err?.helpAr,
         };
       }
     },
@@ -163,7 +173,9 @@ export function PlatformProvider({ children }) {
     if (!user) return true;
     try {
       const data = await heartbeatSession();
-      setSessionInfo((prev) => ({ ...prev, ...data.session }));
+      if (data?.session) {
+        setSessionInfo((prev) => ({ ...(prev || {}), ...data.session }));
+      }
       return true;
     } catch {
       setUser(null);

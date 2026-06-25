@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
+import { toFriendlyAuthMessage } from "../lib/authApi.js";
 import { MawhibaBrand, SiteTitle } from "../components/branding/MawhibaBrand";
 
 export default function LoginPage() {
@@ -13,36 +14,53 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [helpText, setHelpText] = useState("");
   const [loading, setLoading] = useState(false);
+  const submitLock = useRef(false);
 
   if (!authReady) return null;
 
   async function submitStudent(e) {
     e.preventDefault();
+    if (submitLock.current) return;
+    submitLock.current = true;
     setError("");
     setHelpText("");
     setLoading(true);
-    const res = await loginStudentByNationalId(nationalId);
-    setLoading(false);
-    if (!res.ok) {
-      setError(res.message);
-      if (res.helpAr) setHelpText(res.helpAr);
-      return;
+    try {
+      const res = await loginStudentByNationalId(nationalId);
+      if (!res?.ok) {
+        setError(res?.message || "تعذر تسجيل الدخول. حاول مجدداً.");
+        if (res?.helpAr) setHelpText(res.helpAr);
+        return;
+      }
+      navigate("/student", { replace: true });
+    } catch (err) {
+      setError(toFriendlyAuthMessage(err));
+    } finally {
+      setLoading(false);
+      submitLock.current = false;
     }
-    navigate("/student", { replace: true });
   }
 
   async function submitTeacher(e) {
     e.preventDefault();
+    if (submitLock.current) return;
+    submitLock.current = true;
     setError("");
     setHelpText("");
     setLoading(true);
-    const res = await loginTeacher(username, password);
-    setLoading(false);
-    if (!res.ok) {
-      setError(res.message);
-      return;
+    try {
+      const res = await loginTeacher(username, password);
+      if (!res?.ok) {
+        setError(res?.message || "تعذر تسجيل الدخول. حاول مجدداً.");
+        return;
+      }
+      navigate("/teacher", { replace: true });
+    } catch (err) {
+      setError(toFriendlyAuthMessage(err, "بيانات الدخول غير صحيحة."));
+    } finally {
+      setLoading(false);
+      submitLock.current = false;
     }
-    navigate("/teacher", { replace: true });
   }
 
   return (
@@ -119,6 +137,7 @@ export default function LoginPage() {
                   placeholder="أدخل رقم الهوية"
                   autoComplete="off"
                   required
+                  disabled={loading}
                 />
               </label>
               <button
@@ -145,6 +164,7 @@ export default function LoginPage() {
                   placeholder="أدخل رقم الهوية"
                   autoComplete="username"
                   required
+                  disabled={loading}
                 />
               </label>
               <label className="block">
@@ -156,6 +176,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   required
+                  disabled={loading}
                 />
               </label>
               <button
