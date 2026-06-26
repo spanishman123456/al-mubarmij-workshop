@@ -4,27 +4,18 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"node server/index.js\"",
-    "dev:client": "vite",
-    "dev:server": "node server/index.js",
+    "dev": "vite",
     "build:microbit-hex": "node scripts/buildMicrobitHex.mjs",
     "build": "vite build",
-    "start": "node server/index.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
-  "engines": {
-    "node": ">=20"
-  },
   "dependencies": {
-    "cookie-parser": "^1.4.7",
-    "express": "^5.1.0",
     "fflate": "^0.8.3",
     "framer-motion": "^12.38.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.14.0",
-    "sql.js": "^1.13.0"
+    "react-router-dom": "^7.14.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -32,7 +23,6 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "concurrently": "^9.2.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",

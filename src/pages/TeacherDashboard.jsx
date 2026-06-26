@@ -4,7 +4,6 @@ import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { PrePostComparisonChart } from "../components/charts/PrePostComparisonChart";
 import { TeacherGraphicProjects } from "../components/teacher/TeacherGraphicProjects";
-import { StudentSessionsPanel } from "../components/teacher/StudentSessionsPanel";
 import { MawhibaBrand } from "../components/branding/MawhibaBrand";
 import { maskNationalId, getAccountStatus, getAttendanceStatus } from "../lib/platformAnalytics";
 
@@ -78,8 +77,6 @@ export default function TeacherDashboard() {
       </div>
 
       <PrePostComparisonChart className="mt-8" students={allStudentsProgress} />
-
-      <StudentSessionsPanel />
 
       <TeacherGraphicProjects
         students={allStudentsProgress}
