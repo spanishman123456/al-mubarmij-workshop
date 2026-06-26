@@ -2,11 +2,10 @@ import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
 
-const HEARTBEAT_MS = 3 * 60 * 1000;
-
+/** تتبع الصفحات للتحليلات — منفصل عن مؤقت عدم النشاط */
 export function ActivityTracker() {
   const { pathname } = useLocation();
-  const { user, isStudentSession, trackPageView, pingSession } = usePlatform();
+  const { isStudentSession, trackPageView } = usePlatform();
   const lastTracked = useRef("");
 
   useEffect(() => {
@@ -16,25 +15,7 @@ export function ActivityTracker() {
     trackPageView(pathname);
   }, [pathname, isStudentSession, trackPageView]);
 
-  useEffect(() => {
-    if (!user) return;
-
-    pingSession();
-
-    const interval = setInterval(() => {
-      pingSession();
-    }, HEARTBEAT_MS);
-
-    function onVisible() {
-      if (document.visibilityState === "visible") pingSession();
-    }
-
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [user, pingSession]);
-
   return null;
 }
+
+export { StudentInactivityManager } from "../components/auth/StudentInactivityManager.jsx";

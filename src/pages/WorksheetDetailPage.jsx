@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getWorksheet15ById } from "../data/worksheets15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
+import { registerDraftSaver } from "../lib/draftFlush.js";
 
 export default function WorksheetDetailPage() {
   const { worksheetId } = useParams();
@@ -17,6 +18,13 @@ export default function WorksheetDetailPage() {
   useEffect(() => {
     setAnswers(saved);
   }, [worksheetId, saved]);
+
+  useEffect(() => {
+    if (!user?.id || user.role !== "student") return undefined;
+    return registerDraftSaver(() => {
+      saveWorksheetAnswers(worksheetId, answers, "in_progress");
+    });
+  }, [user?.id, user?.role, worksheetId, answers, saveWorksheetAnswers]);
 
   if (!ws) {
     return (

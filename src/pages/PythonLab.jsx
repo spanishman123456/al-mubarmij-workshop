@@ -21,6 +21,12 @@ import {
   MIN_ATTEMPTS_BEFORE_SOLUTION,
   resetStepState,
 } from "../lib/stepLearningEngine.js";
+import {
+  clearInactivityDraft,
+  loadInactivityDraft,
+  registerDraftSaver,
+  saveInactivityDraft,
+} from "../lib/draftFlush.js";
 
 const MODES = [
   { id: "console", label: "تشغيل نصي (Console)" },
@@ -63,6 +69,9 @@ export default function PythonLab() {
   const [solutionRevealed, setSolutionRevealed] = useState(false);
 
   const sessionRef = useRef(null);
+  const draftRestoredRef = useRef(false);
+  const codeRef = useRef(code);
+  codeRef.current = code;
   const [appUi, setAppUi] = useState(null);
   const [appValues, setAppValues] = useState({});
   const [appConsole, setAppConsole] = useState("");
@@ -180,6 +189,32 @@ export default function PythonLab() {
     ensureSkulptLoaded().catch(() => {});
     return () => stopAppSession();
   }, [stopAppSession]);
+
+  useEffect(() => {
+    if (!user?.id || user.role !== "student" || draftRestoredRef.current) return;
+    const draft = loadInactivityDraft(`python-${user.id}`);
+    if (!draft?.code) return;
+    draftRestoredRef.current = true;
+    setCode(draft.code);
+    if (draft.activeId) setActiveId(draft.activeId);
+    if (draft.activeAppId) setActiveAppId(draft.activeAppId);
+    if (draft.runMode === "app" || draft.runMode === "console") setRunMode(draft.runMode);
+    clearInactivityDraft(`python-${user.id}`);
+  }, [user?.id, user?.role]);
+
+  useEffect(() => {
+    if (!user?.id || user.role !== "student") return undefined;
+    return registerDraftSaver(() => {
+      const currentCode = codeRef.current?.trim();
+      if (!currentCode) return;
+      saveInactivityDraft(`python-${user.id}`, {
+        code: currentCode,
+        activeId,
+        activeAppId,
+        runMode,
+      });
+    });
+  }, [user?.id, user?.role, activeId, activeAppId, runMode]);
 
   useEffect(() => {
     if (exFromUrl && pythonExercises.some((e) => e.id === exFromUrl)) {

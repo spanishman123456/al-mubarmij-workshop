@@ -29,6 +29,8 @@ import {
   clearSessionPatch,
   hardRedirectToLogin,
 } from "../lib/session";
+import { INACTIVITY_LOGOUT_REASON } from "../lib/inactivityConfig.js";
+import { clearActivityTracking, resetActivityTracking } from "../lib/inactivitySync.js";
 
 const PlatformContext = createContext(null);
 
@@ -96,20 +98,33 @@ export function PlatformProvider({ children }) {
         };
         return next;
       });
+      resetActivityTracking();
       return { ok: true, user: student };
     },
     [persist],
   );
 
-  const logout = useCallback(() => {
-    persist((prev) => ({ ...prev, ...clearSessionPatch() }));
-    try {
-      sessionStorage.clear();
-    } catch {
-      /* ignore */
-    }
-    hardRedirectToLogin();
-  }, [persist]);
+  const logout = useCallback(
+    ({ reason } = {}) => {
+      persist((prev) => ({ ...prev, ...clearSessionPatch() }));
+      clearActivityTracking();
+      try {
+        sessionStorage.clear();
+      } catch {
+        /* ignore */
+      }
+      if (reason === INACTIVITY_LOGOUT_REASON) {
+        window.location.replace("/login?reason=inactivity");
+        return;
+      }
+      hardRedirectToLogin();
+    },
+    [persist],
+  );
+
+  const logoutForInactivity = useCallback(() => {
+    logout({ reason: INACTIVITY_LOGOUT_REASON });
+  }, [logout]);
 
   const trackPageView = useCallback(
     (path) => {
@@ -594,6 +609,7 @@ export function PlatformProvider({ children }) {
       loginTeacher,
       loginStudentByNationalId,
       logout,
+      logoutForInactivity,
       myProgress,
       myAnalytics,
       myStats,
@@ -624,6 +640,7 @@ export function PlatformProvider({ children }) {
       loginTeacher,
       loginStudentByNationalId,
       logout,
+      logoutForInactivity,
       myProgress,
       myAnalytics,
       myStats,

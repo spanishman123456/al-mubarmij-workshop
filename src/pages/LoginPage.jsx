@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
 import { MawhibaBrand, SiteTitle } from "../components/branding/MawhibaBrand";
+import { INACTIVITY_LOGOUT_MESSAGE_AR } from "../lib/inactivityConfig.js";
 
 export default function LoginPage() {
   const { loginStudentByNationalId, loginTeacher, authReady } = usePlatform();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inactiveNotice =
+    searchParams.get("reason") === "inactivity" ? INACTIVITY_LOGOUT_MESSAGE_AR : "";
   const [tab, setTab] = useState("student");
   const [nationalId, setNationalId] = useState("");
   const [username, setUsername] = useState("");
@@ -92,6 +96,12 @@ export default function LoginPage() {
               دخول المعلم
             </button>
           </div>
+
+          {inactiveNotice ? (
+            <p className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-900">
+              {inactiveNotice}
+            </p>
+          ) : null}
 
           {error ? (
             <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700">

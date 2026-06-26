@@ -20,7 +20,7 @@ import SimulationsPage from "./pages/SimulationsPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import WorksheetDetailPage from "./pages/WorksheetDetailPage";
 import MicrobitPage from "./pages/MicrobitPage";
-import { ActivityTracker } from "./hooks/useActivityTracker";
+import { ActivityTracker, StudentInactivityManager } from "./hooks/useActivityTracker";
 
 function NotFoundRedirect() {
   const { user, authReady } = usePlatform();
@@ -38,6 +38,7 @@ function AppRoutes() {
       {authReady && user ? (
         <>
           <ActivityTracker />
+          <StudentInactivityManager />
           <NavBar />
         </>
       ) : null}
