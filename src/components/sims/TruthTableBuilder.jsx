@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { buildTruthTable } from "../../lib/logic/truthTable.js";
 import { LogicTableHeader } from "./LogicNotation.jsx";
 import {
   LogicExpressionBuilderPanel,
@@ -55,10 +56,15 @@ function TruthTableView({ table }) {
 export function TruthTableBuilder() {
   const builder = useLogicExpressionBuilder(2, { minVarCount: 1, maxVarCount: 5 });
 
-  const table = useMemo(
-    () => (builder.validation?.ok ? buildTruthTable(builder.builderExpr, builder.varCount) : null),
-    [builder.builderExpr, builder.varCount, builder.validation?.ok],
-  );
+  const table = useMemo(() => {
+    try {
+      if (!builder.validation?.ok) return null;
+      return buildTruthTable(builder.builderExpr, builder.varCount);
+    } catch (err) {
+      console.error("[TruthTableBuilder] buildTruthTable failed:", err);
+      return null;
+    }
+  }, [builder.builderExpr, builder.varCount, builder.validation?.ok]);
 
   return (
     <div className="space-y-4" dir="rtl">
