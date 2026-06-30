@@ -152,13 +152,10 @@ basic.forever(on_forever)
 lcd_init()
 gate = 0
 
-def read_sw(pin):
-    return pins.digital_read_pin(pin) == 1
-
 def on_forever():
     global gate
-    a = 1 if read_sw(PIN_SW_A) else 0
-    b = 1 if read_sw(PIN_SW_B) else 0
+    a = 1 if sw_on(PIN_SW_A) else 0
+    b = 1 if sw_on(PIN_SW_B) else 0
     if gate == 0:
         out = 1 if a == 1 and b == 1 else 0
         name = "AND"

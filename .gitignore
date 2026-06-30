@@ -12,6 +12,8 @@ dist
 dist-ssr
 data/
 scripts/microbit-hex-workspace/
+scripts/makecode-compile-workspace/
+scripts/makecode-compile-results.json
 scripts/mkc-test
 *.local
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   MAKECODE_IFRAME_URL,
+  HEX_USER_GUIDE,
   handleMakeCodeMessage,
   postCompileRequest,
   postImportProject,
@@ -24,11 +25,17 @@ export default function MakeCodeModal({ open, code, onClose }) {
         }
         if (data.type === "compile" && data.state === "compiled") {
           setStatus("compiled");
-          setMessage("تم التجميع — استخدم زر التحميل داخل MakeCode إن لم يبدأ التحميل تلقائيًا.");
+          setMessage(
+            "تم التجميع داخل MakeCode — استخدم زر Download الرسمي أسفل المحرر لتنزيل HEX.",
+          );
         }
         if (data.type === "compile" && data.state === "error") {
           setStatus("error");
-          setMessage("فشل التجميع — راجع الكود داخل MakeCode أو استخدم زر التحميل الرسمي.");
+          setMessage("فشل التجميع — راجع الأخطاء داخل MakeCode. لم يُنشأ HEX.");
+        }
+        if (data.type === "download" || data.type === "hexdownload") {
+          setStatus("hex-downloaded");
+          setMessage("بدأ تنزيل HEX من MakeCode.");
         }
       });
     }
@@ -88,9 +95,7 @@ export default function MakeCodeModal({ open, code, onClose }) {
           الحالة: {status}
           {message ? ` — ${message}` : ""}
         </p>
-        <p className="mgl-modal__hint">
-          إذا فشل التصدير التلقائي، استخدم زر التحميل الرسمي داخل MakeCode (أسفل المحرر).
-        </p>
+        <p className="mgl-modal__hint">{HEX_USER_GUIDE}</p>
         <iframe
           ref={iframeRef}
           className="mgl-modal__iframe"

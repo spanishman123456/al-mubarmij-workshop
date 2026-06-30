@@ -11,6 +11,7 @@ import GameQuiz from "./learning/GameQuiz.jsx";
 import HardwarePreview from "./hardware/HardwarePreview.jsx";
 import CodePanel from "./makecode/CodePanel.jsx";
 import MakeCodeModal from "./makecode/MakeCodeModal.jsx";
+import { HEX_USER_GUIDE } from "./makecode/bridge.js";
 import "./microbit-game-lab.css";
 
 /** @typedef {import('./types.js').GameId} GameId */
@@ -121,10 +122,7 @@ export default function MicrobitGameLab() {
         <div className="mgl-section">
           <h3 className="mgl-section__title">MakeCode — توليد الكود وتصدير HEX</h3>
           <CodePanel code={code} onOpenMakeCode={() => setMakeCodeOpen(true)} />
-          <p className="mgl-hex-note">
-            ملف HEX يُنشأ حصريًا عبر MakeCode الرسمي (Import → Compile → Download). لا يوجد HEX
-            مسبق التجميع في المنصة.
-          </p>
+          <p className="mgl-hex-note">{HEX_USER_GUIDE}</p>
         </div>
       </div>
 
