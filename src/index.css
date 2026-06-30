@@ -358,6 +358,143 @@ body {
   line-height: 1.25rem;
 }
 
+.truth-table__head-logic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 10rem;
+  margin-inline: auto;
+}
+
+.truth-table__head-text {
+  display: inline-block;
+}
+
+.truth-table__cell {
+  font-size: 0.95rem;
+}
+
+/* رموز منطقية — خط النفي فوق المتغير */
+.logic-var {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1;
+  margin-inline: 0.1em;
+  vertical-align: middle;
+  color: inherit;
+}
+
+.logic-var--sm {
+  font-size: 0.85rem;
+}
+
+.logic-var--md {
+  font-size: 1.05rem;
+}
+
+.logic-var--lg {
+  font-size: 1.25rem;
+}
+
+.logic-var__char {
+  display: block;
+  font-weight: 700;
+  min-width: 0.55em;
+  text-align: center;
+}
+
+.logic-var__overline {
+  display: block;
+  width: 100%;
+  min-width: 0.75em;
+  height: 0.16em;
+  margin-bottom: 0.14em;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.logic-var--lg .logic-var__overline {
+  height: 0.18em;
+  min-width: 0.85em;
+}
+
+.logic-expr,
+.logic-bool-expr {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1em;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.logic-expr--sum {
+  gap: 0.35em;
+}
+
+.logic-expr__op,
+.logic-bool-expr__op {
+  margin-inline: 0.15em;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.logic-bool-expr__punct {
+  opacity: 0.85;
+}
+
+.logic-expr-fallback {
+  font-family: ui-monospace, monospace;
+}
+
+.logic-kmap-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.logic-kmap-result__prefix {
+  font-weight: 700;
+  margin-inline-end: 0.15rem;
+}
+
+/* شرح قيصر خطوة بخطوة */
+.caesar-steps-table th,
+.caesar-steps-table td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.55rem 0.65rem;
+}
+
+.caesar-step-card {
+  border: 1px solid #475569;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.55);
+  padding: 0.75rem;
+}
+
+.caesar-step-card--wrap {
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25);
+}
+
+.caesar-step-explain {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #cbd5e1;
+  direction: ltr;
+  text-align: start;
+  unicode-bidi: plaintext;
+}
+
 .lab-panel .lab-input {
   width: 100%;
   padding: 0.55rem 0.75rem;

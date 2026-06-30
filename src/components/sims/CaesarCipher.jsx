@@ -5,6 +5,12 @@ import {
   getAlphabetRows,
 } from "../../lib/logic/caesarCipher.js";
 
+const LANG_OPTIONS = [
+  { id: "ar", label: "العربية", placeholder: "موهبة" },
+  { id: "en", label: "English", placeholder: "HELLO" },
+  { id: "both", label: "ثنائي اللغة", placeholder: "Hello موهبة" },
+];
+
 export function CaesarCipherSim() {
   const [msg, setMsg] = useState("موهبة");
   const [shift, setShift] = useState(3);
@@ -21,15 +27,12 @@ export function CaesarCipherSim() {
     [msg, shift, decode, lang],
   );
   const alphabet = useMemo(() => getAlphabetRows(lang), [lang]);
+  const placeholder = LANG_OPTIONS.find((o) => o.id === lang)?.placeholder ?? "";
 
   return (
     <div className="space-y-4" dir="rtl">
       <div className="flex flex-wrap gap-2">
-        {[
-          { id: "ar", label: "العربية" },
-          { id: "en", label: "English" },
-          { id: "both", label: "ثنائي اللغة" },
-        ].map((opt) => (
+        {LANG_OPTIONS.map((opt) => (
           <button
             key={opt.id}
             type="button"
@@ -48,8 +51,15 @@ export function CaesarCipherSim() {
         rows={2}
         value={msg}
         onChange={(e) => setMsg(e.target.value)}
+        placeholder={placeholder}
         aria-label="النص المدخل"
       />
+
+      {lang === "en" ? (
+        <p className="text-xs text-cyan-200/90">
+          وضع الإنجليزية: A=0 … Z=25 — الحروف الكبيرة والصغيرة مدعومة مع الالتفاف من Z إلى A.
+        </p>
+      ) : null}
 
       <div className="overflow-x-auto rounded-xl border border-slate-600 bg-slate-900/50 p-3">
         <p className="mb-2 text-sm font-bold text-cyan-200">شريط الحروف والمواضع</p>
@@ -60,7 +70,9 @@ export function CaesarCipherSim() {
               className="rounded-md bg-slate-800 px-1.5 py-0.5 text-xs text-slate-200"
               title={item.label}
             >
-              {item.chars}
+              <span className="font-bold">{item.chars}</span>
+              <span className="mx-0.5 text-slate-500">=</span>
+              <span className="text-cyan-300">{item.label.split("=")[1]?.trim()}</span>
             </span>
           ))}
         </div>
@@ -87,41 +99,67 @@ export function CaesarCipherSim() {
 
       <div className="lab-result text-lg">{out}</div>
 
-      <details className="rounded-lg border border-slate-600 bg-slate-900/50 p-3" open>
-        <summary className="cursor-pointer text-sm font-semibold text-violet-300">
-          شرح الإزاحة خطوة بخطوة
-        </summary>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[420px] border-collapse text-sm">
+      <section className="rounded-lg border border-slate-600 bg-slate-900/50 p-3" aria-label="شرح الإزاحة خطوة بخطوة">
+        <h3 className="text-sm font-semibold text-violet-300">شرح الإزاحة خطوة بخطوة</h3>
+
+        <div className="mt-3 hidden overflow-x-auto md:block">
+          <table className="caesar-steps-table w-full min-w-[520px] border-collapse text-sm">
             <thead>
               <tr className="bg-slate-800 text-cyan-200">
-                <th className="border border-slate-600 px-2 py-1">الحرف</th>
-                <th className="border border-slate-600 px-2 py-1">الموضع</th>
-                <th className="border border-slate-600 px-2 py-1">الإزاحة</th>
-                <th className="border border-slate-600 px-2 py-1">موضع جديد</th>
-                <th className="border border-slate-600 px-2 py-1">النتيجة</th>
+                <th className="border border-slate-600">الحرف</th>
+                <th className="border border-slate-600">الموضع</th>
+                <th className="border border-slate-600">الإزاحة</th>
+                <th className="border border-slate-600">موضع جديد</th>
+                <th className="border border-slate-600">النتيجة</th>
+                <th className="border border-slate-600 min-w-[12rem]">الشرح</th>
               </tr>
             </thead>
             <tbody>
               {steps.map((s, i) => (
-                <tr key={i} className="text-slate-200">
-                  <td className="border border-slate-600 px-2 py-1 text-center">{s.original}</td>
-                  <td className="border border-slate-600 px-2 py-1 text-center">
-                    {s.position ?? "—"}
+                <tr key={i} className={`text-slate-200 ${s.wrapped ? "bg-cyan-950/30" : ""}`}>
+                  <td className="border border-slate-600 font-bold">{s.original}</td>
+                  <td className="border border-slate-600">
+                    {s.positionLabel ?? (s.position ?? "—")}
                   </td>
-                  <td className="border border-slate-600 px-2 py-1 text-center">{s.shift}</td>
-                  <td className="border border-slate-600 px-2 py-1 text-center">
-                    {s.newPosition ?? "—"}
+                  <td className="border border-slate-600">{s.shift}</td>
+                  <td className="border border-slate-600">
+                    {s.resultLabel ?? (s.newPosition ?? "—")}
                   </td>
-                  <td className="border border-slate-600 px-2 py-1 text-center font-bold text-emerald-300">
-                    {s.result}
+                  <td className="border border-slate-600 font-bold text-emerald-300">{s.result}</td>
+                  <td className="border border-slate-600 text-start text-xs text-slate-300" dir="ltr">
+                    {s.explanation}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </details>
+
+        <div className="mt-3 space-y-2 md:hidden">
+          {steps.map((s, i) => (
+            <div
+              key={i}
+              className={`caesar-step-card${s.wrapped ? " caesar-step-card--wrap" : ""}`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="font-bold text-white">
+                  {s.original} → <span className="text-emerald-300">{s.result}</span>
+                </span>
+                {s.wrapped ? (
+                  <span className="rounded bg-cyan-900/60 px-2 py-0.5 text-xs text-cyan-200">
+                    wrap-around
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 text-xs text-slate-400">
+                موضع: {s.positionLabel ?? "—"} | إزاحة: {s.shift} | جديد:{" "}
+                {s.resultLabel ?? "—"}
+              </p>
+              <p className="caesar-step-explain">{s.explanation}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

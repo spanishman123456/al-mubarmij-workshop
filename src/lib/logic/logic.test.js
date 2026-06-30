@@ -54,6 +54,23 @@ describe("truthTableDrills", () => {
   });
 });
 
+import { parseLogicMinterm } from "./notationFormat.js";
+
+describe("notationFormat", () => {
+  it("parses negated variables in minterm", () => {
+    const t = parseLogicMinterm("p̄q");
+    expect(t).toEqual([
+      { name: "p", negated: true },
+      { name: "q", negated: false },
+    ]);
+  });
+
+  it("parses double negation marks", () => {
+    const t = parseLogicMinterm("pq̄");
+    expect(t[1]).toEqual({ name: "q", negated: true });
+  });
+});
+
 describe("caesarCipher", () => {
   it("wraps English Z with shift", () => {
     expect(caesarTransform("Z", 1, { lang: "en" })).toBe("A");
@@ -67,6 +84,14 @@ describe("caesarCipher", () => {
     const steps = caesarSteps("A", 3, { lang: "en" });
     expect(steps[0].position).toBe(0);
     expect(steps[0].newPosition).toBe(3);
+    expect(steps[0].result).toBe("D");
+    expect(steps[0].explanation).toContain("mod 26");
+  });
+
+  it("explains wrap-around for Z", () => {
+    const steps = caesarSteps("Z", 1, { lang: "en" });
+    expect(steps[0].result).toBe("A");
+    expect(steps[0].wrapped).toBe(true);
   });
 });
 

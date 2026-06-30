@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { buildTruthTable } from "../../lib/logic/truthTable.js";
+import { LogicTableHeader } from "./LogicNotation.jsx";
 import {
   LogicExpressionBuilderPanel,
   useLogicExpressionBuilder,
@@ -29,9 +29,7 @@ function TruthTableView({ table }) {
                 className="truth-table__cell truth-table__head text-cyan-300"
                 title={labels[col]}
               >
-                <span className="truth-table__head-label" dir="ltr">
-                  {labels[col]}
-                </span>
+                <LogicTableHeader label={labels[col]} size="md" />
               </th>
             ))}
           </tr>

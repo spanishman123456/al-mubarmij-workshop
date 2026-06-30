@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { LogicExpression } from "./LogicNotation.jsx";
 import {
   explainGroup,
   isValidGroup,
@@ -210,14 +211,20 @@ export function KarnaughMapSim() {
         <div className="max-w-sm space-y-3">
           <div>
             <p className="font-bold text-violet-300">قبل التبسيط:</p>
-            <div className="lab-result mt-1 text-sm" dir="ltr">
-              F = {unsimplified}
+            <div className="lab-result mt-1 text-sm">
+              <span className="logic-kmap-result">
+                <span className="logic-kmap-result__prefix">F =</span>
+                <LogicExpression expr={unsimplified} size="lg" />
+              </span>
             </div>
           </div>
           <div>
             <p className="font-bold text-emerald-300">بعد التبسيط:</p>
-            <div className="lab-result mt-1 text-sm" dir="ltr">
-              F = {simplified}
+            <div className="lab-result mt-1 text-sm">
+              <span className="logic-kmap-result">
+                <span className="logic-kmap-result__prefix">F =</span>
+                <LogicExpression expr={simplified} size="lg" />
+              </span>
             </div>
           </div>
           <button
