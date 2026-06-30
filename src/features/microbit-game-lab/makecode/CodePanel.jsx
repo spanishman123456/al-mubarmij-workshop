@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { validateMakeCodePython } from "../makecode/validateCode.js";
-import { copyCode, downloadMainPy } from "../makecode/makecodeBridge.js";
+import { validateMakeCodePython } from "../hardware/validateCode.js";
+import { copyCode, downloadMainPy } from "./bridge.js";
 
 /**
  * @param {{ code: string, onOpenMakeCode: () => void }} props

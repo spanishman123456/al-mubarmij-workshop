@@ -49,12 +49,12 @@ export default function ProjectsPage() {
         <div className="space-y-6 lg:col-span-2">
           <EduCard title="مشاريع micro:bit المرتبطة بالمنهج" accent="amber">
             <p className="edu-card-subtitle mt-2">
-              9 مشاريع إثرائية مربوطة بموضوعات PDF: أنظمة العد، بايثون، التشفير، البحث والفرز،
-              المنطق، فيبوناتشي، وبرج هانوي — مع حفظ الكود واختبار الفهم.
+              9 مشاريع إثرائية على لوحة عتاد موحّدة — MakeCode Python، شرح المنهج، واختبار الفهم.
+              المختبر متاح أسفل هذه الصفحة.
             </p>
-            <Link to="/microbit" className="edu-btn edu-btn-primary mt-4 inline-flex">
-              استكشف مشاريع micro:bit
-            </Link>
+            <a href="#microbit-game-lab" className="edu-btn edu-btn-primary mt-4 inline-flex">
+              انتقل إلى Micro:bit Game Lab
+            </a>
           </EduCard>
 
           <EduCard title="أفكار مقترحة" accent="violet">

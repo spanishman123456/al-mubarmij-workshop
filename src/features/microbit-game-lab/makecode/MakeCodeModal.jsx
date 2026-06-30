@@ -4,7 +4,7 @@ import {
   handleMakeCodeMessage,
   postCompileRequest,
   postImportProject,
-} from "../makecode/makecodeBridge.js";
+} from "./bridge.js";
 
 /**
  * @param {{ open: boolean, code: string, onClose: () => void }} props

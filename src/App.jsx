@@ -19,7 +19,6 @@ import DayLessonPage from "./pages/DayLessonPage";
 import SimulationsPage from "./pages/SimulationsPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import WorksheetDetailPage from "./pages/WorksheetDetailPage";
-import MicrobitPage from "./pages/MicrobitPage";
 import { ActivityTracker, StudentInactivityManager } from "./hooks/useActivityTracker";
 
 function NotFoundRedirect() {
@@ -188,7 +187,7 @@ function AppRoutes() {
           path="/microbit"
           element={
             <ProtectedRoute>
-              <MicrobitPage />
+              <Navigate to="/projects#microbit-game-lab" replace />
             </ProtectedRoute>
           }
         />

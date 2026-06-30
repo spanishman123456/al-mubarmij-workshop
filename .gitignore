@@ -11,7 +11,7 @@ node_modules
 dist
 dist-ssr
 data/
-scripts/microbit-hex-workspace
+scripts/microbit-hex-workspace/
 scripts/mkc-test
 *.local
 

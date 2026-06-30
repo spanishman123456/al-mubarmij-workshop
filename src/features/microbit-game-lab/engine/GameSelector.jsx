@@ -1,4 +1,4 @@
-import { MGL_GAMES } from "../games.js";
+import { MGL_GAMES } from "./games.js";
 
 /** @typedef {import('../types.js').GameId} GameId */
 

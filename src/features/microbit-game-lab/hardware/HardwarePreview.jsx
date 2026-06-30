@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MGL_HARDWARE } from "../types.js";
+import { MGL_PINS } from "./pins.js";
 
 const BUTTONS = [
   { id: "up", label: "UP", pin: "P0" },
@@ -41,8 +41,8 @@ export default function HardwarePreview({
       <div className="mgl-hw__layout">
         <div className="mgl-hw__lcd">
           <div className="mgl-hw__lcd-header">
-            HD44780 16×2 · I2C 0x27 / 0x3F · SDA P{MGL_HARDWARE.LCD_SDA} · SCL P
-            {MGL_HARDWARE.LCD_SCL}
+            HD44780 16×2 · I2C 0x27 / 0x3F · SDA P{MGL_PINS.LCD_SDA} · SCL P
+            {MGL_PINS.LCD_SCL}
           </div>
           <div className="mgl-hw__lcd-screen">
             <div className="mgl-hw__lcd-line" dir="ltr">

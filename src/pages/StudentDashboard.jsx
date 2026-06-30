@@ -13,7 +13,7 @@ const QUICK_LINKS = [
   { to: "/quizzes", title: "الاختبارات", desc: "قبلي، قصير، وبعدي" },
   { to: "/simulations", title: "المحاكاة", desc: "معمل تفاعلي للمفاهيم" },
   { to: "/projects", title: "المشروع النهائي", desc: "مخرج الأسبوع الثالث" },
-  { to: "/microbit", title: "مشاريع micro:bit", desc: "تطبيق المنهج على micro:bit" },
+  { to: "/projects#microbit-game-lab", title: "مشاريع micro:bit", desc: "MakeCode Python — 9 مشاريع منهجية" },
 ];
 
 function formatDate(iso) {
