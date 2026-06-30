@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
+import MicrobitGameLab from "../features/microbit-game-lab/MicrobitGameLab.jsx";
 
 const PROJECT_IDEAS = [
   { title: "لعبة تخمين رقم ببايثون", desc: "خوارزمية بحث مع تلميحات تدريجية" },
@@ -160,6 +161,8 @@ export default function ProjectsPage() {
           )}
         </div>
       </div>
+
+      <MicrobitGameLab />
     </PageShell>
   );
 }

@@ -1,0 +1,468 @@
+/* Micro:bit Unified Game Lab — scoped styles (.mgl- prefix only) */
+
+.mgl-root {
+  margin-top: 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.mgl-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #4c1d95 100%);
+  color: #fff;
+  border-bottom: 3px solid #7c3aed;
+}
+
+.mgl-header__title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.mgl-header__desc {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #e2e8f0;
+  max-width: 52rem;
+}
+
+.mgl-header__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mgl-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #c4b5fd;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mgl-body {
+  padding: 1.5rem;
+}
+
+.mgl-section {
+  margin-bottom: 1.5rem;
+}
+
+.mgl-section__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4c1d95;
+  margin: 0 0 0.75rem;
+}
+
+.mgl-game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.65rem;
+}
+
+.mgl-game-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.85rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.mgl-game-card:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.12);
+  transform: translateY(-1px);
+}
+
+.mgl-game-card--active {
+  border-color: #7c3aed;
+  background: linear-gradient(180deg, #faf5ff, #fff);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25);
+}
+
+.mgl-game-card__icon {
+  font-size: 1.5rem;
+}
+
+.mgl-game-card__title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #312e81;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.mgl-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .mgl-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.mgl-details__title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e1b4b;
+  margin: 0 0 0.75rem;
+}
+
+.mgl-details__block {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.65rem;
+  background: #f5f3ff;
+  border: 1px solid #ede9fe;
+}
+
+.mgl-details__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #6d28d9;
+  margin: 0 0 0.35rem;
+}
+
+.mgl-details__text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.mgl-details__tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.mgl-details__tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.mgl-hw__note {
+  font-size: 0.82rem;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0 0.75rem;
+}
+
+.mgl-hw__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mgl-hw__lcd {
+  border: 2px solid #334155;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.mgl-hw__lcd-header {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  padding: 0.35rem 0.5rem;
+  background: #1e293b;
+  text-align: center;
+}
+
+.mgl-hw__lcd-screen {
+  padding: 0.65rem 0.75rem;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.mgl-hw__lcd-line {
+  color: #4ade80;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  min-height: 1.4rem;
+}
+
+.mgl-hw__group {
+  margin-bottom: 0.65rem;
+}
+
+.mgl-hw__group-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+}
+
+.mgl-hw__btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.mgl-hw__btn,
+.mgl-hw__switch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+}
+
+.mgl-hw__btn--pressed,
+.mgl-hw__switch--on {
+  background: #7c3aed;
+  color: #fff;
+  border-color: #6d28d9;
+}
+
+.mgl-hw__led-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.mgl-hw__led {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+.mgl-hw__led--green.mgl-hw__led--on {
+  background: #22c55e;
+  border-color: #16a34a;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+}
+
+.mgl-hw__led--red.mgl-hw__led--on {
+  background: #ef4444;
+  border-color: #dc2626;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+}
+
+.mgl-code__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.mgl-code__btn {
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid #c4b5fd;
+  background: #fff;
+  color: #5b21b6;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mgl-code__btn--outline {
+  border-color: #94a3b8;
+  color: #475569;
+}
+
+.mgl-code__btn--primary {
+  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+  color: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+.mgl-code__hint {
+  font-size: 0.8rem;
+  color: #059669;
+  font-weight: 600;
+}
+
+.mgl-code__block {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0.65rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  max-height: 22rem;
+  overflow: auto;
+  text-align: left;
+}
+
+.mgl-code__validation {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.mgl-code__validation--ok {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+.mgl-code__validation--err {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.mgl-code__validation-title {
+  font-weight: 800;
+  font-size: 0.85rem;
+  margin: 0 0 0.35rem;
+  color: #065f46;
+}
+
+.mgl-code__validation-title--warn {
+  color: #b45309;
+  margin-top: 0.5rem;
+}
+
+.mgl-code__validation-list {
+  margin: 0;
+  padding-right: 1.25rem;
+  font-size: 0.82rem;
+  color: #991b1b;
+}
+
+.mgl-code__validation-list--warn {
+  color: #92400e;
+}
+
+.mgl-hex-link {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0;
+}
+
+.mgl-hex-link__a {
+  color: #7c3aed;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.mgl-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.mgl-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.mgl-modal__panel {
+  position: relative;
+  width: min(96vw, 1100px);
+  height: min(90vh, 800px);
+  background: #fff;
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+}
+
+.mgl-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #1e1b4b, #4c1d95);
+  color: #fff;
+}
+
+.mgl-modal__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.mgl-modal__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mgl-modal__btn {
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.mgl-modal__btn--close {
+  background: #fff;
+  color: #4c1d95;
+}
+
+.mgl-modal__status,
+.mgl-modal__hint {
+  margin: 0;
+  padding: 0.35rem 1rem;
+  font-size: 0.78rem;
+  color: #475569;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mgl-modal__iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+}
