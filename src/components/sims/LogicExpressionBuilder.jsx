@@ -99,10 +99,30 @@ export function useLogicExpressionBuilder(initialVarCount = 2, opts = {}) {
 }
 
 /**
- * @param {ReturnType<typeof useLogicExpressionBuilder>} builder
- * @param {{ showVarCount?: boolean, applyLabel?: string, onApply?: () => void, applyDisabled?: boolean }} [props]
+ * @param {{
+ *   builder: ReturnType<typeof useLogicExpressionBuilder>,
+ *   showVarCount?: boolean,
+ *   applyLabel?: string,
+ *   onApply?: () => void,
+ *   applyDisabled?: boolean,
+ * }} props
  */
-export function LogicExpressionBuilderPanel(builder, props = {}) {
+export function LogicExpressionBuilderPanel({
+  builder,
+  showVarCount = true,
+  applyLabel = "تطبيق",
+  onApply,
+  applyDisabled,
+}) {
+  if (!builder) {
+    console.error("[LogicExpressionBuilderPanel] missing builder prop");
+    return (
+      <p className="rounded-lg bg-red-900/40 px-3 py-2 text-sm text-red-200" role="alert">
+        تعذّر تحميل منشئ التعبير.
+      </p>
+    );
+  }
+
   const {
     mode,
     setMode,
@@ -133,7 +153,6 @@ export function LogicExpressionBuilderPanel(builder, props = {}) {
     maxVarCount,
   } = builder;
 
-  const { showVarCount = true, applyLabel = "تطبيق", onApply, applyDisabled } = props;
   const varOptions = [];
   for (let n = minVarCount; n <= maxVarCount; n += 1) varOptions.push(n);
 
@@ -270,9 +289,9 @@ export function LogicExpressionBuilderPanel(builder, props = {}) {
         <span className="font-mono text-white">{builderExpr}</span>
       </div>
 
-      {!validation.ok ? (
+      {!validation?.ok ? (
         <p className="rounded-lg bg-red-900/40 px-3 py-2 text-sm text-red-200" role="alert">
-          {validation.error}
+          {validation?.error ?? "تعبير غير صالح."}
         </p>
       ) : null}
 
@@ -281,7 +300,7 @@ export function LogicExpressionBuilderPanel(builder, props = {}) {
           type="button"
           className="edu-btn edu-btn-primary"
           onClick={onApply}
-          disabled={applyDisabled ?? !validation.ok}
+          disabled={applyDisabled ?? !validation?.ok}
         >
           {applyLabel}
         </button>

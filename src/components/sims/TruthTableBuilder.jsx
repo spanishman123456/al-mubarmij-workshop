@@ -58,8 +58,8 @@ export function TruthTableBuilder() {
   const builder = useLogicExpressionBuilder(2, { minVarCount: 1, maxVarCount: 5 });
 
   const table = useMemo(
-    () => (builder.validation.ok ? buildTruthTable(builder.builderExpr, builder.varCount) : null),
-    [builder.builderExpr, builder.varCount, builder.validation.ok],
+    () => (builder.validation?.ok ? buildTruthTable(builder.builderExpr, builder.varCount) : null),
+    [builder.builderExpr, builder.varCount, builder.validation?.ok],
   );
 
   return (
