@@ -1,139 +1,185 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import {
+  generateDrill,
+  LOGIC_OPS,
+  validateDrillAnswers,
+} from "../../lib/logic/truthTableDrills.js";
 
-const LEVELS = {
-  easy: [
-    { gate: "AND", inputs: [[0, 0], [0, 1], [1, 0], [1, 1]], hint: "الناتج 1 فقط عندما يكون كلا المدخلين 1" },
-    { gate: "OR", inputs: [[0, 0], [0, 1], [1, 0], [1, 1]], hint: "الناتج 1 إذا كان أحد المدخلين على الأقل 1" },
-    { gate: "NOT", inputs: [[0], [1]], unary: true, hint: "يعكس القيمة" },
-  ],
-  medium: [
-    { gate: "XOR", inputs: [[0, 0], [0, 1], [1, 0], [1, 1]], hint: "1 عندما يختلف المدخلان" },
-    { gate: "NAND", inputs: [[0, 0], [0, 1], [1, 0], [1, 1]], hint: "عكس AND" },
-    { gate: "NOR", inputs: [[0, 0], [0, 1], [1, 0], [1, 1]], hint: "1 فقط عندما يكون كلا المدخلين 0" },
-  ],
-  advanced: [
-    { gate: "XNOR", inputs: [[0, 0], [0, 1], [1, 0], [1, 1]], hint: "1 عندما يتطابق المدخلان" },
-    {
-      expr: "(A AND B) OR (NOT A)",
-      inputs: [[0, 0], [0, 1], [1, 0], [1, 1]],
-      custom: (a, b) => (a && b) || !a,
-      hint: "احسب A AND B ثم OR مع NOT A",
-    },
-  ],
-};
-
-const OPS = {
-  AND: (a, b) => (a && b ? 1 : 0),
-  OR: (a, b) => (a || b ? 1 : 0),
-  NAND: (a, b) => (a && b ? 0 : 1),
-  NOR: (a, b) => (a || b ? 0 : 1),
-  XOR: (a, b) => (a !== b ? 1 : 0),
-  XNOR: (a, b) => (a === b ? 1 : 0),
-  NOT: (a) => (a ? 0 : 1),
-};
+const LEVEL_LABELS = { easy: "سهل", medium: "متوسط", advanced: "متقدم" };
 
 export function TruthTableExercises() {
   const [level, setLevel] = useState("easy");
-  const [idx, setIdx] = useState(0);
+  const [mode, setMode] = useState("random");
+  const [chosenOp, setChosenOp] = useState("AND");
+  const [drill, setDrill] = useState(() => generateDrill("easy"));
   const [answers, setAnswers] = useState({});
   const [attempted, setAttempted] = useState(false);
-  const [hints, setHints] = useState(0);
+  const [attempts, setAttempts] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
 
-  const exercises = LEVELS[level];
-  const ex = exercises[idx % exercises.length];
-  const label = ex.gate || ex.expr;
+  const result = useMemo(
+    () => (attempted ? validateDrillAnswers(drill, answers) : null),
+    [attempted, drill, answers],
+  );
 
-  function expected(row) {
-    if (ex.custom) return ex.custom(row[0], row[1]);
-    if (ex.unary) return OPS.NOT(row[0]);
-    return OPS[ex.gate](row[0], row[1]);
+  function newDrill(nextLevel = level, nextMode = mode) {
+    setDrill(
+      generateDrill(nextLevel, {
+        mode: nextMode,
+        op: nextMode === "manual" ? chosenOp : undefined,
+      }),
+    );
+    setAnswers({});
+    setAttempted(false);
+    setHintsUsed(0);
   }
 
   function check() {
     setAttempted(true);
+    setAttempts((a) => a + 1);
   }
 
-  function allCorrect() {
-    return ex.inputs.every((row, i) => Number(answers[i]) === expected(row));
-  }
-
-  function next() {
-    setIdx((i) => i + 1);
-    setAnswers({});
-    setAttempted(false);
-    setHints(0);
-  }
+  const answerCols = drill.answerColumns;
+  const colLabels = {
+    ...Object.fromEntries(drill.intermediateColumns.map((c) => [c.id, c.label])),
+    result: "الناتج",
+  };
 
   return (
     <div className="space-y-5" dir="rtl">
       <div className="flex flex-wrap gap-2">
-        {Object.keys(LEVELS).map((l) => (
+        {Object.keys(LEVEL_LABELS).map((l) => (
           <button
             key={l}
             type="button"
             onClick={() => {
               setLevel(l);
-              setIdx(0);
-              setAnswers({});
-              setAttempted(false);
+              newDrill(l, mode);
             }}
-            className={`rounded-lg px-3 py-1.5 text-sm font-bold ${
-              level === l ? "bg-violet-700 text-white" : "bg-slate-200 text-slate-700"
+            className={`rounded-lg px-3 py-1.5 text-sm font-bold transition ${
+              level === l ? "bg-violet-600 text-white" : "bg-slate-700 text-slate-100 hover:bg-slate-600"
             }`}
           >
-            {l === "easy" ? "سهل" : l === "medium" ? "متوسط" : "متقدم"}
+            {LEVEL_LABELS[l]}
           </button>
         ))}
       </div>
 
-      <p className="font-bold text-slate-800">أكمل جدول الحقيقة لـ: {label}</p>
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-600 bg-slate-900/50 p-4">
+        <label className="block">
+          <span className="lab-label text-cyan-200">نوع التمرين</span>
+          <select
+            className="lab-select mt-1"
+            value={mode}
+            onChange={(e) => {
+              setMode(e.target.value);
+              newDrill(level, e.target.value);
+            }}
+          >
+            <option value="random">سؤال عشوائي</option>
+            <option value="manual">اختيار يدوي</option>
+          </select>
+        </label>
+        {mode === "manual" ? (
+          <label className="block">
+            <span className="lab-label text-cyan-200">العملية</span>
+            <select
+              className="lab-select mt-1"
+              value={chosenOp}
+              onChange={(e) => setChosenOp(e.target.value)}
+            >
+              {LOGIC_OPS.map((op) => (
+                <option key={op} value={op}>
+                  {op}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <button type="button" className="edu-btn edu-btn-outline" onClick={() => newDrill()}>
+          تمرين جديد
+        </button>
+        {mode === "manual" ? (
+          <button
+            type="button"
+            className="edu-btn edu-btn-primary"
+            onClick={() => newDrill(level, "manual")}
+          >
+            تطبيق الاختيار
+          </button>
+        ) : null}
+      </div>
 
-      <table className="w-full max-w-md border-collapse text-center text-sm">
-        <thead>
-          <tr className="bg-violet-100">
-            {!ex.unary ? (
-              <>
-                <th className="border p-2">A</th>
-                <th className="border p-2">B</th>
-              </>
-            ) : (
-              <th className="border p-2">A</th>
-            )}
-            <th className="border p-2">Y</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ex.inputs.map((row, i) => (
-            <tr key={i}>
-              {!ex.unary ? (
-                <>
-                  <td className="border p-2 font-mono">{row[0]}</td>
-                  <td className="border p-2 font-mono">{row[1]}</td>
-                </>
-              ) : (
-                <td className="border p-2 font-mono">{row[0]}</td>
-              )}
-              <td className="border p-2">
-                <select
-                  className="edu-select edu-select-compact w-full max-w-[5rem]"
-                  value={answers[i] ?? ""}
-                  onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
-                  disabled={attempted}
-                >
-                  <option value="">؟</option>
-                  <option value="0">0</option>
-                  <option value="1">1</option>
-                </select>
-                {attempted ? (
-                  <span className={`mr-2 text-xs ${Number(answers[i]) === expected(row) ? "text-emerald-600" : "text-red-600"}`}>
-                    {expected(row)}
+      <div className="rounded-xl border border-violet-500/40 bg-violet-950/30 p-4">
+        <p className="text-lg font-bold text-white">
+          أكمل جدول الحقيقة للتعبير:
+        </p>
+        <p className="mt-1 font-mono text-base text-cyan-200" dir="ltr">
+          {drill.expr}
+        </p>
+        <p className="mt-2 text-sm text-slate-300">
+          المتغيرات: {drill.variables.join(", ")} — {drill.rows.length} صف
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[320px] border-collapse text-center text-sm">
+          <thead>
+            <tr className="bg-slate-800">
+              {drill.variables.map((v) => (
+                <th key={v} className="border border-slate-600 px-3 py-2 text-cyan-300">
+                  {v}
+                </th>
+              ))}
+              {answerCols.map((col) => (
+                <th key={col} className="border border-slate-600 px-3 py-2 text-violet-300">
+                  <span className="block max-w-[7rem] truncate text-xs" dir="ltr" title={colLabels[col]}>
+                    {colLabels[col] ?? col}
                   </span>
-                ) : null}
-              </td>
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {drill.rows.map((row, rowIdx) => (
+              <tr key={rowIdx} className={rowIdx % 2 ? "bg-slate-900/60" : "bg-slate-900/30"}>
+                {drill.variables.map((v) => (
+                  <td key={v} className="border border-slate-600 px-3 py-2 font-mono text-white">
+                    {row[v]}
+                  </td>
+                ))}
+                {answerCols.map((col) => {
+                  const key = `${rowIdx}-${col}`;
+                  const expected = String(row[col]);
+                  const given = answers[key] ?? "";
+                  const showResult = attempted && given !== "";
+                  const ok = given === expected;
+                  return (
+                    <td key={col} className="border border-slate-600 px-2 py-2">
+                      <select
+                        className="edu-select edu-select-compact w-full min-w-[4rem] bg-slate-800 text-white"
+                        value={given}
+                        onChange={(e) => setAnswers((a) => ({ ...a, [key]: e.target.value }))}
+                        disabled={attempted}
+                        aria-label={`صف ${rowIdx + 1} عمود ${colLabels[col] ?? col}`}
+                      >
+                        <option value="">؟</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                      </select>
+                      {showResult ? (
+                        <span className={`mt-1 block text-xs ${ok ? "text-emerald-400" : "text-red-400"}`}>
+                          {ok ? "✓" : `→ ${expected}`}
+                        </span>
+                      ) : null}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <div className="flex flex-wrap gap-2">
         {!attempted ? (
@@ -144,26 +190,46 @@ export function TruthTableExercises() {
             <button
               type="button"
               className="edu-btn edu-btn-outline"
-              onClick={() => setHints((h) => h + 1)}
+              disabled={hintsUsed >= drill.hints.length}
+              onClick={() => setHintsUsed((h) => h + 1)}
             >
-              تلميح ({hints}/2)
+              تلميح ({hintsUsed}/{drill.hints.length})
             </button>
           </>
         ) : (
-          <button type="button" className="edu-btn edu-btn-primary" onClick={next}>
-            تمرين تالي
+          <button type="button" className="edu-btn edu-btn-primary" onClick={() => newDrill()}>
+            تمرين جديد
           </button>
         )}
       </div>
 
-      {hints > 0 && !attempted ? <p className="text-sm text-amber-800">تلميح: {ex.hint}</p> : null}
+      {hintsUsed > 0 && !attempted ? (
+        <ul className="list-disc space-y-1 pr-5 text-sm text-amber-200">
+          {drill.hints.slice(0, hintsUsed).map((h) => (
+            <li key={h}>{h}</li>
+          ))}
+        </ul>
+      ) : null}
 
-      {attempted ? (
-        <div className="rounded-lg bg-slate-50 p-4 text-sm">
-          <p className={`font-bold ${allCorrect() ? "text-emerald-700" : "text-red-700"}`}>
-            {allCorrect() ? "ممتاز! جميع الإجابات صحيحة." : "راجع الصفوف الخاطئة — الحل معروض بجانب كل خانة."}
+      {attempted && result ? (
+        <div className="rounded-xl border border-slate-600 bg-slate-900/60 p-4 text-sm">
+          <p className={`text-base font-bold ${result.allCorrect ? "text-emerald-400" : "text-amber-300"}`}>
+            {result.allCorrect
+              ? "ممتاز! جميع الإجابات صحيحة."
+              : `صحيح: ${result.correct} — خطأ: ${result.wrong}`}
           </p>
-          <p className="mt-2 text-slate-600">شرح: {ex.hint}</p>
+          <p className="mt-2 text-slate-300">عدد المحاولات: {attempts}</p>
+          <details className="mt-3">
+            <summary className="cursor-pointer font-semibold text-violet-300">شرح الحل</summary>
+            <p className="mt-2 text-slate-300" dir="ltr">
+              {drill.expr}
+            </p>
+            <ul className="mt-2 list-disc pr-5 text-slate-400">
+              {drill.hints.map((h) => (
+                <li key={h}>{h}</li>
+              ))}
+            </ul>
+          </details>
         </div>
       ) : null}
     </div>

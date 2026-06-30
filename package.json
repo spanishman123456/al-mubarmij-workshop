@@ -8,6 +8,7 @@
     "build:microbit-hex": "node scripts/buildMicrobitHex.mjs",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
     "globals": "^17.4.0",
     "makecode": "^1.3.5",
     "tailwindcss": "^4.2.2",
-    "vite": "^8.0.4"
+    "vite": "^8.0.4",
+    "vitest": "^3.2.4"
   }
 }

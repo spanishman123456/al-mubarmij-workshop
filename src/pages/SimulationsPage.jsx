@@ -75,7 +75,7 @@ export default function SimulationsPage() {
         </section>
 
         <section id="truth" className="scroll-mt-28">
-          <LabPanel title="مولّد جداول الحقيقة" hint="أدخل تعبيرًا منطقيًا: AND, OR, NOT, XOR, NAND, NOR, XNOR">
+          <LabPanel title="مولّد جداول الحقيقة" hint="منشئ تعبيرات منطقي — اختر المتغيرات والعمليات أو استخدم الإدخال المتقدم">
             <TruthTableSim />
           </LabPanel>
         </section>
