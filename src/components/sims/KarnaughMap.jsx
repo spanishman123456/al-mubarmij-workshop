@@ -8,7 +8,10 @@ import {
   truthTableToKMap,
   unsimplifiedExpression,
 } from "../../lib/logic/karnaugh.js";
-import { varsForCount } from "../../lib/logic/variables.js";
+import {
+  LogicExpressionBuilderPanel,
+  useLogicExpressionBuilder,
+} from "./LogicExpressionBuilder.jsx";
 
 const DIFF_VARS = { easy: 2, medium: 3, advanced: 4, expert: 5 };
 
@@ -18,8 +21,9 @@ export function KarnaughMapSim() {
   const [values, setValues] = useState(() => randomKMapValues(2));
   const [selectedGroup, setSelectedGroup] = useState([]);
   const [groups, setGroups] = useState([]);
-  const [exprInput, setExprInput] = useState("p AND q");
   const [importError, setImportError] = useState("");
+
+  const builder = useLogicExpressionBuilder(2, { minVarCount: 2, maxVarCount: 5 });
 
   const layout = useMemo(() => kMapLayout(varCount), [varCount]);
 
@@ -49,8 +53,8 @@ export function KarnaughMapSim() {
     setSelectedGroup([]);
   }
 
-  function loadFromTruthTable() {
-    const res = truthTableToKMap(exprInput, varCount);
+  function loadFromExpression() {
+    const res = truthTableToKMap(builder.builderExpr, varCount);
     if (!res.ok) {
       setImportError(res.error);
       return;
@@ -58,6 +62,7 @@ export function KarnaughMapSim() {
     setImportError("");
     setValues(res.values);
     setGroups([]);
+    setSelectedGroup([]);
   }
 
   function toggleSelect(index) {
@@ -74,7 +79,17 @@ export function KarnaughMapSim() {
 
   function resetAll() {
     setVarCount(2);
+    builder.setVarCount(2);
     setValues(randomKMapValues(2));
+    setGroups([]);
+    setSelectedGroup([]);
+    setImportError("");
+  }
+
+  function selectVarCount(n) {
+    setVarCount(n);
+    builder.setVarCount(n);
+    setValues(randomKMapValues(n, allowDontCare));
     setGroups([]);
     setSelectedGroup([]);
     setImportError("");
@@ -98,11 +113,7 @@ export function KarnaughMapSim() {
           <button
             key={key}
             type="button"
-            onClick={() => {
-              setVarCount(n);
-              setValues(randomKMapValues(n, allowDontCare));
-              setGroups([]);
-            }}
+            onClick={() => selectVarCount(n)}
             className={`rounded-lg px-3 py-1.5 text-sm font-bold ${
               varCount === n ? "bg-violet-600 text-white" : "bg-slate-700 text-slate-200"
             }`}
@@ -129,21 +140,17 @@ export function KarnaughMapSim() {
         </button>
       </div>
 
-      <div className="rounded-xl border border-slate-600 bg-slate-900/40 p-3">
-        <p className="lab-label text-cyan-200">إنشاء من جدول حقيقة (تعبير منطقي)</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <input
-            className="lab-input flex-1 font-mono"
-            dir="ltr"
-            value={exprInput}
-            onChange={(e) => setExprInput(e.target.value)}
-            placeholder={`مثال: (${varsForCount(varCount).join(" AND ")})`}
+      <div className="rounded-xl border border-slate-600 bg-slate-900/40 p-4">
+        <p className="lab-label text-cyan-200">إنشاء من تعبير منطقي</p>
+        <div className="mt-3">
+          <LogicExpressionBuilderPanel
+            builder={builder}
+            showVarCount={false}
+            applyLabel="تطبيق على الخريطة"
+            onApply={loadFromExpression}
           />
-          <button type="button" className="edu-btn edu-btn-primary" onClick={loadFromTruthTable}>
-            تطبيق
-          </button>
         </div>
-        {importError ? <p className="mt-2 text-sm text-red-300">{importError}</p> : null}
+        {importError ? <p className="mt-2 text-sm text-red-300" role="alert">{importError}</p> : null}
       </div>
 
       <div className="flex flex-wrap items-start gap-8 justify-center">

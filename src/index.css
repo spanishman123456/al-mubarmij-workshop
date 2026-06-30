@@ -326,6 +326,38 @@ body {
   color: #94a3b8;
 }
 
+/* جدول الحقيقة — توسيط أفقي ورأسي موحّد */
+.truth-table-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+.truth-table {
+  table-layout: auto;
+}
+
+.truth-table__cell {
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.625rem 0.75rem;
+  min-height: 2.75rem;
+  border: 1px solid #475569;
+  white-space: nowrap;
+}
+
+.truth-table__head {
+  min-width: 3.5rem;
+}
+
+.truth-table__head-label {
+  display: inline-block;
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
 .lab-panel .lab-input {
   width: 100%;
   padding: 0.55rem 0.75rem;
