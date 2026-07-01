@@ -152,9 +152,10 @@ export default function Home() {
 
       {/* Pillars */}
       <section className="mx-auto max-w-6xl px-4 py-16">
-        <h2 className="mb-2 text-center text-3xl font-bold text-slate-900">اختر مسارك الفكري</h2>
-        <p className="mx-auto mb-10 max-w-2xl text-center text-slate-600">
-          أربعة محاور تدعم أهداف المقرر وتجربة الورشة — بدون تغيير أسلوب التعلم الممتع.
+        <h2 className="mb-2 text-center text-3xl font-bold text-slate-900">رحلتك الفكرية المتكاملة</h2>
+        <p className="mx-auto mb-10 max-w-3xl px-2 text-center leading-relaxed text-slate-600">
+          تجربة تعليمية متدرجة يمر خلالها الطالب بأربعة محاور مترابطة، تجمع بين الفهم والتطبيق
+          والتجريب وبناء المشروع النهائي، بما يحقق أهداف المقرر ويحافظ على متعة التعلم.
         </p>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {learningPillars.map((p, i) => (
