@@ -58,6 +58,14 @@ export async function recordLessonAttemptApi(studentId, payload) {
   });
 }
 
+export async function fetchStudentProgressApi(studentId) {
+  return request(`/api/progress/${encodeURIComponent(studentId)}`);
+}
+
+export async function fetchHealthApi() {
+  return request("/api/health");
+}
+
 export async function fetchLessonSummaryApi() {
   return request("/api/lesson/summary");
 }

@@ -2,22 +2,25 @@ import { useState } from "react";
 import { runSimpleIf } from "../../lib/pythonLabs/ifInterpreter";
 import { recordLessonAttemptApi } from "../../lib/platformApi";
 
-export function IfStatementLab({ lessonId, userId, initialCode = "" }) {
+export function IfStatementLab({ lessonId, userId, initialCode = "", onRunComplete }) {
   const [code, setCode] = useState(initialCode);
   const [result, setResult] = useState(null);
 
   function run() {
     const res = runSimpleIf(code);
     setResult(res);
+    const ok = res.errors.length === 0 && res.outputs.length > 0;
+    const outputStr = res.outputs.join("\n");
     if (userId) {
       recordLessonAttemptApi(userId, {
         lessonId,
         exerciseId: "if-lab-run",
         answer: code.slice(0, 500),
-        correct: res.errors.length === 0 && res.outputs.length > 0,
+        correct: ok,
         errorType: res.errors[0] || null,
       });
     }
+    onRunComplete?.(outputStr, ok);
   }
 
   return (

@@ -73,6 +73,30 @@ export const ifStatementLesson = {
         "✓ if x > 0:\n    print(x)\n✗ if x > 0:\nprint(x)  ← IndentationError\n✗ if x = 5:  ← SyntaxError\n✗ if x > 10:\n    print('كبير')\nprint('دائماً')  ← السطر الأخير خارج if",
     },
     {
+      id: "logic-ops-enrichment",
+      titleAr: "and / or / not (إثرائي)",
+      bodyAr:
+        "**محتوى إثرائي** — قد لا يظهر صراحة في PDF اليوم 2. and: كلا الشرطين True. or: أحدهما True. not: عكس bool. مثال: if age >= 18 and has_id: print('ok').",
+    },
+    {
+      id: "nested-enrichment",
+      titleAr: "الشروط المتداخلة (إثرائي)",
+      bodyAr:
+        "**محتوى إثرائي** — if داخل if للحالات المركبة. if logged_in: if is_admin: print('panel'). احذر البادئة المزدوجة (8 مسافات للداخل.",
+    },
+    {
+      id: "eval-order",
+      titleAr: "ترتيب تقييم الشروط",
+      bodyAr:
+        "elif يُفحص من الأعلى — أول True يُنفَّذ ثم يتوقف. ضع الحالات الأخص أولاً (>=90 قبل >=80).",
+    },
+    {
+      id: "trace-if",
+      titleAr: "تتبع التنفيذ خطوة بخطوة",
+      bodyAr:
+        "score=55: 55>=50 → True → يُطبع «ناجح» — else لا يُنفَّذ. جرّب score=40: if False → else.",
+    },
+    {
       id: "logic-errors",
       titleAr: "أخطاء المنطق",
       bodyAr:

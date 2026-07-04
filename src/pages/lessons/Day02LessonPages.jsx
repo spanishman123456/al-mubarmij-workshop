@@ -12,6 +12,8 @@ import { pythonArraysLesson } from "../../content/lessons/day02/pythonArraysLess
 import { pythonForRangeLesson } from "../../content/lessons/day02/pythonForRangeLesson";
 import { pythonWhileLesson } from "../../content/lessons/day02/pythonWhileLesson";
 import { cardSortAlgorithmLesson } from "../../content/lessons/day02/cardSortAlgorithmLesson";
+import { CardSortSimulation } from "../../components/lesson/CardSortSimulation";
+import { Day02ComputerLabPanel } from "../../components/lesson/Day02ComputerLabPanel";
 import { AlgorithmStepsLab } from "../../components/lesson/AlgorithmStepsLab";
 import { IfStatementLab } from "../../components/lesson/IfStatementLab";
 import { BaseArithmeticLab } from "../../components/lesson/BaseArithmeticLab";
@@ -70,7 +72,7 @@ export function CardSortAlgorithmLessonPage() {
   const { user } = usePlatform();
   return (
     <StandardLessonPage lesson={cardSortAlgorithmLesson} backTo={BACK} nextLink={{ to: "/lessons/algorithms", label: "التالي →" }}>
-      <Lab><AlgorithmStepsLab lessonId={cardSortAlgorithmLesson.id} userId={user?.id} /></Lab>
+      <Lab><CardSortSimulation lessonId={cardSortAlgorithmLesson.id} userId={user?.id} /></Lab>
     </StandardLessonPage>
   );
 }
@@ -133,7 +135,7 @@ export function Day02ComputerLabLessonPage() {
   const { user } = usePlatform();
   return (
     <StandardLessonPage lesson={day02ComputerLabLesson} backTo={BACK}>
-      <Lab><IfStatementLab lessonId={day02ComputerLabLesson.id} userId={user?.id} initialCode="d1,d2=4,6\nif d1>d2: print('1')\nelif d1<d2: print('2')\nelse: print('tie')" /></Lab>
+      <Lab><Day02ComputerLabPanel lessonId={day02ComputerLabLesson.id} userId={user?.id} initialCode="d1,d2=4,6\nif d1>d2: print('1')\nelif d1<d2: print('2')\nelse: print('tie')" /></Lab>
     </StandardLessonPage>
   );
 }

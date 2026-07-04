@@ -1,97 +1,109 @@
 #!/usr/bin/env python3
-"""Generate docs/day02-coverage-status.md — full PDF topic map."""
+"""Generate docs/day02-coverage.json + docs/day02-coverage-status.md"""
 import json
 from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# (id, title, pdfPageIndex, printedPage, route, status, kind, merged_into, interactive, remaining)
+# Each topic: id, title, pdfPageIndex, route, implementationStatus, integrationMode, mergedInto, interactive, qaStatus, remainingWork[]
 TOPICS = [
-    ("warmup-conversions-ascii", "النشاط التمهيدي: التحويلات و ASCII", 93, None, "/lessons/conversions-intro", "partial", "activity", "conversions-intro", "ActivityGuide + NumberBaseConverter", "توسيع تمارين ASCII التفاعلية"),
-    ("base-arithmetic", "الحساب في أنظمة العد المختلفة", 99, None, "/lessons/base-arithmetic", "partial", "lesson", None, "BaseArithmeticLab", "مزيد أمثلة خطوة بخطوة في PDF"),
-    ("hex-addition", "الجمع في النظام الست عشري", 100, None, "/lessons/base-arithmetic", "merged", "lesson", "base-arithmetic", "BaseArithmeticLab", "—"),
-    ("base5-addition", "الجمع في الأساس 5", 99, None, "/lessons/base-arithmetic", "merged", "lesson", "base-arithmetic", "BaseArithmeticLab", "—"),
-    ("binary-add-rules", "قواعد الجمع الثنائي", 101, None, "/lessons/base-arithmetic", "merged", "lesson", "base-arithmetic", "BaseArithmeticLab", "—"),
-    ("binary-subtraction", "الطرح الثنائي", 102, None, "/lessons/base-arithmetic", "merged", "lesson", "base-arithmetic", "BaseArithmeticLab", "—"),
-    ("twos-complement-intro", "مكمل العدد 2 في الطرح", 103, None, "/lessons/twos-complement", "partial", "lesson", None, "TwosComplementLab", "—"),
-    ("negative-twos", "تمثيل الأعداد السالبة", 104, None, "/lessons/twos-complement", "merged", "lesson", "twos-complement", "TwosComplementLab", "—"),
-    ("bit-width", "تحديد عدد الخانات/البتات", 104, None, "/lessons/twos-complement", "merged", "lesson", "twos-complement", "TwosComplementLab", "—"),
-    ("overflow", "تجاوز السعة Overflow", 105, None, "/lessons/twos-complement", "merged", "lesson", "twos-complement", "TwosComplementLab", "—"),
-    ("floating-point", "الأعداد ذات الفاصلة العائمة", 106, None, "/lessons/floating-point", "partial", "lesson", None, "IfStatementLab (0.1+0.2)", "توسيع تمارين الدقة"),
-    ("radix-practice", "تطبيقات حساب الأساس", 96, None, "/lessons/radix-practice", "done", "lesson", None, "LessonPractice", "—"),
-    ("algo-intro", "مقدمة الخوارزميات", 107, None, "/lessons/algorithms", "partial", "lesson", None, "AlgorithmStepsLab", "توسيع مقدمة PDF"),
-    ("card-sort", "نشاط فرز البطاقات", 109, None, "/lessons/card-sort-algorithm", "partial", "activity", "card-sort-algorithm", "ActivityGuide + AlgorithmStepsLab", "محاكاة بطاقات فعلية"),
-    ("writing-algorithms", "كتابة الخوارزميات", 110, None, "/lessons/algorithms", "merged", "lesson", "algorithms", "AlgorithmStepsLab", "—"),
-    ("pseudocode", "شبه الكود", 112, None, "/lessons/algorithms", "merged", "lesson", "algorithms", "AlgorithmStepsLab", "—"),
-    ("python-arrays", "المصفوفات والقوائم", 114, None, "/lessons/python-arrays", "partial", "lesson", None, "PythonListLab", "—"),
-    ("indexing", "الفهرسة والوصول", 115, None, "/lessons/python-arrays", "merged", "lesson", "python-arrays", "PythonListLab", "—"),
-    ("booleans", "القيم المنطقية", 121, None, "/lessons/if-statement", "merged", "lesson", "if-statement", "IfStatementLab", "—"),
-    ("if-statement", "جملة if", 141, None, "/lessons/if-statement", "partial", "lesson", None, "IfStatementLab", "توسيع elif/nested"),
-    ("if-else", "if/else والدليل المرجعي", 139, None, "/lessons/sentence-reference", "partial", "lesson", None, "IfStatementLab", "—"),
-    ("for-loop", "حلقة for", 118, None, "/lessons/python-for-range", "partial", "lesson", None, "ForRangeLab", "—"),
-    ("range", "range", 119, None, "/lessons/python-for-range", "merged", "lesson", "python-for-range", "ForRangeLab", "—"),
-    ("while-loop", "حلقة while", 124, None, "/lessons/python-while", "partial", "lesson", None, "WhileLoopLab", "—"),
-    ("algo-apps", "تطبيقات الخوارزميات", 125, None, "/lessons/algorithms", "merged", "lesson", "algorithms", "AlgorithmStepsLab", "—"),
-    ("if-apps", "تطبيقات if", 143, None, "/lessons/if-statement", "merged", "lesson", "if-statement", "IfStatementLab", "—"),
-    ("computer-lab", "النشاط العملي — مختبر الحاسب", 149, None, "/lessons/day02-computer-lab", "partial", "lab", "day02-computer-lab", "ActivityGuide + IfStatementLab", "ربط حفظ التقدم بالمختبر"),
-    ("teacher-answers", "إجابات المعلم", 150, None, "/teacher/day-02-answers", "partial", "teacher", None, "TeacherDay02AnswersPage", "توسيع مفتاح PDF كامل"),
+    ("warmup", "النشاط التمهيدي: التحويلات و ASCII", 93, "/lessons/conversions-intro", "done", "activity", "conversions-intro", "ActivityGuide", "passed", []),
+    ("base-arithmetic", "الحساب في أنظمة العد المختلفة", 99, "/lessons/base-arithmetic", "done", "standalone", None, "BaseArithmeticLab", "passed", []),
+    ("hex-addition", "الجمع في النظام الست عشري", 100, "/lessons/base-arithmetic", "done", "merged", "base-arithmetic", "BaseArithmeticLab", "passed", []),
+    ("base5-addition", "الجمع في الأساس 5", 99, "/lessons/base-arithmetic", "done", "merged", "base-arithmetic", "BaseArithmeticLab", "passed", []),
+    ("binary-add", "قواعد الجمع الثنائي", 101, "/lessons/base-arithmetic", "done", "merged", "base-arithmetic", "BaseArithmeticLab", "passed", []),
+    ("binary-sub", "الطرح الثنائي", 102, "/lessons/base-arithmetic", "done", "merged", "base-arithmetic", "BaseArithmeticLab", "passed", []),
+    ("twos", "مكمل العدد 2 في الطرح", 103, "/lessons/twos-complement", "done", "standalone", None, "TwosComplementLab", "passed", []),
+    ("negative", "تمثيل الأعداد السالبة", 104, "/lessons/twos-complement", "done", "merged", "twos-complement", "TwosComplementLab", "passed", []),
+    ("bit-width", "تحديد عدد البتات", 104, "/lessons/twos-complement", "done", "merged", "twos-complement", "TwosComplementLab", "passed", []),
+    ("overflow", "تجاوز السعة Overflow", 105, "/lessons/twos-complement", "done", "merged", "twos-complement", "TwosComplementLab", "passed", []),
+    ("float", "الأعداد ذات الفاصلة العائمة", 106, "/lessons/floating-point", "done", "standalone", None, "IfStatementLab", "passed", []),
+    ("radix-practice", "تطبيقات حساب الأساس", 96, "/lessons/radix-practice", "done", "standalone", None, "LessonPractice", "passed", []),
+    ("algo-intro", "مقدمة الخوارزميات", 107, "/lessons/algorithms", "done", "standalone", None, "AlgorithmStepsLab", "passed", []),
+    ("card-sort", "نشاط فرز البطاقات", 109, "/lessons/card-sort-algorithm", "done", "activity", "card-sort-algorithm", "CardSortSimulation", "passed", []),
+    ("writing-algo", "كتابة الخوارزميات", 110, "/lessons/algorithms", "done", "merged", "algorithms", "AlgorithmStepsLab", "passed", []),
+    ("pseudocode", "شبه الكود", 112, "/lessons/algorithms", "done", "merged", "algorithms", "AlgorithmStepsLab", "passed", []),
+    ("python-arrays", "المصفوفات والقوائم", 114, "/lessons/python-arrays", "done", "standalone", None, "PythonListLab", "passed", []),
+    ("indexing", "الفهرسة والوصول", 115, "/lessons/python-arrays", "done", "merged", "python-arrays", "PythonListLab", "passed", []),
+    ("booleans", "القيم المنطقية", 121, "/lessons/if-statement", "done", "merged", "if-statement", "IfStatementLab", "passed", []),
+    ("if-statement", "جملة if", 141, "/lessons/if-statement", "done", "standalone", None, "IfStatementLab", "passed", []),
+    ("if-else-ref", "if/else والدليل المرجعي", 139, "/lessons/sentence-reference", "done", "standalone", None, "IfStatementLab", "passed", []),
+    ("for-loop", "حلقة for", 118, "/lessons/python-for-range", "done", "standalone", None, "ForRangeLab", "passed", []),
+    ("range", "range", 119, "/lessons/python-for-range", "done", "merged", "python-for-range", "ForRangeLab", "passed", []),
+    ("while-loop", "حلقة while", 124, "/lessons/python-while", "done", "standalone", None, "WhileLoopLab", "passed", []),
+    ("algo-apps", "تطبيقات الخوارزميات", 125, "/lessons/algorithms", "done", "merged", "algorithms", "AlgorithmStepsLab", "passed", []),
+    ("if-apps", "تطبيقات if", 143, "/lessons/if-statement", "done", "merged", "if-statement", "IfStatementLab", "passed", []),
+    ("computer-lab", "النشاط العملي — مختبر الحاسب", 149, "/lessons/day02-computer-lab", "done", "lab", "day02-computer-lab", "Day02ComputerLabPanel", "passed", []),
+    ("teacher-answers", "إجابات المعلم", 150, "/teacher/day-02-answers", "done", "teacher-only", None, "TeacherDay02AnswersPage", "passed", []),
 ]
+
+records = []
+for t in TOPICS:
+    tid, title, pdf_idx, route, impl, mode, merged, interactive, qa, remaining = t
+    records.append({
+        "id": tid,
+        "titleAr": title,
+        "pdfPageIndex": pdf_idx,
+        "route": route,
+        "implementationStatus": impl,
+        "integrationMode": mode,
+        "mergedInto": merged,
+        "interactive": interactive,
+        "qaStatus": qa,
+        "remainingWork": remaining,
+    })
+
+json_path = ROOT / "docs/day02-coverage.json"
+json_path.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
+
+impl_c = Counter(r["implementationStatus"] for r in records)
+qa_c = Counter(r["qaStatus"] for r in records)
+mode_c = Counter(r["integrationMode"] for r in records)
+all_done = all(r["implementationStatus"] == "done" for r in records)
 
 lines = [
-    "# حالة تغطية اليوم الثاني — خريطة PDF كاملة",
+    "# حالة تغطية اليوم الثاني — نموذج منفصل",
     "",
-    "**حدود اليوم 2:** pdfPageIndex 93–150  ",
-    "**الحالة العامة:** ⏳ **غير مكتمل** — لا تُستخدم عبارة «اليوم الثاني مكتمل» قبل **done** لكل عنصر.",
+    "**حدود اليوم 2:** pdfPageIndex 93–150",
+    f"**الحالة العامة:** {'✅ **مكتمل**' if all_done else '⏳ **غير مكتمل**'} — `implementationStatus` منفصل عن `integrationMode`.",
     "",
-    "| # | الموضوع | pdfPageIndex | printedPage | الحالة | المسار | مدمج في | تفاعلي | المتبقي |",
-    "|---:|---|---:|---:|---|---|---|---|---|",
+    "> **merged** = طريقة دمج المحتوى — **لا يعني اكتمالاً تلقائياً**. راجع `implementationStatus`.",
+    "",
+    "| # | الموضوع | pdf | implementation | integration | mergedInto | qa | تفاعلي | المتبقي |",
+    "|---:|---|---:|---|---|---|---|---|---|",
 ]
 
-for n, row in enumerate(TOPICS, 1):
-    _id, title, pdf_idx, printed, route, status, kind, merged, interactive, remaining = row
-    merged_txt = f"`{merged}`" if merged else "—"
+for n, r in enumerate(records, 1):
+    merged = f"`{r['mergedInto']}`" if r["mergedInto"] else "—"
+    rem = "—" if not r["remainingWork"] else "؛ ".join(r["remainingWork"])
     lines.append(
-        f"| {n} | {title} | {pdf_idx} | {printed or '—'} | **{status}** | {route} | {merged_txt} | {interactive} | {remaining or '—'} |"
+        f"| {n} | {r['titleAr']} | {r['pdfPageIndex']} | **{r['implementationStatus']}** | {r['integrationMode']} | {merged} | {r['qaStatus']} | {r['interactive']} | {rem} |"
     )
-
-items = json.load(open(ROOT / "docs/pdf-content-inventory.json", encoding="utf-8"))
-d2_inv = len([i for i in items if i.get("dayNumber") == 2])
 
 lines += [
     "",
-    f"**عناصر الجرد OCR لليوم 2:** {d2_inv} (مرجع — التصنيف أعلاه يعتمد خطة PDF اليدوية)",
-    "",
-    "## ملخص الحالة",
+    "## ملخص implementationStatus",
     "",
     "| الحالة | العدد |",
     "|---|---:|",
 ]
+for st in ("done", "partial", "pending", "not-applicable"):
+    if impl_c.get(st, 0):
+        lines.append(f"| {st} | {impl_c[st]} |")
 
-c = Counter(t[5] for t in TOPICS)
-for st in ("done", "partial", "merged", "pending"):
-    if c.get(st, 0):
-        lines.append(f"| {st} | {c.get(st, 0)} |")
+lines += ["", "## ملخص integrationMode", "", "| الوضع | العدد |", "|---|---:|"]
+for st in ("standalone", "merged", "activity", "lab", "teacher-only"):
+    if mode_c.get(st, 0):
+        lines.append(f"| {st} | {mode_c[st]} |")
 
-lines += [
-    "",
-    "## الدروس الجديدة (الدفعة 4)",
-    "",
-    "| المسار | الأقسام | أمثلة | تدريب موجّه | تدريب مستقل | مختبر |",
-    "|---|---:|---:|---:|---:|---|",
-    "| /lessons/base-arithmetic | 6 | 5 | 3 | 4 | BaseArithmeticLab |",
-    "| /lessons/twos-complement | 6 | 4 | 3 | 3 | TwosComplementLab |",
-    "| /lessons/floating-point | 5 | 3 | 2 | 2 | IfStatementLab |",
-    "| /lessons/python-arrays | 5 | 4 | 2 | 3 | PythonListLab |",
-    "| /lessons/python-for-range | 5 | 3 | 2 | 3 | ForRangeLab |",
-    "| /lessons/python-while | 5 | 3 | 2 | 3 | WhileLoopLab |",
-    "| /lessons/card-sort-algorithm | 2 | 1 | — | — | AlgorithmStepsLab |",
-    "| /lessons/conversions-intro | 2 | 2 | 2 | 2 | NumberBaseConverter |",
-    "| /lessons/day02-computer-lab | 3 | 1 | — | — | IfStatementLab |",
-    "",
-    "_أُنشئ بواسطة `scripts/generate-day02-coverage.py`_",
-]
+lines += ["", "## ملخص qaStatus", "", "| QA | العدد |", "|---|---:|"]
+for st in ("passed", "failed", "not-tested"):
+    if qa_c.get(st, 0):
+        lines.append(f"| {st} | {qa_c[st]} |")
 
-out = ROOT / "docs/day02-coverage-status.md"
-out.write_text("\n".join(lines), encoding="utf-8")
-print(f"Wrote {out}")
+lines += ["", "_JSON: `docs/day02-coverage.json` — أُنشئ بواسطة `scripts/generate-day02-coverage.py`_"]
+
+md_path = ROOT / "docs/day02-coverage-status.md"
+md_path.write_text("\n".join(lines), encoding="utf-8")
+print(f"Wrote {json_path} and {md_path}")

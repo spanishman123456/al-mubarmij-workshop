@@ -94,6 +94,16 @@ export function getDatabase() {
   return db;
 }
 
+export function getDatabaseStatus() {
+  const dbPath = getDbPath();
+  return {
+    ok: Boolean(db),
+    path: dbPath,
+    exists: fs.existsSync(dbPath),
+    writeCount,
+  };
+}
+
 export function resetDatabaseForTests() {
   if (db) {
     db.close();

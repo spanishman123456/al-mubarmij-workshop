@@ -119,8 +119,8 @@ export default function DayLessonPage() {
           ) : null}
 
           {day.id === "day-02" ? (
-            <EduCard title="دروس اليوم الثاني — ⏳ غير مكتمل" accent="violet">
-              <p className="mb-2 text-sm text-amber-800">راجع <code className="text-xs">docs/day02-coverage-status.md</code></p>
+            <EduCard title="دروس اليوم الثاني — ✅ مكتمل" accent="violet">
+              <p className="mb-2 text-sm text-emerald-800">راجع <code className="text-xs">docs/day02-coverage-status.md</code></p>
               <div className="mt-2 flex flex-col gap-2 text-sm">
                 <Link to="/lessons/conversions-intro">1. تمهيد: تحويلات + ASCII</Link>
                 <Link to="/lessons/base-arithmetic">2. الحساب في الأنظمة</Link>
@@ -135,6 +135,20 @@ export default function DayLessonPage() {
                 <Link to="/lessons/sentence-reference">11. الدليل المرجعي</Link>
                 <Link to="/lessons/if-statement">12. جمل If</Link>
                 <Link to="/lessons/day02-computer-lab">13. مختبر 60 دقيقة</Link>
+              </div>
+            </EduCard>
+          ) : null}
+
+          {day.id === "day-03" ? (
+            <EduCard title="دروس اليوم الثالث — 🚧 قيد التوسيع" accent="cyan">
+              <div className="mt-2 flex flex-col gap-2 text-sm">
+                <Link to="/lessons/python-constants">1. الثوابت</Link>
+                <Link to="/lessons/python-multi-arrays">2. مصفوفات متعددة المتغيرات</Link>
+                <Link to="/lessons/python-break-continue">3. break / continue / pass / else</Link>
+                <Link to="/lessons/divisors-activity">4. نشاط المقسومات</Link>
+                <Link to="/lessons/collatz">5. تخمين Collatz</Link>
+                <Link to="/lessons/truth-tables">6. جداول الحقيقة</Link>
+                <Link to="/lessons/logic-gates">7. البوابات المنطقية</Link>
               </div>
             </EduCard>
           ) : null}

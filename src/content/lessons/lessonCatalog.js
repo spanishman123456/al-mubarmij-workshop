@@ -20,6 +20,13 @@ import { pythonWhileLesson } from "./day02/pythonWhileLesson.js";
 import { sentenceReferenceLesson } from "./day02/sentenceReferenceLesson.js";
 import { ifStatementLesson } from "./day02/ifStatementLesson.js";
 import { day02ComputerLabLesson } from "./day02/day02ComputerLabLesson.js";
+import { constantsLesson } from "./day03/constantsLesson.js";
+import { multiDimArraysLesson } from "./day03/multiDimArraysLesson.js";
+import { breakContinuePassLesson } from "./day03/breakContinuePassLesson.js";
+import { divisorsActivityLesson } from "./day03/divisorsActivityLesson.js";
+import { collatzLesson } from "./day03/collatzLesson.js";
+import { truthTablesLesson } from "./day03/truthTablesLesson.js";
+import { logicGatesLesson } from "./day03/logicGatesLesson.js";
 
 export const lessonCatalog = [
   numberSystemsLesson,
@@ -44,4 +51,11 @@ export const lessonCatalog = [
   sentenceReferenceLesson,
   ifStatementLesson,
   day02ComputerLabLesson,
+  constantsLesson,
+  multiDimArraysLesson,
+  breakContinuePassLesson,
+  divisorsActivityLesson,
+  collatzLesson,
+  truthTablesLesson,
+  logicGatesLesson,
 ];

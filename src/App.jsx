@@ -47,6 +47,15 @@ import {
   PythonForRangeLessonPage,
   PythonWhileLessonPage,
 } from "./pages/lessons/Day02LessonPages.jsx";
+import {
+  ConstantsLessonPage,
+  MultiDimArraysLessonPage,
+  BreakContinuePassLessonPage,
+  DivisorsActivityLessonPage,
+  CollatzLessonPage,
+  TruthTablesLessonPage,
+  LogicGatesLessonPage,
+} from "./pages/lessons/Day03LessonPages.jsx";
 import TeacherDay01AnswersPage from "./pages/teacher/TeacherDay01AnswersPage.jsx";
 import TeacherDay02AnswersPage from "./pages/teacher/TeacherDay02AnswersPage.jsx";
 
@@ -234,6 +243,14 @@ function AppRoutes() {
         <Route path="/lessons/sentence-reference" element={<ProtectedRoute><SentenceReferenceLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/if-statement" element={<ProtectedRoute><IfStatementLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/day02-computer-lab" element={<ProtectedRoute><Day02ComputerLabLessonPage /></ProtectedRoute>} />
+
+        <Route path="/lessons/python-constants" element={<ProtectedRoute><ConstantsLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/python-multi-arrays" element={<ProtectedRoute><MultiDimArraysLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/python-break-continue" element={<ProtectedRoute><BreakContinuePassLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/divisors-activity" element={<ProtectedRoute><DivisorsActivityLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/collatz" element={<ProtectedRoute><CollatzLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/truth-tables" element={<ProtectedRoute><TruthTablesLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/logic-gates" element={<ProtectedRoute><LogicGatesLessonPage /></ProtectedRoute>} />
 
         <Route path="/teacher/day-01-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay01AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-02-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay02AnswersPage /></ProtectedRoute>} />
