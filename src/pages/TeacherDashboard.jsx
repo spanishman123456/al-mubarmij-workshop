@@ -93,6 +93,9 @@ export default function TeacherDashboard() {
       <EduCard className="mb-6 flex flex-wrap items-center justify-between gap-4" accent="violet">
         <MawhibaBrand variant="horizontal" />
         <div className="flex flex-wrap items-center gap-3">
+          <Link to="/teacher/day-01-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 1
+          </Link>
           <button
             type="button"
             onClick={handleRefresh}

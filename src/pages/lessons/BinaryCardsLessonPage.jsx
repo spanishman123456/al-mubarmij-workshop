@@ -19,6 +19,12 @@ export default function BinaryCardsLessonPage() {
 
       <EduCard title="الشرح" className="mt-4">
         <p className="mb-4 text-slate-700">{L.conceptSimple}</p>
+        {L.deepSections?.map((s) => (
+          <div key={s.id} className="mb-3 rounded-lg border border-violet-100 bg-violet-50/50 p-3 text-sm">
+            <p className="font-bold text-violet-900">{s.titleAr}</p>
+            <p className="mt-1 text-slate-700">{s.bodyAr}</p>
+          </div>
+        ))}
         <div className="flex flex-wrap gap-2">
           {CARD_VALUES.map((v) => (
             <div key={v} className="rounded-lg border-2 border-violet-300 bg-violet-50 px-4 py-3 text-center font-bold">

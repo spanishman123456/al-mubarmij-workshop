@@ -4,6 +4,7 @@ import { usePlatform } from "../../context/PlatformContext";
 import { fetchOnboardingStatus } from "../../lib/platformApi";
 
 const GATE_PATHS = ["/path", "/curriculum", "/simulations", "/python", "/worksheets", "/quizzes", "/projects"];
+const ONBOARDING_ALLOWED_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre", "/quizzes/take/quiz-pre"];
 
 export function OnboardingGate({ children }) {
   const { user, isStudentSession } = usePlatform();
@@ -26,7 +27,7 @@ export function OnboardingGate({ children }) {
 
   if (!needsGate) return children;
   if (loading) return null;
-  if (status && !status.complete && !location.pathname.startsWith("/onboarding")) {
+  if (status && !status.complete && !ONBOARDING_ALLOWED_PREFIXES.some((p) => location.pathname.startsWith(p))) {
     return <Navigate to="/onboarding" replace state={{ from: location.pathname }} />;
   }
   return children;
@@ -47,7 +48,12 @@ export function OnboardingHub() {
     { to: "/onboarding/acceptable-use", label: "سياسة الاستخدام المناسب", key: "acceptable_use", done: status?.agreements?.acceptable_use?.status === "signed" },
     { to: "/onboarding/honor-agreement", label: "اتفاقية مدونة الشرف", key: "honor_agreement", done: status?.agreements?.honor_agreement?.status === "signed" },
     { to: "/onboarding/tech-contract", label: "عقد استخدام التقنيات", key: "tech_contract", done: status?.agreements?.tech_contract?.status === "signed" },
-    { to: "/quizzes/take/quiz-pre", label: "التقويم القبلي", key: "pre_assessment", done: false },
+    {
+      to: "/quizzes/run/quiz-pre",
+      label: "التقويم القبلي",
+      key: "pre_assessment",
+      done: status?.preAssessment?.status === "completed",
+    },
   ];
 
   return (

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { NavBar } from "./components/NavBar";
 import { PlatformProvider, usePlatform } from "./context/PlatformContext";
@@ -32,12 +32,26 @@ import HexPuzzleLessonPage from "./pages/lessons/HexPuzzleLessonPage.jsx";
 import BinaryPuzzleLessonPage from "./pages/lessons/BinaryPuzzleLessonPage.jsx";
 import BinaryMatchingLessonPage from "./pages/lessons/BinaryMatchingLessonPage.jsx";
 import StringSplittingLessonPage from "./pages/lessons/StringSplittingLessonPage.jsx";
+import {
+  AlgorithmsLessonPage,
+  IfStatementLessonPage,
+  ConversionsIntroLessonPage,
+  RadixPracticeLessonPage,
+  SentenceReferenceLessonPage,
+  Day02ComputerLabLessonPage,
+} from "./pages/lessons/Day02LessonPages.jsx";
+import TeacherDay01AnswersPage from "./pages/teacher/TeacherDay01AnswersPage.jsx";
 
 function NotFoundRedirect() {
   const { user, authReady } = usePlatform();
   if (!authReady) return <AuthLoading />;
   if (!user) return <Navigate to="/login" replace />;
   return <Navigate to={user.role === "teacher" ? "/teacher" : "/student"} replace />;
+}
+
+function QuizTakeRedirect() {
+  const { quizId } = useParams();
+  return <Navigate to={`/quizzes/run/${quizId}`} replace />;
 }
 
 function AppRoutes() {
@@ -199,6 +213,22 @@ function AppRoutes() {
           }
         />
 
+        <Route path="/lessons/conversions-intro" element={<ProtectedRoute><ConversionsIntroLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/radix-practice" element={<ProtectedRoute><RadixPracticeLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/algorithms" element={<ProtectedRoute><AlgorithmsLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/sentence-reference" element={<ProtectedRoute><SentenceReferenceLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/if-statement" element={<ProtectedRoute><IfStatementLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/day02-computer-lab" element={<ProtectedRoute><Day02ComputerLabLessonPage /></ProtectedRoute>} />
+
+        <Route
+          path="/teacher/day-01-answers"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <TeacherDay01AnswersPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/path"
           element={
@@ -283,6 +313,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route path="/quizzes/take/:quizId" element={<QuizTakeRedirect />} />
 
         <Route
           path="/simulations"

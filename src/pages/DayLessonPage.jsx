@@ -110,12 +110,37 @@ export default function DayLessonPage() {
                   <Link to="/lessons/hex-colors" className="text-sm font-semibold text-violet-700 hover:underline">
                     9. ألوان Hex و RGB →
                   </Link>
-                  <Link to="/quizzes/take/quiz-pre" className="text-sm font-semibold text-amber-700 hover:underline">
+                  <Link to="/quizzes/run/quiz-pre" className="text-sm font-semibold text-amber-700 hover:underline">
                     التقويم القبلي →
                   </Link>
                 </div>
               </EduCard>
             </>
+          ) : null}
+
+          {day.id === "day-02" ? (
+            <EduCard title="دروس اليوم الثاني — pdfPageIndex 93–150" accent="violet">
+              <div className="mt-2 flex flex-col gap-2">
+                <Link to="/lessons/conversions-intro" className="text-sm font-semibold text-violet-700 hover:underline">
+                  1. النشاط التمهيدي: التحويلات (93–98) →
+                </Link>
+                <Link to="/lessons/radix-practice" className="text-sm font-semibold text-violet-700 hover:underline">
+                  2. تطبيقات حساب الأساس (99–104) →
+                </Link>
+                <Link to="/lessons/algorithms" className="text-sm font-semibold text-violet-700 hover:underline">
+                  3. كتابة الخوارزمية (105–120) →
+                </Link>
+                <Link to="/lessons/sentence-reference" className="text-sm font-semibold text-violet-700 hover:underline">
+                  4. الدليل المرجعي لبناء الجملة (139–140) →
+                </Link>
+                <Link to="/lessons/if-statement" className="text-sm font-semibold text-violet-700 hover:underline">
+                  5. تطبيقات جمل If (141–148) →
+                </Link>
+                <Link to="/lessons/day02-computer-lab" className="text-sm font-semibold text-violet-700 hover:underline">
+                  6. النشاط العملي — مختبر الحاسب (149–150) →
+                </Link>
+              </div>
+            </EduCard>
           ) : null}
 
           <EduCard title="تطبيق عملي" accent="emerald">

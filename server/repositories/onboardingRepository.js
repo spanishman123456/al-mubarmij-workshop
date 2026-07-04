@@ -1,7 +1,16 @@
 import { queryOne, queryAll, runSql } from "../db/query.js";
 import { persistDatabase } from "../db/index.js";
+import { getStudentProgress } from "./progressRepository.js";
 
 const DOC_TYPES = ["honor_code", "acceptable_use", "honor_agreement", "tech_contract"];
+
+function isPreAssessmentComplete(studentId) {
+  const row = getStudentProgress(studentId);
+  const progress = row?.progress || {};
+  if (progress.preTest?.percent != null || progress.preTest?.score != null) return true;
+  const quizPre = progress.quizScores?.["quiz-pre"];
+  return Boolean(quizPre?.percent != null || quizPre?.score != null || quizPre?.submitted);
+}
 
 export function getOnboardingStatus(studentId) {
   const bingoRow = queryOne(
@@ -31,10 +40,16 @@ export function getOnboardingStatus(studentId) {
       : { status: "not_started" };
   }
 
-  const complete =
-    bingo.status === "submitted" && DOC_TYPES.every((t) => agreements[t].status === "signed");
+  const preAssessment = {
+    status: isPreAssessmentComplete(studentId) ? "completed" : "not_started",
+  };
 
-  return { bingo, agreements, complete, requiredDocs: DOC_TYPES };
+  const complete =
+    bingo.status === "submitted" &&
+    DOC_TYPES.every((t) => agreements[t].status === "signed") &&
+    preAssessment.status === "completed";
+
+  return { bingo, agreements, preAssessment, complete, requiredDocs: DOC_TYPES };
 }
 
 export function saveBingoProgress(studentId, { cells, status, startedAt, completedAt, submittedAt }) {
