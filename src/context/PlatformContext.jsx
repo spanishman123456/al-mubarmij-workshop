@@ -21,7 +21,9 @@ import {
   recordActivityStart,
   recordActivityComplete,
   defaultAnalytics,
+  mergeRemoteAnalytics,
 } from "../lib/platformAnalytics";
+import { reportLoginEvent, reportActivityPatch, fetchAllAnalytics } from "../lib/analyticsApi";
 import {
   loadValidatedPlatformState,
   resolveSessionUser,
@@ -34,9 +36,49 @@ import { clearActivityTracking, resetActivityTracking } from "../lib/inactivityS
 
 const PlatformContext = createContext(null);
 
+const LOGIN_SESSION_KEY = "mubarmij-login-session-id";
+let activitySyncTimer = null;
+
+function getOrCreateLoginSessionId() {
+  try {
+    let id = sessionStorage.getItem(LOGIN_SESSION_KEY);
+    if (!id) {
+      id = crypto.randomUUID();
+      sessionStorage.setItem(LOGIN_SESSION_KEY, id);
+    }
+    return id;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
+function clearLoginSessionId() {
+  try {
+    sessionStorage.removeItem(LOGIN_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function scheduleActivitySync(studentId, analytics) {
+  if (activitySyncTimer) clearTimeout(activitySyncTimer);
+  activitySyncTimer = setTimeout(() => {
+    reportActivityPatch(studentId, {
+      lastActivityAt: analytics.lastActivityAt,
+      dailyLog: analytics.dailyLog,
+      pagesVisited: analytics.pagesVisited,
+      pythonRuns: analytics.pythonRuns,
+      activitiesCompleted: analytics.activitiesCompleted,
+      simRuns: analytics.simRuns,
+    });
+  }, 3000);
+}
+
 export function PlatformProvider({ children }) {
   const [state, setState] = useState(() => loadValidatedPlatformState());
   const [authReady, setAuthReady] = useState(false);
+  const [remoteAnalyticsByStudent, setRemoteAnalyticsByStudent] = useState({});
+  const [analyticsSyncStatus, setAnalyticsSyncStatus] = useState({ loading: false, error: null, fetchedAt: null });
 
   useEffect(() => {
     setAuthReady(true);
@@ -88,25 +130,62 @@ export function PlatformProvider({ children }) {
         return { ok: false, message: "رقم الهوية غير مسجل في النظام." };
       }
       const student = rosterStudentToUser(row);
+      const sessionId = getOrCreateLoginSessionId();
+      let updatedAnalytics = null;
+
       persist((prev) => {
         let next = { ...prev, ...createSessionPatch(student.id) };
         next = ensureStudentRecords(next, student.id);
         const current = next.analyticsByStudent[student.id];
+        updatedAnalytics = recordLogin(current, { sessionId });
         next.analyticsByStudent = {
           ...next.analyticsByStudent,
-          [student.id]: recordLogin(current),
+          [student.id]: updatedAnalytics,
         };
         return next;
       });
+
+      reportLoginEvent(student.id, {
+        at: updatedAnalytics.lastLoginAt,
+        sessionId,
+        success: true,
+        userAgent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : "",
+      }).then((res) => {
+        if (!res.ok) {
+          console.error("[platform] login sync failed", res.error);
+        }
+      });
+
       resetActivityTracking();
       return { ok: true, user: student };
     },
     [persist],
   );
 
+  const refreshTeacherAnalytics = useCallback(async () => {
+    setAnalyticsSyncStatus((s) => ({ ...s, loading: true, error: null }));
+    const res = await fetchAllAnalytics();
+    if (res.ok) {
+      setRemoteAnalyticsByStudent(res.analyticsByStudent || {});
+      setAnalyticsSyncStatus({
+        loading: false,
+        error: null,
+        fetchedAt: res.fetchedAt || new Date().toISOString(),
+      });
+      return { ok: true };
+    }
+    setAnalyticsSyncStatus({
+      loading: false,
+      error: res.error || "تعذّر جلب البيانات من الخادم",
+      fetchedAt: null,
+    });
+    return { ok: false, error: res.error };
+  }, []);
+
   const logout = useCallback(
     ({ reason } = {}) => {
       persist((prev) => ({ ...prev, ...clearSessionPatch() }));
+      clearLoginSessionId();
       clearActivityTracking();
       try {
         sessionStorage.clear();
@@ -134,11 +213,13 @@ export function PlatformProvider({ children }) {
         const resolved = resolveSessionUser(uid);
         if (!resolved || resolved.role !== "student") return prev;
         const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
+        const updated = recordPageView(current, path);
+        scheduleActivitySync(uid, updated);
         return {
           ...prev,
           analyticsByStudent: {
             ...prev.analyticsByStudent,
-            [uid]: recordPageView(current, path),
+            [uid]: updated,
           },
         };
       });
@@ -592,7 +673,9 @@ export function PlatformProvider({ children }) {
   const allStudentsProgress = useMemo(() => {
     return getAllRosterStudents().map((student) => {
       const progress = getStudentProgress(state, student.id);
-      const analytics = getStudentAnalytics(state, student.id);
+      const localAnalytics = getStudentAnalytics(state, student.id);
+      const remoteAnalytics = remoteAnalyticsByStudent[student.id];
+      const analytics = mergeRemoteAnalytics(localAnalytics, remoteAnalytics);
       return {
         student,
         progress,
@@ -600,7 +683,14 @@ export function PlatformProvider({ children }) {
         stats: computeProgressStats(progress),
       };
     });
-  }, [state]);
+  }, [state, remoteAnalyticsByStudent]);
+
+  useEffect(() => {
+    const userNow = state.sessionUserId ? resolveSessionUser(state.sessionUserId) : null;
+    if (userNow?.role === "teacher") {
+      refreshTeacherAnalytics();
+    }
+  }, [state.sessionUserId, refreshTeacherAnalytics]);
 
   const value = useMemo(
     () => ({
@@ -632,6 +722,8 @@ export function PlatformProvider({ children }) {
       trackPythonRun,
       sessionUserId,
       isStudentSession,
+      refreshTeacherAnalytics,
+      analyticsSyncStatus,
       state,
     }),
     [
@@ -663,6 +755,8 @@ export function PlatformProvider({ children }) {
       trackPythonRun,
       sessionUserId,
       isStudentSession,
+      refreshTeacherAnalytics,
+      analyticsSyncStatus,
       state,
     ],
   );

@@ -53,7 +53,7 @@ function migrateFromV1() {
     if (!raw) return null;
     const old = JSON.parse(raw);
     const progressByStudent = { ...seedProgress(), ...(old.progressByStudent || {}) };
-    const analyticsByStudent = seedAnalytics();
+    const analyticsByStudent = { ...seedAnalytics(), ...(old.analyticsByStudent || {}) };
     Object.keys(old.progressByStudent || {}).forEach((id) => {
       if (!analyticsByStudent[id]) analyticsByStudent[id] = defaultAnalytics();
     });
@@ -90,7 +90,11 @@ export function loadPlatformState() {
 }
 
 export function savePlatformState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (err) {
+    console.error("[platform-store] save failed", err?.message || err);
+  }
 }
 
 export function getStudentProgress(state, studentId) {
