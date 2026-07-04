@@ -46,13 +46,19 @@ export const binaryCardsLesson = {
     { titleAr: "العد من 1", bodyAr: "في البرمجة المنازل تبدأ من 0 — first box is box 0." },
   ],
   quickCheck: {
-    questions: [{ id: "q1", promptAr: "21 يحتاج بطاقة 16؟", answer: "نعم", hintAr: "16 ≤ 21" }],
+    questions: [
+      { id: "q1", promptAr: "21 يحتاج بطاقة 16؟", answer: "نعم", hintAr: "16 ≤ 21" },
+      { id: "q2", promptAr: "1010₂ = ?", answer: "10", hintAr: "8+2" },
+    ],
   },
   guidedPractice: [
     { id: "g1", promptAr: "5 بالبطاقات = ?", answer: "101", hints: ["4+1", "101"] },
     { id: "g2", promptAr: "13 بالبطاقات = ?", answer: "1101", hints: ["8+4+1"] },
   ],
-  independentPractice: [{ id: "i1", promptAr: "10 بالبطاقات ثنائي؟", answer: "1010", hints: ["8+2"] }],
+  independentPractice: [
+    { id: "i1", promptAr: "10 بالبطاقات ثنائي؟", answer: "1010", hints: ["8+2"] },
+    { id: "i2", promptAr: "7 بالبطاقات ثنائي؟", answer: "111", hints: ["4+2+1"] },
+  ],
   summary: "البطاقات = قيمة مكانية ملموسة. الظاهر = 1، المقلوب = 0.",
   linkedActivity: "/lessons/number-systems",
 };

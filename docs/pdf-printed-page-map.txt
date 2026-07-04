@@ -1,0 +1,14 @@
+=== printedPage -> pdfPageIndex ===
+printed  50 -> pdfPageIndex 200 (pdfPage 201)
+printed  51 -> pdfPageIndex 73 (pdfPage 74)
+printed  52 -> pdfPageIndex 74 (pdfPage 75)
+printed  53 -> pdfPageIndex 75 (pdfPage 76)
+printed  54 -> pdfPageIndex 204 (pdfPage 205)
+printed  55 -> pdfPageIndex 205 (pdfPage 206)
+printed  56 -> pdfPageIndex 206 (pdfPage 207)
+printed  57 -> pdfPageIndex 207 (pdfPage 208)
+printed  58 -> pdfPageIndex 208 (pdfPage 209)
+printed  60 -> pdfPageIndex 82 (pdfPage 83)
+printed 405 -> pdfPageIndex 366 (pdfPage 367)
+
+=== Search: اليوم الثاني on content pages ===

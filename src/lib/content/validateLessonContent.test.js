@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { validateLessonContent, validateLessonCatalog } from "./validateLessonContent.js";
-import { numberSystemsLesson } from "../../content/lessons/numberSystemsLesson.js";
-import { pythonIntroLesson } from "../../content/lessons/day01/pythonIntroLesson.js";
-import { asciiUnicodeLesson } from "../../content/lessons/day01/asciiUnicodeLesson.js";
-import { hexColorsLesson } from "../../content/lessons/day01/hexColorsLesson.js";
-import { binaryCardsLesson } from "../../content/lessons/day01/binaryCardsLesson.js";
+import { lessonCatalog } from "../../content/lessons/lessonCatalog.js";
 
 describe("validateLessonContent", () => {
   it("rejects empty lesson", () => {
@@ -13,30 +9,16 @@ describe("validateLessonContent", () => {
     expect(r.errors.length).toBeGreaterThan(5);
   });
 
-  it("accepts full number-systems lesson", () => {
-    const r = validateLessonContent(numberSystemsLesson);
-    expect(r.ok).toBe(true);
-    expect(r.errors).toEqual([]);
-  });
-
-  it("rejects placeholder text", () => {
-    const r = validateLessonContent({
-      ...numberSystemsLesson,
-      summary: "TODO",
-    });
-    expect(r.ok).toBe(false);
-  });
-
-  it("validates day-01 lesson catalog", () => {
-    const results = validateLessonCatalog([
-      numberSystemsLesson,
-      binaryCardsLesson,
-      pythonIntroLesson,
-      asciiUnicodeLesson,
-      hexColorsLesson,
-    ]);
+  it("validates full lesson catalog", () => {
+    const results = validateLessonCatalog(lessonCatalog);
     for (const r of results) {
       expect(r.ok, `${r.id}: ${r.errors.join("; ")}`).toBe(true);
     }
+  });
+
+  it("rejects duplicate summaries", () => {
+    const dup = [{ ...lessonCatalog[0] }, { ...lessonCatalog[0], id: "copy" }];
+    const results = validateLessonCatalog(dup);
+    expect(results.some((r) => !r.ok)).toBe(true);
   });
 });

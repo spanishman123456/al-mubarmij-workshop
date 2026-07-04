@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Extract structured inventory from برمجة الحاسب.pdf — exact PDF page numbers."""
+"""
+Extract PDF inventory with corrected day mapping.
+Uses docs/curriculum-day-boundaries.json — NOT OCR day detection alone.
+"""
+
+from __future__ import annotations
 
 import json
 import re
@@ -9,217 +14,255 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
+ROOT = Path(__file__).resolve().parent.parent
 PDF_PATH = Path(r"C:\Users\hosam\OneDrive\Desktop\برمجة الحاسب.pdf")
-OUT_MD = Path(__file__).resolve().parent.parent / "docs" / "pdf-content-inventory.md"
-OUT_JSON = Path(__file__).resolve().parent.parent / "docs" / "pdf-content-inventory.json"
+BOUNDARIES_PATH = ROOT / "docs" / "curriculum-day-boundaries.json"
+COVERAGE_PATH = ROOT / "docs" / "platform-coverage-map.json"
+OUT_JSON = ROOT / "docs" / "pdf-content-inventory.json"
+OUT_MD = ROOT / "docs" / "pdf-content-inventory.md"
 
-DAY_PATTERNS = [
-    (re.compile(r"اليوم\s+الأ?و?ل\b|اليوم\s+1\b|1\s+اليوم\s+الأ?و?ل"), 1),
-    (re.compile(r"اليوم\s+الثاني\b|اليوم\s+2\b|2\s+اليوم"), 2),
-    (re.compile(r"اليوم\s+الثالث\b|اليوم\s+3\b|3\s+اليوم"), 3),
-    (re.compile(r"اليوم\s+الرابع\b|اليوم\s+4\b|4\s+اليوم"), 4),
-    (re.compile(r"اليوم\s+الخامس\b|اليوم\s+5\b|5\s+اليوم"), 5),
-    (re.compile(r"اليوم\s+السادس\b|اليوم\s+6\b|6\s+اليوم"), 6),
-    (re.compile(r"اليوم\s+السابع\b|اليوم\s+7\b|7\s+اليوم"), 7),
-    (re.compile(r"اليوم\s+الثامن\b|اليوم\s+8\b|8\s+اليوم"), 8),
-    (re.compile(r"اليوم\s+التاسع\b|اليوم\s+9\b|9\s+اليوم"), 9),
-    (re.compile(r"اليوم\s+العاشر\b|اليوم\s+10\b|10\s+اليوم"), 10),
-    (re.compile(r"اليوم\s+الحادي\s+عشر\b|11\s+اليوم"), 11),
-    (re.compile(r"اليوم\s+الثاني\s+عشر\b|12\s+اليوم"), 12),
-    (re.compile(r"اليوم\s+الثالث\s+عشر\b|13\s+اليوم"), 13),
-    (re.compile(r"اليوم\s+الرابع\s+عشر\b|14\s+اليوم"), 14),
-    (re.compile(r"اليوم\s+الخامس\s+عشر\b|15\s+اليوم"), 15),
-]
+FOOTER_NUM = re.compile(r"^(\d{1,3})$")
+GARBAGE = re.compile(r"^[.\s\u2026\uFFFD\d]+$|^\d+\s+\.{3,}")
 
 CONTENT_TYPE_RULES = [
-    (re.compile(r"إجابات?\s*الأ?"), "إجابة"),
-    (re.compile(r"ورقة\s+عمل|ورقة\s+العمل"), "ورقة عمل"),
-    (re.compile(r"تطبيقات\s+على|تطبيق\s+عملي|اط\s+عملي"), "نشاط"),
-    (re.compile(r"نشاط\s+كسر\s+الجليد|BINGO", re.I), "نشاط"),
-    (re.compile(r"مدونة\s+الشرف"), "شرح"),
-    (re.compile(r"سياسة\s+الاستخدام|عقد\s+استخدام"), "شرح"),
-    (re.compile(r"اتفاقية\s+مدونة"), "شرح"),
-    (re.compile(r"تقويم\s+قبل|تقويم\s+بعد|تقويم\s+البرنامج"), "تقويم"),
-    (re.compile(r"المشروع\s+الختام|مشروع\s+نهائي"), "مشروع"),
-    (re.compile(r"المقدمة|مقدمة\s+"), "شرح"),
+    (re.compile(r"إجابات?\s"), "إجابة"),
+    (re.compile(r"ورقة\s+عمل|ورقة\s+العمل|ورقة\s+نش"), "ورقة عمل"),
+    (re.compile(r"تطبيقات\s+على|تطبيق\s+عملي|اط\s+عملي|اط\s+خوارز"), "نشاط"),
+    (re.compile(r"BINGO|كسر\s+الجليد", re.I), "نشاط"),
+    (re.compile(r"تقويم\s+قبل|تقويم\s+بعد|تقويم\s+البرنامج|التقويم\s+القبل"), "تقويم"),
+    (re.compile(r"مدونة\s+الشرف|اتفاقية\s+مدونة|عقد\s+استخدام|سياسة\s+الاستخدام"), "شرح"),
+    (re.compile(r"الدليل\s+المرجعي"), "مرجع"),
     (re.compile(r"الأ?هداف"), "شرح"),
-    (re.compile(r"الخاتمة|إجراءات\s+الخاتمة"), "شرح"),
-    (re.compile(r"مثال\s+ال|المثال\s+ال"), "مثال"),
-    (re.compile(r"الدليل\s+المرجعي|مرجع"), "مرجع"),
+    (re.compile(r"خطوات\s+ال?تنفيذ"), "شرح"),
+    (re.compile(r"الخاتمة|إجراءات\s+ال?خاتمة"), "شرح"),
+    (re.compile(r"^مثال|المثال"), "مثال"),
+    (re.compile(r"أ?حجية"), "نشاط"),
+    (re.compile(r"^مقدمة|مقدمة\s"), "شرح"),
 ]
 
-TOPIC_KEYWORDS = [
+TOPIC_RULES = [
     ("bingo", r"BINGO|كسر\s+الجليد"),
     ("honor-code", r"مدونة\s+الشرف"),
-    ("acceptable-use", r"سياسة\s+الاستخدام|الاستخدام\s+المناسب"),
+    ("acceptable-use", r"سياسة\s+الاستخدام|الاستخدام\s+المقبول"),
     ("honor-agreement", r"اتفاقية\s+مدونة"),
     ("tech-contract", r"عقد\s+استخدام\s+التقنيات"),
-    ("number-systems", r"نظام\s+العد|الثنائي|الأساسات|القيمة\s+المكانية"),
-    ("binary-cards", r"بطاقات\s+الأ?رقام\s+الثنائية|Unplugged|حديقة\s+الحوسبة"),
-    ("python-intro", r"بايثون|Python"),
+    ("pre-assessment", r"التقويم\s+القبل|تقويم\s+قبل"),
+    ("number-systems", r"نظام\s+ال?عد|القيمة\s+المكان|تحويل.*نظام|الأساسات?|حساب\s+الأساس"),
+    ("binary-cards", r"بطاقات\s+.*ثنائ|Unplugged|حديقة\s+الحوس"),
+    ("binary-puzzle", r"أ?حجية\s+.*ثنائ"),
+    ("binary-matching", r"مطابقة.*ثنائ|بطاقات\s+المطابقة"),
+    ("bases-radix", r"الأساسات|حساب\s+الأساس"),
+    ("python-intro", r"بايثون|Python|print\s*\("),
+    ("string-splitting", r"تقسيم\s+سل|split\s*\(|سلاسل\s+الرموز"),
     ("ascii-unicode", r"ASCII|Unicode|يونيكود"),
-    ("hex-colors", r"الست\s+عشري|RGB|Kuler|الأ?لوان"),
-    ("algorithms", r"خوارزم"),
-    ("if-statement", r"جملة\s+If|if\s+Statement|إذا"),
-    ("loops", r"while|for|التكرار|حلقة"),
-    ("arrays", r"مصفوف|قوائم|قائمة"),
-    ("collatz", r"Collatz|كولاتز"),
-    ("truth-tables", r"جدول\s+الحقيقة|جداول\s+الحقيقة"),
-    ("logic-gates", r"البوابات\s+المنطقية|بوابة"),
+    ("hex-puzzle", r"أ?حجية.*ست\s+عشري|تحويل\s+النظام\s+ال"),
+    ("fibonacci", r"فيبونات|Fibonacci"),
+    ("big-o", r"Big-O|التعقيد"),
+    ("hanoi", r"هانوي|Hanoi|Tower"),
+    ("hex-colors", r"RGB|Kuler|الأ?لوان|#"),
+    ("conversions-intro", r"التحويلات|الروتين"),
+    ("algorithms", r"خوارزم|pseudocode|خوارزمية"),
+    ("sentence-reference", r"الدليل\s+المرجعي\s+لبناء\s+الجمل"),
+    ("if-statement", r"If\s+Statement|جملة\s+If|إذا"),
+    ("loops", r"\bwhile\b|\bfor\b|التكرار|حلقة|Range"),
+    ("truth-tables", r"جدول\s+الحق|جداول\s+الحق"),
+    ("logic-gates", r"البوابات\s+المنطق|بوابة\s+منط"),
     ("karnaugh", r"كارنوف|Karnaugh"),
-    ("relations", r"اقتران|حقول\s+مترابطة"),
-    ("search-sort", r"بحث|فرز"),
-    ("caesar", r"قيصر|Caesar"),
-    ("fibonacci", r"فيبوناتش|Fibonacci"),
-    ("hanoi", r"هانوي|Hanoi"),
-    ("scheduling", r"جدولة|FCFS"),
-    ("oop", r"كائن|OOP|شيئ"),
-    ("encryption", r"تشفير|فك\s+التشفير"),
-    ("roman-numerals", r"رومان"),
+    ("relations", r"اقتران|Tuples|الحقول\s+المتر"),
+    ("search-sort", r"البحث|الفرز|search|sort"),
+    ("caesar", r"قيصر|Caesar|تشفير"),
+    ("oop", r"كائن|OOP|class\s"),
     ("regex-nfa", r"Regex|NFA|DFA|تعبير\s+عادي"),
-    ("graph-theory", r"نظرية\s+المخططات|مخطط"),
-    ("halting", r"التوقف|Halting"),
-    ("ip", r"ملكية\s+فكرية|انتحال"),
+    ("graph-theory", r"نظرية\s+المخط|مخطط"),
+    ("halting", r"التوقف|Halting|Turing"),
     ("final-project", r"مشروع\s+ختام|عرض\s+ختام"),
 ]
 
-PRINTED_PAGE_RE = re.compile(r"(?:^|\s)(\d{1,3})(?:\s|$)")
+
+def load_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def detect_day(text: str) -> int | None:
-    for pat, num in DAY_PATTERNS:
-        if pat.search(text):
-            return num
+def day_for_index(pdf_page_index: int, boundaries: list) -> int | None:
+    for d in boundaries:
+        if d["pdfPageIndexStart"] <= pdf_page_index <= d["pdfPageIndexEnd"]:
+            return d["dayNumber"]
     return None
 
 
-def detect_content_type(line: str) -> str | None:
+def extract_printed_page(text: str, pdf_page_index: int) -> int | None:
+    """Footer printed page — only when page looks like teacher guide content."""
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    if not lines:
+        return None
+    # Teacher pages often: برمجة | الحاسب | N | ...
+    if "برمجة" not in text or "الحاسب" not in text:
+        # still try footer on content worksheets
+        pass
+    candidates = []
+    for line in reversed(lines[-6:]):
+        m = FOOTER_NUM.match(line)
+        if m:
+            n = int(m.group(1))
+            if 1 <= n <= 600:
+                candidates.append(n)
+    if not candidates:
+        return None
+    # Prefer smallest footer on guide pages (printed page), ignore TOC dot leaders
+    return candidates[0]
+
+
+def detect_content_type(text: str) -> str:
     for pat, ctype in CONTENT_TYPE_RULES:
-        if pat.search(line):
+        if pat.search(text):
             return ctype
-    return None
+    return "شرح"
 
 
-def detect_topic_slug(text: str) -> str | None:
-    for slug, pat in TOPIC_KEYWORDS:
+def detect_topic(text: str) -> str | None:
+    for slug, pat in TOPIC_RULES:
         if re.search(pat, text, re.I):
             return slug
     return None
 
 
-def extract_printed_page(text: str) -> int | None:
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
-    for line in reversed(lines[-6:]):
-        m = re.match(r"^(\d{1,3})$", line)
-        if m:
-            n = int(m.group(1))
-            if 1 <= n <= 600:
-                return n
-    return None
+def clean_title(line: str) -> str:
+    line = re.sub(r"\s+", " ", line).strip()
+    line = re.sub(r"\.{3,}.*$", "", line).strip()
+    return line[:120]
 
 
-def title_from_lines(lines: list[str]) -> str:
-    for line in lines[:12]:
-        clean = re.sub(r"\s+", " ", line).strip()
-        if len(clean) < 8 or len(clean) > 120:
+def title_from_page(lines: list[str], joined: str) -> str:
+    priority_patterns = [
+        r"أ?حجية",
+        r"مدونة\s+الشرف",
+        r"BINGO",
+        r"التقويم\s+القبل",
+        r"الدليل\s+المرجعي",
+        r"تطبيقات\s+على",
+        r"مقدمة\s+",
+        r"إلى\s+.*مقدمة",
+        r"كتابة\s+الخوارز",
+        r"خطوات\s+ال?تنفيذ",
+        r"الأ?هداف",
+    ]
+    for pat in priority_patterns:
+        for line in lines[:20]:
+            if re.search(pat, line, re.I):
+                t = clean_title(line)
+                if len(t) >= 6:
+                    return t
+    for line in lines[:15]:
+        t = clean_title(line)
+        if len(t) < 8 or len(t) > 100:
             continue
-        if re.match(r"^[\d\s\.]+$", clean):
+        if GARBAGE.match(t):
             continue
-        if "برمجة" in clean and "الحاسب" in clean and len(clean) < 25:
+        if t in ("برمجة", "الحاسب", "vww"):
             continue
-        return clean[:100]
+        return t
     return ""
+
+
+def should_include_page(text: str, title: str, topic: str | None, day: int | None) -> bool:
+    if day is None:
+        return False
+    if not text.strip():
+        return False
+    # skip nearly empty or corrupted-only pages
+    if len(text.strip()) < 40 and not topic:
+        return False
+    if not title and not topic:
+        return False
+    return True
 
 
 def main():
     if not PDF_PATH.exists():
-        print(f"PDF not found: {PDF_PATH}", file=sys.stderr)
+        print(f"PDF missing: {PDF_PATH}", file=sys.stderr)
         sys.exit(1)
+
+    boundaries_doc = load_json(BOUNDARIES_PATH)
+    coverage = load_json(COVERAGE_PATH)
+    boundaries = boundaries_doc["days"]
 
     reader = PdfReader(str(PDF_PATH))
     total = len(reader.pages)
     items = []
-    current_day = None
 
-    for pdf_page in range(1, total + 1):
-        text = reader.pages[pdf_page - 1].extract_text() or ""
+    content_start = min(d["pdfPageIndexStart"] for d in boundaries)
+    content_end = max(d["pdfPageIndexEnd"] for d in boundaries)
+
+    for pdf_page_index in range(content_start, min(content_end + 1, total)):
+        text = reader.pages[pdf_page_index].extract_text() or ""
         lines = [l.strip() for l in text.split("\n") if l.strip()]
         joined = " ".join(lines)
 
-        day_hit = detect_day(joined)
-        if day_hit:
-            current_day = day_hit
+        day_number = day_for_index(pdf_page_index, boundaries)
+        printed = extract_printed_page(text, pdf_page_index)
+        topic_slug = detect_topic(joined)
+        content_type = detect_content_type(joined)
+        title = title_from_page(lines, joined)
 
-        printed = extract_printed_page(text)
-        ctype = None
-        title = ""
-        for line in lines:
-            t = detect_content_type(line)
-            if t:
-                ctype = t
-                title = line[:100]
-                break
-        if not title:
-            title = title_from_lines(lines)
-
-        topic = detect_topic_slug(joined)
-        if not ctype and not title and not topic:
+        if not should_include_page(text, title, topic_slug, day_number):
             continue
+
+        cov = coverage.get(topic_slug or "", {})
+        platform_route = cov.get("route", "—")
+        impl_status = cov.get("status", "pending")
 
         items.append(
             {
-                "pdfPage": pdf_page,
-                "printedPage": printed,
-                "day": current_day,
-                "topicSlug": topic,
-                "titleAr": title or f"صفحة {pdf_page}",
-                "contentType": ctype or "شرح",
-                "preview": joined[:200],
+                "pdfPageIndex": pdf_page_index,
+                "printedPageNumber": printed,
+                "dayNumber": day_number,
+                "title": title or f"صفحة محتوى {pdf_page_index + 1}",
+                "contentType": content_type,
+                "topicSlug": topic_slug,
+                "platformRoute": platform_route,
+                "implementationStatus": impl_status,
+                "status": "done" if impl_status == "done" else "pending",
             }
         )
 
-    OUT_MD.parent.mkdir(parents=True, exist_ok=True)
+    OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    # Platform mapping hints
-    platform_map = {
-        "bingo": ("/onboarding/bingo", "❌"),
-        "honor-code": ("/onboarding/honor-code", "❌"),
-        "number-systems": ("/lessons/number-systems", "⚠️ جزئي"),
-        "truth-tables": ("/simulations#truth", "✅ محاكاة"),
-    }
-
     with OUT_MD.open("w", encoding="utf-8") as f:
-        f.write("# جرد محتوى PDF — برمجة الحاسب\n\n")
+        f.write("# جرد محتوى PDF — برمجة الحاسب (مصحح)\n\n")
         f.write(f"**مصدر:** `{PDF_PATH.name}`  \n")
+        f.write(f"**حدود الأيام:** `docs/curriculum-day-boundaries.json`  \n")
         f.write(f"**عدد صفحات PDF:** {total}  \n")
-        f.write(f"**عدد العناصر المستخرجة:** {len(items)}  \n")
-        f.write(f"**تاريخ الاستخراج:** آلياً عبر `scripts/extract-pdf-inventory.py`\n\n")
-        f.write("## دليل الأعمدة\n\n")
-        f.write("| العمود | الوصف |\n|---|---|\n")
-        f.write("| pdfPage | رقم الصفحة في ملف PDF (1-based) |\n")
-        f.write("| printedPage | الرقم المطبوع في أسفل الصفحة إن وُجد |\n")
-        f.write("| day | اليوم التدريبي |\n")
-        f.write("| contentType | شرح / مثال / نشاط / ورقة عمل / تقويم / إجابة / مشروع / مرجع |\n")
-        f.write("| platformRoute | المسار المقترح في المنصة |\n")
-        f.write("| coverage | حالة التغطية الحالية |\n")
-        f.write("| status | pending / in_progress / done |\n\n")
-        f.write("## الجرد الكامل\n\n")
+        f.write(f"**عدد عناصر المحتوى:** {len(items)}  \n\n")
+        f.write("## دليل الحقول\n\n")
+        f.write("| الحقل | الوصف |\n|---|---|\n")
+        f.write("| pdfPageIndex | فهرس الصفحة في قارئ PDF (0-based) |\n")
+        f.write("| printedPageNumber | الرقم المطبوع في تذييل الكتاب (إن وُجد بشكل موثوق) |\n")
+        f.write("| dayNumber | اليوم التدريبي (1–15) من حدود يدوية |\n")
+        f.write("| contentType | شرح / نشاط / مثال / ورقة عمل / تقoيم / إجابة / مرجع |\n")
+        f.write("| implementationStatus | done / partial / pending / simulation-only |\n")
+        f.write("| status | pending / done |\n\n")
+
+        f.write("## ملخص حسب اليوم\n\n")
+        f.write("| اليوم | عناصر |\n|---:|---:|\n")
+        for d in range(1, 16):
+            count = sum(1 for it in items if it["dayNumber"] == d)
+            f.write(f"| {d} | {count} |\n")
+
+        f.write("\n## الجرد الكامل\n\n")
         f.write(
-            "| pdfPage | printedPage | day | contentType | topicSlug | titleAr | platformRoute | coverage | needs | component | status |\n"
+            "| pdfPageIndex | printedPage | day | contentType | topicSlug | title | route | impl | status |\n"
         )
-        f.write("|---:|---:|---:|---|---|---|---|---|---|---|\n")
+        f.write("|---:|---:|---:|---|---|---|---|---|---|\n")
         for it in items:
-            route, cov = platform_map.get(it["topicSlug"] or "", ("—", "❌"))
-            needs = "محتوى تفصيلي + تفاعل" if cov.startswith("❌") or cov.startswith("⚠️") else "—"
-            comp = it["topicSlug"] or "LessonContent"
             f.write(
-                f"| {it['pdfPage']} | {it['printedPage'] or '—'} | {it['day'] or '—'} | "
-                f"{it['contentType']} | {it['topicSlug'] or '—'} | "
-                f"{it['titleAr'].replace('|', '/')} | {route} | {cov} | {needs} | {comp} | pending |\n"
+                f"| {it['pdfPageIndex']} | {it['printedPageNumber'] or '—'} | {it['dayNumber']} | "
+                f"{it['contentType']} | {it.get('topicSlug') or '—'} | "
+                f"{it['title'].replace('|', '/')} | {it['platformRoute']} | "
+                f"{it['implementationStatus']} | {it['status']} |\n"
             )
 
-    print(f"Wrote {len(items)} items to {OUT_MD} and {OUT_JSON}")
+    print(f"Wrote {len(items)} items -> {OUT_JSON}")
 
 
 if __name__ == "__main__":

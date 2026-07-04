@@ -8,7 +8,7 @@ import { usePlatform } from "../../context/PlatformContext";
  */
 export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/day-01", nextLink, children }) {
   const { user } = usePlatform();
-  const pdfLabel = L.pdfRefs?.map((r) => r.pdfPage).join("، ") || "";
+  const pdfLabel = L.pdfRefs?.map((r) => r.pdfPageIndex ?? r.pdfPage).join("، ") || "";
 
   return (
     <PageShell title={L.titleAr} subtitle={subtitle || (pdfLabel ? `pdfPage ${pdfLabel}` : "")}>

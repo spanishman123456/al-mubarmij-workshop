@@ -28,6 +28,10 @@ import BinaryCardsLessonPage from "./pages/lessons/BinaryCardsLessonPage.jsx";
 import PythonIntroLessonPage from "./pages/lessons/PythonIntroLessonPage.jsx";
 import AsciiUnicodeLessonPage from "./pages/lessons/AsciiUnicodeLessonPage.jsx";
 import HexColorsLessonPage from "./pages/lessons/HexColorsLessonPage.jsx";
+import HexPuzzleLessonPage from "./pages/lessons/HexPuzzleLessonPage.jsx";
+import BinaryPuzzleLessonPage from "./pages/lessons/BinaryPuzzleLessonPage.jsx";
+import BinaryMatchingLessonPage from "./pages/lessons/BinaryMatchingLessonPage.jsx";
+import StringSplittingLessonPage from "./pages/lessons/StringSplittingLessonPage.jsx";
 
 function NotFoundRedirect() {
   const { user, authReady } = usePlatform();
@@ -128,6 +132,42 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <NumberSystemsLessonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lessons/binary-puzzle"
+          element={
+            <ProtectedRoute>
+              <BinaryPuzzleLessonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lessons/binary-matching"
+          element={
+            <ProtectedRoute>
+              <BinaryMatchingLessonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lessons/string-splitting"
+          element={
+            <ProtectedRoute>
+              <StringSplittingLessonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lessons/hex-puzzle"
+          element={
+            <ProtectedRoute>
+              <HexPuzzleLessonPage />
             </ProtectedRoute>
           }
         />

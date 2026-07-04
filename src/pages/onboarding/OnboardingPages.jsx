@@ -47,6 +47,7 @@ export function OnboardingHub() {
     { to: "/onboarding/acceptable-use", label: "سياسة الاستخدام المناسب", key: "acceptable_use", done: status?.agreements?.acceptable_use?.status === "signed" },
     { to: "/onboarding/honor-agreement", label: "اتفاقية مدونة الشرف", key: "honor_agreement", done: status?.agreements?.honor_agreement?.status === "signed" },
     { to: "/onboarding/tech-contract", label: "عقد استخدام التقنيات", key: "tech_contract", done: status?.agreements?.tech_contract?.status === "signed" },
+    { to: "/quizzes/take/quiz-pre", label: "التقويم القبلي", key: "pre_assessment", done: false },
   ];
 
   return (

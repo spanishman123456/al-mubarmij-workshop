@@ -61,6 +61,17 @@ export function validateLessonContent(lesson) {
   if (Array.isArray(lesson.commonMistakes) && lesson.commonMistakes.length < 2) {
     errors.push("commonMistakes: يلزم خطأان شائعان على الأقل");
   }
+  if (Array.isArray(lesson.independentPractice) && lesson.independentPractice.length < 2) {
+    errors.push("independentPractice: يلزم تمرينان مستقلان على الأقل");
+  }
+
+  if (Array.isArray(lesson.guidedPractice) && lesson.guidedPractice.length < 2) {
+    errors.push("guidedPractice: يلزم تمرينان موجهان على الأقل");
+  }
+
+  if (lesson.linkedActivity && typeof lesson.linkedActivity === "string" && !lesson.linkedActivity.startsWith("/")) {
+    errors.push("linkedActivity: يجب أن يبدأ بـ /");
+  }
 
   for (const ex of lesson.workedExamples || []) {
     assertNonEmpty(ex.titleAr, `workedExample.${ex.id}.titleAr`, errors);

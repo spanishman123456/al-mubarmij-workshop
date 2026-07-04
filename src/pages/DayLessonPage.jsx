@@ -84,19 +84,34 @@ export default function DayLessonPage() {
               <EduCard title="دروس اليوم الأول — شرح تفصيلي" accent="violet">
                 <div className="mt-2 flex flex-col gap-2">
                   <Link to="/lessons/binary-cards" className="text-sm font-semibold text-violet-700 hover:underline">
-                    1. بطاقات الأرقام الثنائية (pdfPage 31–32) →
+                    1. بطاقات الأرقام الثنائية (pdfPageIndex 31–32) →
+                  </Link>
+                  <Link to="/lessons/binary-puzzle" className="text-sm font-semibold text-violet-700 hover:underline">
+                    2. أحجية الأرقام الثنائية (pdfPageIndex 70–76) →
                   </Link>
                   <Link to="/lessons/number-systems" className="text-sm font-semibold text-violet-700 hover:underline">
-                    2. أنظمة العد والتحويل (pdfPage 32–34, 77–78) →
+                    3. أنظمة العد والتحويل →
                   </Link>
-                  <Link to="/lessons/hex-colors" className="text-sm font-semibold text-violet-700 hover:underline">
-                    3. ألوان Hex و RGB (pdfPage 50–51) →
-                  </Link>
-                  <Link to="/lessons/ascii-unicode" className="text-sm font-semibold text-violet-700 hover:underline">
-                    4. ASCII و Unicode (pdfPage 46, 96–97) →
+                  <Link to="/lessons/binary-matching" className="text-sm font-semibold text-violet-700 hover:underline">
+                    4. بطاقات المطابقة (pdfPageIndex 81–82) →
                   </Link>
                   <Link to="/lessons/python-intro" className="text-sm font-semibold text-violet-700 hover:underline">
-                    5. مقدمة بايثون (pdfPage 40, 43, 85) →
+                    5. مقدمة بايثون →
+                  </Link>
+                  <Link to="/lessons/string-splitting" className="text-sm font-semibold text-violet-700 hover:underline">
+                    6. تقسيم سلاسل الرموز →
+                  </Link>
+                  <Link to="/lessons/ascii-unicode" className="text-sm font-semibold text-violet-700 hover:underline">
+                    7. ASCII و Unicode →
+                  </Link>
+                  <Link to="/lessons/hex-puzzle" className="text-sm font-semibold text-violet-700 hover:underline">
+                    8. أحجية hex →
+                  </Link>
+                  <Link to="/lessons/hex-colors" className="text-sm font-semibold text-violet-700 hover:underline">
+                    9. ألوان Hex و RGB →
+                  </Link>
+                  <Link to="/quizzes/take/quiz-pre" className="text-sm font-semibold text-amber-700 hover:underline">
+                    التقويم القبلي →
                   </Link>
                 </div>
               </EduCard>
