@@ -1,7 +1,7 @@
 # تقرير الدفعة 5 — إغلاق اليوم 2 + بداية اليوم 3
 
 **الفرع:** `feature/full-curriculum-expansion`  
-**Commit:** _(يُحدَّث بعد push)_
+**Commit:** `f7c95be`
 
 ---
 
