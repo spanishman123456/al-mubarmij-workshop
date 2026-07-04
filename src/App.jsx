@@ -20,6 +20,14 @@ import SimulationsPage from "./pages/SimulationsPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import WorksheetDetailPage from "./pages/WorksheetDetailPage";
 import { ActivityTracker, StudentInactivityManager } from "./hooks/useActivityTracker";
+import { OnboardingGate, OnboardingHub } from "./pages/onboarding/OnboardingPages.jsx";
+import BingoPage from "./pages/onboarding/BingoPage.jsx";
+import AgreementPage from "./pages/onboarding/AgreementPage.jsx";
+import NumberSystemsLessonPage from "./pages/lessons/NumberSystemsLessonPage.jsx";
+import BinaryCardsLessonPage from "./pages/lessons/BinaryCardsLessonPage.jsx";
+import PythonIntroLessonPage from "./pages/lessons/PythonIntroLessonPage.jsx";
+import AsciiUnicodeLessonPage from "./pages/lessons/AsciiUnicodeLessonPage.jsx";
+import HexColorsLessonPage from "./pages/lessons/HexColorsLessonPage.jsx";
 
 function NotFoundRedirect() {
   const { user, authReady } = usePlatform();
@@ -43,6 +51,7 @@ function AppRoutes() {
       ) : null}
 
       <div key={location.pathname} className="page-enter">
+      <OnboardingGate>
       <Routes location={location}>
         <Route
           path="/login"
@@ -76,6 +85,76 @@ function AppRoutes() {
           element={
             <ProtectedRoute roles={["teacher"]}>
               <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <OnboardingHub />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/onboarding/bingo"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <BingoPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/onboarding/:slug"
+          element={
+            <ProtectedRoute roles={["student"]}>
+              <AgreementPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lessons/binary-cards"
+          element={
+            <ProtectedRoute>
+              <BinaryCardsLessonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lessons/number-systems"
+          element={
+            <ProtectedRoute>
+              <NumberSystemsLessonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lessons/hex-colors"
+          element={
+            <ProtectedRoute>
+              <HexColorsLessonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lessons/ascii-unicode"
+          element={
+            <ProtectedRoute>
+              <AsciiUnicodeLessonPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/lessons/python-intro"
+          element={
+            <ProtectedRoute>
+              <PythonIntroLessonPage />
             </ProtectedRoute>
           }
         />
@@ -206,6 +285,7 @@ function AppRoutes() {
 
         <Route path="*" element={<NotFoundRedirect />} />
       </Routes>
+      </OnboardingGate>
       </div>
     </div>
   );

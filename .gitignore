@@ -12,11 +12,15 @@ dist
 dist-ssr
 data/
 server/data/analytics.json
+server/data/platform.db
 scripts/microbit-hex-workspace/
 scripts/makecode-compile-workspace/
 scripts/makecode-compile-results.json
 scripts/mkc-test
 *.local
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

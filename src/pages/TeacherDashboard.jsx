@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
+import { fetchOnboardingAll } from "../lib/platformApi";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { PrePostComparisonChart } from "../components/charts/PrePostComparisonChart";
@@ -34,6 +35,13 @@ export default function TeacherDashboard() {
   const [loginFilter, setLoginFilter] = useState("all");
   const [expandedHistory, setExpandedHistory] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [onboardingSummary, setOnboardingSummary] = useState(null);
+
+  useEffect(() => {
+    fetchOnboardingAll()
+      .then(setOnboardingSummary)
+      .catch(() => setOnboardingSummary(null));
+  }, [analyticsSyncStatus.fetchedAt]);
 
   if (!user || user.role !== "teacher") {
     return (
@@ -106,6 +114,15 @@ export default function TeacherDashboard() {
           <p className="text-sm text-amber-900">
             تعذّر جلب بيانات النشاط من الخادم: {analyticsSyncStatus.error}. تُعرض البيانات المحلية
             المتاحة فقط.
+          </p>
+        </EduCard>
+      ) : null}
+
+      {onboardingSummary ? (
+        <EduCard className="mb-4" accent="cyan" title="التمهيد — BINGO والموافقات">
+          <p className="text-sm text-slate-600">
+            طلاب سجّلوا في التمهيد: {onboardingSummary.studentIds?.length ?? 0} — يُحدَّث من قاعدة
+            البيانات المركزية.
           </p>
         </EduCard>
       ) : null}

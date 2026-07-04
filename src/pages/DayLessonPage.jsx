@@ -79,6 +79,30 @@ export default function DayLessonPage() {
             </EduCard>
           ))}
 
+          {day.id === "day-01" ? (
+            <>
+              <EduCard title="دروس اليوم الأول — شرح تفصيلي" accent="violet">
+                <div className="mt-2 flex flex-col gap-2">
+                  <Link to="/lessons/binary-cards" className="text-sm font-semibold text-violet-700 hover:underline">
+                    1. بطاقات الأرقام الثنائية (pdfPage 31–32) →
+                  </Link>
+                  <Link to="/lessons/number-systems" className="text-sm font-semibold text-violet-700 hover:underline">
+                    2. أنظمة العد والتحويل (pdfPage 32–34, 77–78) →
+                  </Link>
+                  <Link to="/lessons/hex-colors" className="text-sm font-semibold text-violet-700 hover:underline">
+                    3. ألوان Hex و RGB (pdfPage 50–51) →
+                  </Link>
+                  <Link to="/lessons/ascii-unicode" className="text-sm font-semibold text-violet-700 hover:underline">
+                    4. ASCII و Unicode (pdfPage 46, 96–97) →
+                  </Link>
+                  <Link to="/lessons/python-intro" className="text-sm font-semibold text-violet-700 hover:underline">
+                    5. مقدمة بايثون (pdfPage 40, 43, 85) →
+                  </Link>
+                </div>
+              </EduCard>
+            </>
+          ) : null}
+
           <EduCard title="تطبيق عملي" accent="emerald">
             <p className="mt-2 text-slate-700">{day.practicalAr}</p>
             {day.exerciseIds?.length ? (
