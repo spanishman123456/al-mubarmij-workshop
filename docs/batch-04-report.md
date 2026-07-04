@@ -8,7 +8,7 @@
 
 ## Commit
 
-> يُحدَّث بعد `git push` — راجع `git log -1` على الفرع.
+**`57bf0e9`** — `feat(curriculum): batch 4 — Day 2 coverage correction and lesson completion`
 
 ---
 
