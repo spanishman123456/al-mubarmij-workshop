@@ -7,29 +7,56 @@ function url(path) {
 async function request(path, options = {}) {
   const res = await fetch(url(path), {
     cache: "no-store",
+    credentials: "include",
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     ...options,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || res.statusText);
+  if (!res.ok) {
+    const err = new Error(data.error || res.statusText);
+    err.status = res.status;
+    throw err;
+  }
   return data;
+}
+
+export async function loginStudentApi(nationalId) {
+  return request("/api/auth/student", {
+    method: "POST",
+    body: JSON.stringify({ nationalId }),
+  });
+}
+
+export async function loginTeacherApi(nationalId, password) {
+  return request("/api/auth/teacher", {
+    method: "POST",
+    body: JSON.stringify({ nationalId, password }),
+  });
+}
+
+export async function logoutApi() {
+  return request("/api/auth/logout", { method: "POST" });
+}
+
+export async function fetchAuthMeApi() {
+  return request("/api/auth/me");
 }
 
 export async function fetchOnboardingStatus(studentId) {
   return request(`/api/onboarding/status/${encodeURIComponent(studentId)}`);
 }
 
-export async function saveBingoApi(studentId, payload) {
+export async function saveBingoApi(_studentId, payload) {
   return request("/api/onboarding/bingo", {
     method: "POST",
-    body: JSON.stringify({ studentId, ...payload }),
+    body: JSON.stringify(payload),
   });
 }
 
-export async function saveAgreementApi(studentId, payload) {
+export async function saveAgreementApi(_studentId, payload) {
   return request("/api/onboarding/agreement", {
     method: "POST",
-    body: JSON.stringify({ studentId, ...payload }),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -37,24 +64,24 @@ export async function fetchOnboardingAll() {
   return request("/api/onboarding/all");
 }
 
-export async function syncProgressApi(studentId, progress) {
+export async function syncProgressApi(_studentId, progress) {
   return request("/api/progress/sync", {
     method: "POST",
-    body: JSON.stringify({ studentId, progress }),
+    body: JSON.stringify({ progress }),
   });
 }
 
-export async function saveLessonProgressApi(studentId, lessonId, sectionId, progress, completed) {
+export async function saveLessonProgressApi(_studentId, lessonId, sectionId, progress, completed) {
   return request("/api/lesson/progress", {
     method: "POST",
-    body: JSON.stringify({ studentId, lessonId, sectionId, progress, completed }),
+    body: JSON.stringify({ lessonId, sectionId, progress, completed }),
   });
 }
 
-export async function recordLessonAttemptApi(studentId, payload) {
+export async function recordLessonAttemptApi(_studentId, payload) {
   return request("/api/lesson/attempt", {
     method: "POST",
-    body: JSON.stringify({ studentId, ...payload }),
+    body: JSON.stringify(payload),
   });
 }
 

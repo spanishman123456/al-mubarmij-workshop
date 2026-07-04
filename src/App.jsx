@@ -58,6 +58,7 @@ import {
 } from "./pages/lessons/Day03LessonPages.jsx";
 import TeacherDay01AnswersPage from "./pages/teacher/TeacherDay01AnswersPage.jsx";
 import TeacherDay02AnswersPage from "./pages/teacher/TeacherDay02AnswersPage.jsx";
+import TeacherDay03AnswersPage from "./pages/teacher/TeacherDay03AnswersPage.jsx";
 
 function NotFoundRedirect() {
   const { user, authReady } = usePlatform();
@@ -254,6 +255,7 @@ function AppRoutes() {
 
         <Route path="/teacher/day-01-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay01AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-02-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay02AnswersPage /></ProtectedRoute>} />
+        <Route path="/teacher/day-03-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay03AnswersPage /></ProtectedRoute>} />
 
         <Route
           path="/path"

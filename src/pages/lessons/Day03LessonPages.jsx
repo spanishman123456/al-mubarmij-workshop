@@ -7,6 +7,12 @@ import { collatzLesson } from "../../content/lessons/day03/collatzLesson";
 import { truthTablesLesson } from "../../content/lessons/day03/truthTablesLesson";
 import { logicGatesLesson } from "../../content/lessons/day03/logicGatesLesson";
 import { IfStatementLab } from "../../components/lesson/IfStatementLab";
+import { MultiDimGridLab } from "../../components/lesson/MultiDimGridLab";
+import { LoopControlLab } from "../../components/lesson/LoopControlLab";
+import { DivisorsLab } from "../../components/lesson/DivisorsLab";
+import { CollatzSimulator } from "../../components/lesson/CollatzSimulator";
+import { TruthTableBuilder } from "../../components/sims/TruthTableBuilder";
+import { LogicGatesSim } from "../../components/sims/LogicSims";
 import { usePlatform } from "../../context/PlatformContext";
 
 const BACK = "/path/day/day-03";
@@ -33,7 +39,7 @@ export function MultiDimArraysLessonPage() {
   const { user } = usePlatform();
   return (
     <StandardLessonPage lesson={multiDimArraysLesson} backTo={BACK} nextLink={{ to: "/lessons/python-break-continue", label: "التالي →" }}>
-      <Lab><IfStatementLab lessonId={multiDimArraysLesson.id} userId={user?.id} initialCode={multiDimArraysLesson.interactiveExample.defaultValue} /></Lab>
+      <Lab><MultiDimGridLab lessonId={multiDimArraysLesson.id} userId={user?.id} /></Lab>
     </StandardLessonPage>
   );
 }
@@ -42,14 +48,17 @@ export function BreakContinuePassLessonPage() {
   const { user } = usePlatform();
   return (
     <StandardLessonPage lesson={breakContinuePassLesson} backTo={BACK} nextLink={{ to: "/lessons/divisors-activity", label: "التالي →" }}>
-      <Lab><IfStatementLab lessonId={breakContinuePassLesson.id} userId={user?.id} initialCode={breakContinuePassLesson.interactiveExample.defaultValue} /></Lab>
+      <Lab><LoopControlLab lessonId={breakContinuePassLesson.id} userId={user?.id} preset="continue" /></Lab>
     </StandardLessonPage>
   );
 }
 
 export function DivisorsActivityLessonPage() {
+  const { user } = usePlatform();
   return (
-    <StandardLessonPage lesson={divisorsActivityLesson} backTo={BACK} nextLink={{ to: "/lessons/collatz", label: "التالي →" }} />
+    <StandardLessonPage lesson={divisorsActivityLesson} backTo={BACK} nextLink={{ to: "/lessons/collatz", label: "التالي →" }}>
+      <Lab><DivisorsLab lessonId={divisorsActivityLesson.id} userId={user?.id} /></Lab>
+    </StandardLessonPage>
   );
 }
 
@@ -57,19 +66,23 @@ export function CollatzLessonPage() {
   const { user } = usePlatform();
   return (
     <StandardLessonPage lesson={collatzLesson} backTo={BACK} nextLink={{ to: "/lessons/truth-tables", label: "التالي: جداول الحقيقة →" }}>
-      <Lab><IfStatementLab lessonId={collatzLesson.id} userId={user?.id} initialCode={collatzLesson.interactiveExample.defaultValue} /></Lab>
+      <Lab><CollatzSimulator lessonId={collatzLesson.id} userId={user?.id} /></Lab>
     </StandardLessonPage>
   );
 }
 
 export function TruthTablesLessonPage() {
   return (
-    <StandardLessonPage lesson={truthTablesLesson} backTo={BACK} nextLink={{ to: "/lessons/logic-gates", label: "التالي: البوابات →" }} />
+    <StandardLessonPage lesson={truthTablesLesson} backTo={BACK} nextLink={{ to: "/lessons/logic-gates", label: "التالي: البوابات →" }}>
+      <Lab><TruthTableBuilder /></Lab>
+    </StandardLessonPage>
   );
 }
 
 export function LogicGatesLessonPage() {
   return (
-    <StandardLessonPage lesson={logicGatesLesson} backTo={BACK} />
+    <StandardLessonPage lesson={logicGatesLesson} backTo={BACK}>
+      <Lab><LogicGatesSim /></Lab>
+    </StandardLessonPage>
   );
 }

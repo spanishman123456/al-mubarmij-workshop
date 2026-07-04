@@ -12,21 +12,26 @@ import {
   getLessonProgressAll,
   getTeacherLessonSummary,
 } from "../repositories/progressRepository.js";
+import { requireAuth, requireRole, requireProgressAccess } from "../auth/middleware.js";
 
 export function registerPlatformRoutes(app, logError) {
-  app.get("/api/onboarding/status/:studentId", (req, res) => {
+  app.get("/api/onboarding/status/:studentId", requireAuth, requireProgressAccess, (req, res) => {
     try {
-      res.json({ ok: true, ...getOnboardingStatus(req.params.studentId) });
+      const sid = req.params.studentId;
+      if (req.auth.role === "student" && sid !== req.auth.userId) {
+        return res.status(403).json({ ok: false, error: "Forbidden" });
+      }
+      res.json({ ok: true, ...getOnboardingStatus(sid) });
     } catch (err) {
       logError("onboarding.status", err);
       res.status(500).json({ ok: false, error: "failed" });
     }
   });
 
-  app.post("/api/onboarding/bingo", (req, res) => {
+  app.post("/api/onboarding/bingo", requireAuth, requireRole("student"), (req, res) => {
     try {
-      const { studentId, cells, status, startedAt, completedAt, submittedAt } = req.body || {};
-      if (!studentId) return res.status(400).json({ ok: false, error: "studentId required" });
+      const studentId = req.auth.userId;
+      const { cells, status, startedAt, completedAt, submittedAt } = req.body || {};
       const result = saveBingoProgress(studentId, { cells, status, startedAt, completedAt, submittedAt });
       res.json({ ok: true, ...result });
     } catch (err) {
@@ -35,11 +40,12 @@ export function registerPlatformRoutes(app, logError) {
     }
   });
 
-  app.post("/api/onboarding/agreement", (req, res) => {
+  app.post("/api/onboarding/agreement", requireAuth, requireRole("student"), (req, res) => {
     try {
-      const { studentId, docType, version, signatureText, payload } = req.body || {};
-      if (!studentId || !docType || !signatureText) {
-        return res.status(400).json({ ok: false, error: "studentId, docType, signatureText required" });
+      const studentId = req.auth.userId;
+      const { docType, version, signatureText, payload } = req.body || {};
+      if (!docType || !signatureText) {
+        return res.status(400).json({ ok: false, error: "docType, signatureText required" });
       }
       const result = saveAgreement(studentId, {
         docType,
@@ -56,7 +62,7 @@ export function registerPlatformRoutes(app, logError) {
     }
   });
 
-  app.get("/api/onboarding/all", (_req, res) => {
+  app.get("/api/onboarding/all", requireAuth, requireRole("teacher"), (_req, res) => {
     try {
       res.json({ ok: true, ...getAllOnboardingSummary(), fetchedAt: new Date().toISOString() });
     } catch (err) {
@@ -65,21 +71,21 @@ export function registerPlatformRoutes(app, logError) {
     }
   });
 
-  app.get("/api/progress/:studentId", (req, res) => {
+  app.get("/api/progress/:studentId", requireAuth, requireProgressAccess, (req, res) => {
     try {
-      const data = getStudentProgress(req.params.studentId);
-      res.json({ ok: true, data, lessons: getLessonProgressAll(req.params.studentId) });
+      const studentId = req.params.studentId;
+      const data = getStudentProgress(studentId);
+      res.json({ ok: true, data, lessons: getLessonProgressAll(studentId) });
     } catch (err) {
       logError("progress.get", err);
       res.status(500).json({ ok: false, error: "failed" });
     }
   });
 
-  app.post("/api/progress/sync", (req, res) => {
+  app.post("/api/progress/sync", requireAuth, requireRole("student"), (req, res) => {
     try {
-      const { studentId, progress } = req.body || {};
-      if (!studentId) return res.status(400).json({ ok: false, error: "studentId required" });
-      const result = saveStudentProgress(studentId, progress);
+      const { progress } = req.body || {};
+      const result = saveStudentProgress(req.auth.userId, progress);
       res.json({ ok: true, ...result });
     } catch (err) {
       logError("progress.sync", err);
@@ -87,11 +93,11 @@ export function registerPlatformRoutes(app, logError) {
     }
   });
 
-  app.post("/api/lesson/progress", (req, res) => {
+  app.post("/api/lesson/progress", requireAuth, requireRole("student"), (req, res) => {
     try {
-      const { studentId, lessonId, sectionId, progress, completed } = req.body || {};
-      if (!studentId || !lessonId) return res.status(400).json({ ok: false, error: "studentId and lessonId required" });
-      saveLessonProgress(studentId, lessonId, sectionId, progress, completed);
+      const { lessonId, sectionId, progress, completed } = req.body || {};
+      if (!lessonId) return res.status(400).json({ ok: false, error: "lessonId required" });
+      saveLessonProgress(req.auth.userId, lessonId, sectionId, progress, completed);
       res.json({ ok: true });
     } catch (err) {
       logError("lesson.progress", err);
@@ -99,13 +105,21 @@ export function registerPlatformRoutes(app, logError) {
     }
   });
 
-  app.post("/api/lesson/attempt", (req, res) => {
+  app.post("/api/lesson/attempt", requireAuth, requireRole("student"), (req, res) => {
     try {
-      const { studentId, lessonId, exerciseId, answer, correct, hintsUsed, errorType, durationMs } = req.body || {};
-      if (!studentId || !lessonId || !exerciseId) {
+      const { lessonId, exerciseId, answer, correct, hintsUsed, errorType, durationMs } = req.body || {};
+      if (!lessonId || !exerciseId) {
         return res.status(400).json({ ok: false, error: "missing fields" });
       }
-      recordLessonAttempt(studentId, { lessonId, exerciseId, answer, correct, hintsUsed, errorType, durationMs });
+      recordLessonAttempt(req.auth.userId, {
+        lessonId,
+        exerciseId,
+        answer,
+        correct,
+        hintsUsed,
+        errorType,
+        durationMs,
+      });
       res.json({ ok: true });
     } catch (err) {
       logError("lesson.attempt", err);
@@ -113,7 +127,7 @@ export function registerPlatformRoutes(app, logError) {
     }
   });
 
-  app.get("/api/lesson/summary", (_req, res) => {
+  app.get("/api/lesson/summary", requireAuth, requireRole("teacher"), (_req, res) => {
     try {
       res.json({ ok: true, summary: getTeacherLessonSummary() });
     } catch (err) {

@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:server": "node server/index.js",
+    "dev:server": "node scripts/start-dev-server.mjs",
+    "dev:server:raw": "node server/index.js",
     "build": "vite build",
     "start": "node server/index.js",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "coverage:day03": "python scripts/generate-day03-coverage.py",
     "extract:pdf-inventory": "python scripts/extract-pdf-inventory.py",
     "test:makecode-compile": "node scripts/compileMakecodeGames.mjs",
     "preview": "vite preview"
@@ -24,7 +27,7 @@
     "sql.js": "^1.14.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.52.0",
     "@tailwindcss/vite": "^4.2.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

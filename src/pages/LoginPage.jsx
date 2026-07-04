@@ -19,11 +19,11 @@ export default function LoginPage() {
 
   if (!authReady) return null;
 
-  function submitStudent(e) {
+  async function submitStudent(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const res = loginStudentByNationalId(nationalId);
+    const res = await loginStudentByNationalId(nationalId);
     setLoading(false);
     if (!res.ok) {
       setError(res.message);
@@ -114,6 +114,7 @@ export default function LoginPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-slate-700">رقم الهوية الوطنية</span>
                 <input
+                  data-testid="student-national-id"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-lg tracking-widest text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                   value={nationalId}
                   onChange={(e) => setNationalId(e.target.value.replace(/\D/g, ""))}
@@ -126,6 +127,7 @@ export default function LoginPage() {
               </label>
               <button
                 type="submit"
+                data-testid="student-submit"
                 disabled={loading}
                 className="w-full rounded-xl bg-violet-700 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-violet-800 disabled:opacity-60"
               >
@@ -140,6 +142,7 @@ export default function LoginPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-slate-700">رقم الهوية</span>
                 <input
+                  data-testid="teacher-national-id"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-lg tracking-widest text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.replace(/\D/g, ""))}
@@ -153,6 +156,7 @@ export default function LoginPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-slate-700">كلمة المرور</span>
                 <input
+                  data-testid="teacher-password"
                   type="password"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                   value={password}
@@ -163,6 +167,7 @@ export default function LoginPage() {
               </label>
               <button
                 type="submit"
+                data-testid="teacher-submit"
                 disabled={loading}
                 className="w-full rounded-xl bg-violet-700 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-violet-800 disabled:opacity-60"
               >

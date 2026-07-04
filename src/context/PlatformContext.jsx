@@ -24,6 +24,7 @@ import {
   mergeRemoteAnalytics,
 } from "../lib/platformAnalytics";
 import { reportLoginEvent, reportActivityPatch, fetchAllAnalytics } from "../lib/analyticsApi";
+import { loginStudentApi, loginTeacherApi, logoutApi } from "../lib/platformApi";
 import {
   loadValidatedPlatformState,
   resolveSessionUser,
@@ -117,6 +118,12 @@ export function PlatformProvider({ children }) {
     async (username, password) => {
       const found = await findTeacher(username, password);
       if (!found) return { ok: false, message: "بيانات الدخول غير صحيحة." };
+      try {
+        await loginTeacherApi(username, password);
+      } catch (err) {
+        console.error("[platform] server auth failed", err);
+        return { ok: false, message: "تعذّر إنشاء جلسة الخادم." };
+      }
       persist((prev) => ({ ...prev, ...createSessionPatch(found.id) }));
       return { ok: true, user: found };
     },
@@ -124,12 +131,18 @@ export function PlatformProvider({ children }) {
   );
 
   const loginStudentByNationalId = useCallback(
-    (nationalId) => {
+    async (nationalId) => {
       const row = findStudentByNationalId(nationalId);
       if (!row) {
         return { ok: false, message: "رقم الهوية غير مسجل في النظام." };
       }
       const student = rosterStudentToUser(row);
+      try {
+        await loginStudentApi(nationalId);
+      } catch (err) {
+        console.error("[platform] server auth failed", err);
+        return { ok: false, message: "تعذّر إنشاء جلسة الخادم." };
+      }
       const sessionId = getOrCreateLoginSessionId();
       let updatedAnalytics = null;
 
@@ -184,6 +197,7 @@ export function PlatformProvider({ children }) {
 
   const logout = useCallback(
     ({ reason } = {}) => {
+      logoutApi().catch((err) => console.error("[platform] server logout", err));
       persist((prev) => ({ ...prev, ...clearSessionPatch() }));
       clearLoginSessionId();
       clearActivityTracking();

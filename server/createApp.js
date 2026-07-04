@@ -11,6 +11,9 @@ import {
   mergeAnalytics,
 } from "./analyticsStore.js";
 import { registerPlatformRoutes } from "./routes/platformRoutes.js";
+import { registerAuthRoutes } from "./auth/authRoutes.js";
+import { requireAuth, requireRole } from "./auth/middleware.js";
+import { ensureSessionSchema } from "./auth/sessionRepository.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");
@@ -32,40 +35,45 @@ export function createApp() {
   const app = express();
   app.use(express.json({ limit: "512kb" }));
 
+  registerAuthRoutes(app, logError);
+
   app.get("/api/health", (_req, res) => {
+    const isProd = process.env.NODE_ENV === "production";
+    if (isProd) {
+      return res.json({ ok: true });
+    }
     const dbStatus = getDatabaseStatus?.() || { ok: Boolean(globalThis.__platformDbReady) };
     res.json({
       ok: true,
-      at: new Date().toISOString(),
       storage: "sqlite",
-      database: dbStatus,
-      commit: getGitCommit(),
-      nodeEnv: process.env.NODE_ENV || "development",
+      database: { ok: dbStatus.ok, exists: dbStatus.exists },
+      appCommit: getGitCommit(),
+      contentVersion: process.env.CONTENT_VERSION || getGitCommit(),
+      buildTime: process.env.BUILD_TIME || null,
       port: Number(process.env.PORT) || 3001,
     });
   });
 
-  app.post("/api/analytics/login", (req, res) => {
+  app.post("/api/analytics/login", requireAuth, requireRole("student"), (req, res) => {
     try {
-      const { studentId, event } = req.body || {};
-      if (!studentId || !event?.at) {
-        return res.status(400).json({ ok: false, error: "studentId and event.at required" });
-      }
+      const studentId = req.auth.userId;
+      const { event } = req.body || {};
+      if (!event?.at) return res.status(400).json({ ok: false, error: "event.at required" });
       const store = loadStore();
       const current = store.analyticsByStudent[studentId];
       store.analyticsByStudent[studentId] = applyLoginEvent(current, event);
       saveStore(store);
       res.json({ ok: true, analytics: store.analyticsByStudent[studentId] });
     } catch (err) {
-      logError("analytics.login", err, { studentId: req.body?.studentId });
-      res.status(500).json({ ok: false, error: "failed to record login" });
+      logError("analytics.login", err);
+      res.status(500).json({ ok: false, error: "failed" });
     }
   });
 
-  app.post("/api/analytics/activity", (req, res) => {
+  app.post("/api/analytics/activity", requireAuth, requireRole("student"), (req, res) => {
     try {
-      const { studentId, patch } = req.body || {};
-      if (!studentId) return res.status(400).json({ ok: false, error: "studentId required" });
+      const studentId = req.auth.userId;
+      const { patch } = req.body || {};
       const store = loadStore();
       store.analyticsByStudent[studentId] = applyActivityPatch(store.analyticsByStudent[studentId], patch || {});
       saveStore(store);
@@ -76,10 +84,11 @@ export function createApp() {
     }
   });
 
-  app.post("/api/analytics/sync", (req, res) => {
+  app.post("/api/analytics/sync", requireAuth, requireRole("student"), (req, res) => {
     try {
-      const { studentId, analytics } = req.body || {};
-      if (!studentId || !analytics) return res.status(400).json({ ok: false, error: "missing fields" });
+      const studentId = req.auth.userId;
+      const { analytics } = req.body || {};
+      if (!analytics) return res.status(400).json({ ok: false, error: "analytics required" });
       const store = loadStore();
       store.analyticsByStudent[studentId] = mergeAnalytics(store.analyticsByStudent[studentId], analytics);
       saveStore(store);
@@ -90,7 +99,7 @@ export function createApp() {
     }
   });
 
-  app.get("/api/analytics/all", (_req, res) => {
+  app.get("/api/analytics/all", requireAuth, requireRole("teacher"), (_req, res) => {
     try {
       const store = loadStore();
       res.json({ ok: true, analyticsByStudent: store.analyticsByStudent, fetchedAt: new Date().toISOString() });
@@ -105,6 +114,7 @@ export function createApp() {
 
 export async function prepareApp(app) {
   await initDatabase();
+  ensureSessionSchema();
   globalThis.__platformDbReady = true;
   registerPlatformRoutes(app, logError);
 
