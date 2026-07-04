@@ -1,7 +1,8 @@
 # تقرير الدفعة 3
 
 **التاريخ:** 2026-07-05  
-**الفرع:** `feature/full-curriculum-expansion`
+**الفرع:** `feature/full-curriculum-expansion`  
+**Commit:** `0c87f46`
 
 ## تسوية الجرد
 
