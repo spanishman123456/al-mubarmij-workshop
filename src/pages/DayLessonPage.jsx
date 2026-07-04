@@ -119,26 +119,22 @@ export default function DayLessonPage() {
           ) : null}
 
           {day.id === "day-02" ? (
-            <EduCard title="دروس اليوم الثاني — pdfPageIndex 93–150" accent="violet">
-              <div className="mt-2 flex flex-col gap-2">
-                <Link to="/lessons/conversions-intro" className="text-sm font-semibold text-violet-700 hover:underline">
-                  1. النشاط التمهيدي: التحويلات (93–98) →
-                </Link>
-                <Link to="/lessons/radix-practice" className="text-sm font-semibold text-violet-700 hover:underline">
-                  2. تطبيقات حساب الأساس (99–104) →
-                </Link>
-                <Link to="/lessons/algorithms" className="text-sm font-semibold text-violet-700 hover:underline">
-                  3. كتابة الخوارزمية (105–120) →
-                </Link>
-                <Link to="/lessons/sentence-reference" className="text-sm font-semibold text-violet-700 hover:underline">
-                  4. الدليل المرجعي لبناء الجملة (139–140) →
-                </Link>
-                <Link to="/lessons/if-statement" className="text-sm font-semibold text-violet-700 hover:underline">
-                  5. تطبيقات جمل If (141–148) →
-                </Link>
-                <Link to="/lessons/day02-computer-lab" className="text-sm font-semibold text-violet-700 hover:underline">
-                  6. النشاط العملي — مختبر الحاسب (149–150) →
-                </Link>
+            <EduCard title="دروس اليوم الثاني — ⏳ غير مكتمل" accent="violet">
+              <p className="mb-2 text-sm text-amber-800">راجع <code className="text-xs">docs/day02-coverage-status.md</code></p>
+              <div className="mt-2 flex flex-col gap-2 text-sm">
+                <Link to="/lessons/conversions-intro">1. تمهيد: تحويلات + ASCII</Link>
+                <Link to="/lessons/base-arithmetic">2. الحساب في الأنظمة</Link>
+                <Link to="/lessons/twos-complement">3. مكمل العدد 2</Link>
+                <Link to="/lessons/floating-point">4. الفاصلة العائمة</Link>
+                <Link to="/lessons/radix-practice">5. تطبيقات الأساس</Link>
+                <Link to="/lessons/card-sort-algorithm">6. فرز البطاقات</Link>
+                <Link to="/lessons/algorithms">7. الخوارزميات</Link>
+                <Link to="/lessons/python-arrays">8. المصفوفات/القوائم</Link>
+                <Link to="/lessons/python-for-range">9. for و range</Link>
+                <Link to="/lessons/python-while">10. while</Link>
+                <Link to="/lessons/sentence-reference">11. الدليل المرجعي</Link>
+                <Link to="/lessons/if-statement">12. جمل If</Link>
+                <Link to="/lessons/day02-computer-lab">13. مختبر 60 دقيقة</Link>
               </div>
             </EduCard>
           ) : null}

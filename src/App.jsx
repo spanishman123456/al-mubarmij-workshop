@@ -39,8 +39,16 @@ import {
   RadixPracticeLessonPage,
   SentenceReferenceLessonPage,
   Day02ComputerLabLessonPage,
+  BaseArithmeticLessonPage,
+  TwosComplementLessonPage,
+  FloatingPointLessonPage,
+  CardSortAlgorithmLessonPage,
+  PythonArraysLessonPage,
+  PythonForRangeLessonPage,
+  PythonWhileLessonPage,
 } from "./pages/lessons/Day02LessonPages.jsx";
 import TeacherDay01AnswersPage from "./pages/teacher/TeacherDay01AnswersPage.jsx";
+import TeacherDay02AnswersPage from "./pages/teacher/TeacherDay02AnswersPage.jsx";
 
 function NotFoundRedirect() {
   const { user, authReady } = usePlatform();
@@ -214,20 +222,21 @@ function AppRoutes() {
         />
 
         <Route path="/lessons/conversions-intro" element={<ProtectedRoute><ConversionsIntroLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/base-arithmetic" element={<ProtectedRoute><BaseArithmeticLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/twos-complement" element={<ProtectedRoute><TwosComplementLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/floating-point" element={<ProtectedRoute><FloatingPointLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/radix-practice" element={<ProtectedRoute><RadixPracticeLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/card-sort-algorithm" element={<ProtectedRoute><CardSortAlgorithmLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/algorithms" element={<ProtectedRoute><AlgorithmsLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/python-arrays" element={<ProtectedRoute><PythonArraysLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/python-for-range" element={<ProtectedRoute><PythonForRangeLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/python-while" element={<ProtectedRoute><PythonWhileLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/sentence-reference" element={<ProtectedRoute><SentenceReferenceLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/if-statement" element={<ProtectedRoute><IfStatementLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/day02-computer-lab" element={<ProtectedRoute><Day02ComputerLabLessonPage /></ProtectedRoute>} />
 
-        <Route
-          path="/teacher/day-01-answers"
-          element={
-            <ProtectedRoute roles={["teacher"]}>
-              <TeacherDay01AnswersPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/teacher/day-01-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay01AnswersPage /></ProtectedRoute>} />
+        <Route path="/teacher/day-02-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay02AnswersPage /></ProtectedRoute>} />
 
         <Route
           path="/path"

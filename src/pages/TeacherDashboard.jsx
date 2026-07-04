@@ -96,6 +96,9 @@ export default function TeacherDashboard() {
           <Link to="/teacher/day-01-answers" className="edu-btn edu-btn-outline text-sm">
             إجابات المعلم — اليوم 1
           </Link>
+          <Link to="/teacher/day-02-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 2
+          </Link>
           <button
             type="button"
             onClick={handleRefresh}

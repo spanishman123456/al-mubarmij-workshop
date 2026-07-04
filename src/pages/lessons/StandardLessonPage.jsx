@@ -40,6 +40,20 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
         <p className="leading-relaxed text-slate-700">{L.conceptSimple}</p>
       </EduCard>
 
+      {L.activityGuide ? (
+        <EduCard title={`دليل ${L.lessonKind === "lab" ? "المختبر" : "النشاط"}`} className="mt-4" accent="amber">
+          <p className="font-semibold text-slate-800">{L.activityGuide.goalAr}</p>
+          <p className="mt-2 text-sm text-slate-600">⏱ {L.activityGuide.estimatedMinutes} دقيقة</p>
+          <h3 className="mt-3 font-bold">التعليمات</h3>
+          <ul className="list-disc pr-5 text-sm">{L.activityGuide.instructionsAr.map((x) => <li key={x}>{x}</li>)}</ul>
+          <h3 className="mt-3 font-bold">خطوات التنفيذ</h3>
+          <ol className="list-decimal pr-5 text-sm">{L.activityGuide.executionSteps.map((x) => <li key={x}>{x}</li>)}</ol>
+          <p className="mt-3 text-sm"><span className="font-bold">المهمة:</span> {L.activityGuide.taskAr}</p>
+          <p className="mt-2 text-sm"><span className="font-bold">معايير النجاح:</span> {L.activityGuide.successCriteria.join("؛ ")}</p>
+          <p className="mt-2 text-sm text-slate-600">{L.activityGuide.reflectionAr}</p>
+        </EduCard>
+      ) : null}
+
       {L.deepSections?.length ? (
         <section className="mt-6 space-y-4">
           <h2 className="text-xl font-bold">شرح تفصيلي</h2>
@@ -75,6 +89,7 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
         </EduCard>
       ) : null}
 
+      {L.workedExamples?.length ? (
       <section className="mt-8 space-y-4">
         <h2 className="text-xl font-bold">أمثلة محلولة ({L.workedExamples.length})</h2>
         {L.workedExamples.map((ex) => (
@@ -97,9 +112,11 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           </EduCard>
         ))}
       </section>
+      ) : null}
 
       {children}
 
+      {L.commonMistakes?.length ? (
       <EduCard title="أخطاء شائعة" className="mt-6" accent="rose">
         <ul className="space-y-2 text-sm text-slate-700">
           {L.commonMistakes.map((m) => (
@@ -109,7 +126,9 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           ))}
         </ul>
       </EduCard>
+      ) : null}
 
+      {L.guidedPractice?.length ? (
       <EduCard title="تدريب موجّه" className="mt-6">
         <LessonPractice
           exercises={L.guidedPractice}
@@ -118,7 +137,9 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           userId={user?.id}
         />
       </EduCard>
+      ) : null}
 
+      {L.independentPractice?.length ? (
       <EduCard title="تدريب مستقل" className="mt-4">
         <LessonPractice
           exercises={L.independentPractice}
@@ -127,7 +148,9 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           userId={user?.id}
         />
       </EduCard>
+      ) : null}
 
+      {L.quickCheck?.questions?.length ? (
       <EduCard title="تحقق سريع" className="mt-4">
         <ul className="space-y-2 text-sm">
           {L.quickCheck.questions.map((q) => (
@@ -139,6 +162,7 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           ))}
         </ul>
       </EduCard>
+      ) : null}
 
       <EduCard title="ملخص" className="mt-4">
         <p className="text-slate-700">{L.summary}</p>

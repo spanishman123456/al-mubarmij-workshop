@@ -33,11 +33,27 @@ export function validateLessonContent(lesson) {
     return { ok: false, errors: ["lesson object required"] };
   }
 
+  const kind = lesson.lessonKind || "lesson";
+
   assertNonEmpty(lesson.id, "id", errors);
   assertNonEmpty(lesson.titleAr, "titleAr", errors);
   assertNonEmpty(lesson.learningObjectives, "learningObjectives", errors);
   assertNonEmpty(lesson.whyLearn, "whyLearn", errors);
   assertNonEmpty(lesson.prerequisites, "prerequisites", errors);
+  assertNonEmpty(lesson.summary, "summary", errors);
+  assertNonEmpty(lesson.linkedActivity, "linkedActivity", errors);
+
+  if (kind === "activity" || kind === "lab") {
+    validateActivityGuide(lesson.activityGuide, errors, kind);
+    // activity/lab still needs minimal teaching structure
+    assertNonEmpty(lesson.conceptSimple, "conceptSimple", errors);
+    assertNonEmpty(lesson.stepsDetailed, "stepsDetailed", errors);
+    if (Array.isArray(lesson.stepsDetailed) && lesson.stepsDetailed.length < 4) {
+      errors.push("stepsDetailed: يلزم 4 خطوات على الأقل");
+    }
+    return { ok: errors.length === 0, errors };
+  }
+
   assertNonEmpty(lesson.conceptSimple, "conceptSimple", errors);
   assertNonEmpty(lesson.stepsDetailed, "stepsDetailed", errors);
   assertNonEmpty(lesson.workedExamples, "workedExamples", errors);
@@ -91,6 +107,38 @@ export function validateLessonContent(lesson) {
   }
 
   return { ok: errors.length === 0, errors };
+}
+
+const ACTIVITY_REQUIRED = [
+  "goalAr",
+  "instructionsAr",
+  "estimatedMinutes",
+  "executionSteps",
+  "taskAr",
+  "successCriteria",
+  "verificationAr",
+  "feedbackAr",
+  "reflectionAr",
+  "completionTracking",
+];
+
+function validateActivityGuide(guide, errors, kind) {
+  if (!guide || typeof guide !== "object") {
+    errors.push(`${kind}: activityGuide مطلوب`);
+    return;
+  }
+  for (const field of ACTIVITY_REQUIRED) {
+    assertNonEmpty(guide[field], `activityGuide.${field}`, errors);
+  }
+  if (Array.isArray(guide.instructionsAr) && guide.instructionsAr.length < 2) {
+    errors.push("activityGuide.instructionsAr: يلزم تعليمتان على الأقل");
+  }
+  if (Array.isArray(guide.executionSteps) && guide.executionSteps.length < 3) {
+    errors.push("activityGuide.executionSteps: يلزم 3 خطوات تنفيذ على الأقل");
+  }
+  if (Array.isArray(guide.successCriteria) && guide.successCriteria.length < 2) {
+    errors.push("activityGuide.successCriteria: يلزم معياران للنجاح");
+  }
 }
 
 export function validateLessonCatalog(catalog, seenSummaries = new Set()) {
