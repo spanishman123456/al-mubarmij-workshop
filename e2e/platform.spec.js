@@ -53,6 +53,26 @@ async function labFlow(page, { wrong, hintButton, checkButton, successPattern })
   if (successPattern) await expect(page.getByText(successPattern)).toBeVisible();
 }
 
+test.describe("binary cards lesson", () => {
+  test("student flips cards, checks answer, sees success", async ({ page }) => {
+    await loginStudent(page);
+    await page.goto("/lessons/binary-cards");
+    await expect(page.getByRole("heading", { name: /بطاقات الأرقام الثنائية/i })).toBeVisible();
+
+    const card4 = page.getByRole("button", { name: /بطاقة القيمة 4/ });
+    await card4.click();
+    await expect(card4).toHaveAttribute("aria-pressed", "true");
+
+    const card1 = page.getByRole("button", { name: /بطاقة القيمة 1/ });
+    await card1.click();
+    await expect(page.getByText("المجموع الحالي:")).toBeVisible();
+    await expect(page.locator("text=00101")).toBeVisible();
+
+    await page.getByRole("button", { name: "تحقق من الإجابة" }).click();
+    await expect(page.getByText(/ممتاز/)).toBeVisible({ timeout: 10000 });
+  });
+});
+
 test.describe("onboarding pre-assessment gate", () => {
   test("student completes agreements only and can start day one without pre-test", async ({ page }) => {
     await loginStudent(page);

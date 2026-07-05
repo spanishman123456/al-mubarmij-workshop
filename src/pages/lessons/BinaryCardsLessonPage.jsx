@@ -1,17 +1,24 @@
 import { Link } from "react-router-dom";
 import { binaryCardsLesson as L } from "../../content/lessons/day01/binaryCardsLesson";
 import { PageShell, EduCard } from "../../components/layout/PageShell";
-import { LessonPractice } from "../../components/lesson/LessonPractice";
+import { BinaryCardsLab } from "../../components/lesson/BinaryCardsLab";
 import { usePlatform } from "../../context/PlatformContext";
 
-const CARD_VALUES = [16, 8, 4, 2, 1];
+const CARD_EXERCISES = [
+  { id: "g1", target: 5, promptAr: "مثّل العدد 5" },
+  { id: "g2", target: 13, promptAr: "مثّل العدد 13" },
+  { id: "i1", target: 10, promptAr: "مثّل العدد 10" },
+  { id: "i2", target: 7, promptAr: "مثّل العدد 7" },
+];
 
 export default function BinaryCardsLessonPage() {
   const { user } = usePlatform();
 
   return (
     <PageShell title={L.titleAr} subtitle="pdfPage 31–32">
-      <Link to="/path/day/day-01" className="mb-4 inline-block text-sm font-semibold text-violet-700">← اليوم الأول</Link>
+      <Link to="/path/day/day-01" className="mb-4 inline-block text-sm font-semibold text-violet-700">
+        ← اليوم الأول
+      </Link>
 
       <EduCard title="ما ستتعلمه">
         <ul className="list-disc pr-5">{L.learningObjectives.map((o) => <li key={o}>{o}</li>)}</ul>
@@ -25,28 +32,35 @@ export default function BinaryCardsLessonPage() {
             <p className="mt-1 text-slate-700">{s.bodyAr}</p>
           </div>
         ))}
-        <div className="flex flex-wrap gap-2">
-          {CARD_VALUES.map((v) => (
-            <div key={v} className="rounded-lg border-2 border-violet-300 bg-violet-50 px-4 py-3 text-center font-bold">
-              {v}
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-sm text-slate-600">اقلب البطاقات لتمثيل العدد — الظاهرة = 1، المخفية = 0.</p>
+        <p className="text-sm text-slate-600">
+          البطاقات الخمس تمثل القيم 16، 8، 4، 2، 1. في النشاط التفاعلي أدناه يمكنك قلبها — الظاهرة = 1،
+          المخفية = 0.
+        </p>
       </EduCard>
 
-      {L.workedExamples.map((ex) => (
-        <EduCard key={ex.id} title={ex.titleAr} className="mt-4" accent="emerald">
-          <ol className="list-decimal pr-5 text-sm">{ex.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
-          <p className="mt-2 font-bold" dir="ltr">{ex.result}₂</p>
-        </EduCard>
-      ))}
-
-      <EduCard title="تدريب" className="mt-4">
-        <LessonPractice exercises={[...L.guidedPractice, ...L.independentPractice]} mode="guided" lessonId={L.id} userId={user?.id} />
+      <EduCard title="أمثلة محلولة" className="mt-4" accent="emerald">
+        {L.workedExamples.map((ex) => (
+          <div key={ex.id} className="mb-4 border-b border-emerald-100 pb-4 last:mb-0 last:border-0 last:pb-0">
+            <p className="font-bold text-emerald-900">{ex.titleAr}</p>
+            <ol className="mt-2 list-decimal pr-5 text-sm text-slate-700">
+              {ex.steps.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ol>
+            <p className="mt-2 font-mono font-bold" dir="ltr">
+              {ex.result}₂
+            </p>
+          </div>
+        ))}
       </EduCard>
 
-      <Link to="/lessons/number-systems" className="edu-btn edu-btn-primary mt-6 inline-flex">التالي: أنظمة العد →</Link>
+      <EduCard title="جرّب بنفسك" className="mt-4" accent="violet">
+        <BinaryCardsLab lessonId={L.id} userId={user?.id} exercises={CARD_EXERCISES} />
+      </EduCard>
+
+      <Link to="/lessons/number-systems" className="edu-btn edu-btn-primary mt-6 inline-flex">
+        التالي: أنظمة العد →
+      </Link>
     </PageShell>
   );
 }
