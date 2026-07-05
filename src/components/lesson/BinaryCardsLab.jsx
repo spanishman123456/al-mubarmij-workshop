@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BINARY_CARD_VALUES,
   cardSum,
@@ -25,6 +25,7 @@ function BinaryCard({ value, visible, onToggle }) {
   return (
     <button
       type="button"
+      data-testid={`binary-card-${value}`}
       aria-pressed={visible}
       aria-label={cardAriaLabel(value, visible)}
       onClick={() => onToggle(value)}
@@ -92,17 +93,21 @@ export function BinaryCardsLab({ lessonId, userId, exercises = [] }) {
   const [attempts, setAttempts] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [completed, setCompleted] = useState({});
+  const hydratedRef = useRef(false);
 
   const exercise = exercises[exerciseIndex];
   const target = exercise?.target ?? 5;
 
   useEffect(() => {
-    if (!restored || !progress) return;
+    if (!restored || hydratedRef.current) return;
+    hydratedRef.current = true;
+    if (!progress) return;
     if (typeof progress.exerciseIndex === "number") setExerciseIndex(progress.exerciseIndex);
     if (progress.cards) setCards(progress.cards);
     if (typeof progress.hintsUsed === "number") setHintsUsed(progress.hintsUsed);
     if (typeof progress.attempts === "number") setAttempts(progress.attempts);
     if (progress.completed) setCompleted(progress.completed);
+    if (progress.feedback) setFeedback(progress.feedback);
   }, [restored, progress]);
 
   const save = useCallback(
@@ -191,11 +196,15 @@ export function BinaryCardsLab({ lessonId, userId, exercises = [] }) {
 
   if (!exercise) return null;
 
+  if (userId && !restored) {
+    return <p className="text-sm text-slate-600">جاري استعادة تقدمك…</p>;
+  }
+
   return (
     <div className="space-y-4" dir="rtl">
       <StaticExampleDemo />
 
-      <div className="rounded-xl border-2 border-violet-300 bg-violet-50/40 p-4">
+      <div className="rounded-xl border-2 border-violet-300 bg-violet-50/40 p-4" data-testid="binary-cards-lab">
         <h3 className="text-lg font-bold text-violet-900">نشاط تفاعلي: اقلب البطاقات لتمثيل العدد</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
           كل بطاقة لها قيمة: 1، 2، 4، 8، 16. عندما تكون البطاقة <strong>ظاهرة</strong> نستخدم قيمتها وتمثل{" "}
