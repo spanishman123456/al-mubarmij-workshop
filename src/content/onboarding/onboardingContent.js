@@ -1,4 +1,4 @@
-/** نشاط BINGO — محتوى من PDF صفحة 30 (pdfPage 53) */
+/** نشاط BINGO — محتوى من PDF صفحة 30 (pdfPage 53) — شبكة 5×5 (24 خانة + خانة مركزية مجانية) */
 
 export const BINGO_CELLS = [
   { id: "c0", labelAr: "سافر إلى أحد البلدان" },
@@ -25,6 +25,7 @@ export const BINGO_CELLS = [
   { id: "c21", labelAr: "يشاهد أفلام الكرتون" },
   { id: "c22", labelAr: "لديه دراجة" },
   { id: "c23", labelAr: "يحب ألعاب الحاسب" },
+  { id: "c24", labelAr: "يستمتع بالقراءة في وقت فراغه" },
 ];
 
 export const HONOR_CODE_PRINCIPLES = [

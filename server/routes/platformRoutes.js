@@ -34,9 +34,19 @@ export function registerPlatformRoutes(app, logError) {
       const studentId = req.auth.userId;
       const { cells, status, startedAt, completedAt, submittedAt } = req.body || {};
       const result = saveBingoProgress(studentId, { cells, status, startedAt, completedAt, submittedAt });
+      console.info(
+        JSON.stringify({
+          scope: "onboarding.bingo",
+          event: "save_ok",
+          studentId,
+          path: "/api/onboarding/bingo",
+          status: status || "in_progress",
+          at: new Date().toISOString(),
+        }),
+      );
       res.json({ ok: true, ...result });
     } catch (err) {
-      logError("onboarding.bingo", err);
+      logError("onboarding.bingo", err, { studentId: req.auth?.userId, path: "/api/onboarding/bingo" });
       res.status(500).json({ ok: false, error: "failed" });
     }
   });

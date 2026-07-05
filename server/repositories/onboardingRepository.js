@@ -1,6 +1,13 @@
 import { queryOne, queryAll, runSql } from "../db/query.js";
 import { persistDatabase } from "../db/index.js";
 import { getStudentProgress } from "./progressRepository.js";
+import {
+  BINGO_EXPECTED_FILLABLE,
+  computeBingoProgress,
+  createInitialBingoStudentState,
+  normalizeBingoStudentState,
+} from "../../src/content/onboarding/validateBingoContent.js";
+import { BINGO_CELLS } from "../../src/content/onboarding/onboardingContent.js";
 
 const DOC_TYPES = ["honor_code", "acceptable_use", "honor_agreement", "tech_contract"];
 
@@ -19,14 +26,14 @@ export function getOnboardingStatus(studentId) {
   );
 
   const bingo = bingoRow
-    ? {
+    ? normalizeBingoStudentState({
         status: bingoRow.status,
         startedAt: bingoRow.started_at,
         completedAt: bingoRow.completed_at,
         submittedAt: bingoRow.submitted_at,
         cells: JSON.parse(bingoRow.cells_json || "{}"),
-      }
-    : { status: "not_started", cells: {} };
+      })
+    : createInitialBingoStudentState();
 
   const agreements = {};
   for (const docType of DOC_TYPES) {
@@ -118,14 +125,14 @@ export function getAllOnboardingSummary() {
   for (const row of bingoRows) {
     students.add(row.student_id);
     const cells = JSON.parse(row.cells_json || "{}");
-    const filled = Object.values(cells).filter((v) => String(v || "").trim()).length;
+    const { filledCount, percent, totalFillable } = computeBingoProgress(BINGO_CELLS, cells);
     bingoMap[row.student_id] = {
       status: row.status,
       startedAt: row.started_at,
       submittedAt: row.submitted_at,
-      filledCells: filled,
-      totalCells: 24,
-      percent: Math.round((filled / 24) * 100),
+      filledCells: filledCount,
+      totalCells: totalFillable || BINGO_EXPECTED_FILLABLE,
+      percent,
     };
   }
 

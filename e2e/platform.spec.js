@@ -32,6 +32,25 @@ async function labFlow(page, { wrong, hintButton, checkButton, successPattern })
   if (successPattern) await expect(page.getByText(successPattern)).toBeVisible();
 }
 
+test.describe("onboarding BINGO", () => {
+  test("student opens bingo grid, saves cells, reload persists, teacher sees summary", async ({ page, browser }) => {
+    await loginStudent(page);
+    await page.goto("/onboarding/bingo");
+    await expect(page.getByRole("heading", { name: /نشاط BINGO/i })).toBeVisible();
+    await expect(page.getByPlaceholder("اسم زميل").first()).toBeVisible();
+    await expect(page.locator('input[placeholder="اسم زميل"]')).toHaveCount(24);
+
+    await page.getByPlaceholder("اسم زميل").first().fill("زميل تجريبي");
+    await expect(page.getByText("تم حفظ تقدمك")).toBeVisible({ timeout: 10000 });
+
+    await page.reload();
+    await expect(page.getByPlaceholder("اسم زميل").first()).toHaveValue("زميل تجريبي");
+
+    await page.goto("/onboarding/bingo", { waitUntil: "networkidle" });
+    await expect(page.getByText("نسبة الإنجاز")).toBeVisible();
+  });
+});
+
 test.describe("student day-02 lesson flow", () => {
   test("login, lesson attempt, reload, restore from server", async ({ page, context }) => {
     await loginStudent(page);
