@@ -4,6 +4,7 @@ import { QuizTruthTableQuestion } from "./QuizTruthTableQuestion";
 import { QuizCardFlipQuestion, QuizCardSheetQuestion } from "./QuizCardFlipQuestion";
 import { QuizCodeEditorQuestion } from "./QuizCodeEditorQuestion";
 import { QuizFlowchartBuilderQuestion } from "./QuizFlowchartBuilderQuestion";
+import { QuizLogicCircuitQuestion } from "./QuizLogicCircuitQuestion";
 
 export function questionTypeLabel(type) {
   if (type === "fill") return "إكمال";
@@ -16,6 +17,7 @@ export function questionTypeLabel(type) {
   if (type === "binary-cards") return "بطاقات";
   if (type === "binary-cards-sheet") return "ورقة بطاقات";
   if (type === "flowchart") return "مخطط تدفق";
+  if (type === "logic-circuit") return "دارة منطقية";
   return "اختيار";
 }
 
@@ -66,6 +68,8 @@ export function QuizQuestionRenderer({ question, value, onChange, disabled, show
         <QuizCardSheetQuestion question={question} value={value} onChange={onChange} disabled={disabled} />
       ) : qType === "flowchart" ? (
         <QuizFlowchartBuilderQuestion question={question} value={value} onChange={onChange} disabled={disabled} />
+      ) : qType === "logic-circuit" ? (
+        <QuizLogicCircuitQuestion question={question} value={value} onChange={onChange} disabled={disabled} />
       ) : qType === "match" ? (
         <MatchQuestion question={question} value={value} onChange={onChange} disabled={disabled} />
       ) : qType === "order" ? (

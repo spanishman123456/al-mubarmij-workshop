@@ -6,9 +6,11 @@ import {
   gradeCardFlip,
   gradeCardSheet,
   gradeFlowchart,
+  gradeLogicCircuit,
   gradeMatch,
   gradeOrder,
   gradeTruthTable,
+  logicCircuitModelLabel,
   truthTableModelAnswer,
 } from "../../src/lib/quiz/grading.js";
 import { buildSectionGroups, getSectionsForQuiz } from "./quizSections.js";
@@ -20,7 +22,8 @@ const BANKS = {
 
 const KEY_FIELDS = [
   "correctIndex", "correctAnswer", "acceptAnswers", "correctPairs", "correctOrder",
-  "correctFlow", "target", "targets", "logicExpr", "explainAr", "modelAnswerAr",
+  "correctFlow", "target", "targets", "logicExpr", "circuitGate", "expectedOutputs",
+  "explainAr", "modelAnswerAr",
 ];
 
 export function isServerBankQuiz(quizId) {
@@ -59,6 +62,10 @@ export function sanitizeQuestion(q) {
   if (out.type === "flowchart") {
     out.instructionAr = out.instructionAr || "اختر الرمز المناسب لكل خطوة في المخطط.";
   }
+  if (out.type === "logic-circuit") {
+    out.instructionAr =
+      out.instructionAr || "ابْنِ الدارة بإضافة البوابة وتوصيل المداخل إلى المصباح (OUT).";
+  }
   return out;
 }
 
@@ -89,7 +96,7 @@ export function isAutoGradable(question) {
   const type = question.type || "mcq";
   return [
     "mcq", "truefalse", "fill", "match", "order",
-    "truth-table", "binary-cards", "binary-cards-sheet", "flowchart",
+    "truth-table", "binary-cards", "binary-cards-sheet", "flowchart", "logic-circuit",
   ].includes(type);
 }
 
@@ -134,6 +141,8 @@ export function gradeQuestion(question, userAnswer) {
     correct = gradeCardSheet(question, userAnswer);
   } else if (type === "flowchart") {
     correct = gradeFlowchart(question, userAnswer);
+  } else if (type === "logic-circuit") {
+    correct = gradeLogicCircuit(question, userAnswer);
   } else if (hasUserAnswer(userAnswer)) {
     correct = Number(userAnswer) === question.correctIndex;
   }
@@ -215,6 +224,7 @@ export function buildReviewPayload(quizId, answers, teacherNotes = {}) {
       else if (q.type === "truth-table") review.modelAnswer = truthTableModelAnswer(q);
       else if (q.type === "binary-cards") review.modelAnswer = `مجموع البطاقات = ${q.target}`;
       else if (q.type === "binary-cards-sheet") review.modelAnswer = (q.targets || []).join("، ");
+      else if (q.type === "logic-circuit") review.modelAnswer = logicCircuitModelLabel(q);
       else review.modelAnswer = q.optionsAr?.[q.correctIndex];
       review.correctPairs = q.type === "match" ? q.correctPairs : undefined;
       review.correctOrder = q.type === "order" ? q.correctOrder : undefined;

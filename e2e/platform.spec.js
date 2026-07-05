@@ -81,7 +81,7 @@ test.describe("pre-assessment quiz interactive", () => {
     await expect(page.getByText("الاختبار القبلي").or(page.getByRole("heading", { name: /الاختبار القبلي/i }))).toBeVisible({
       timeout: 15000,
     });
-    await expect(page.getByText(/السؤال \d+ من 105/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/السؤال \d+ من 108/)).toBeVisible({ timeout: 15000 });
     const nextBtn = page.getByRole("button", { name: "التالي" });
     for (let i = 0; i < 9; i += 1) {
       if (await page.getByTestId("quiz-card-4").count()) break;

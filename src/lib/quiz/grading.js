@@ -1,3 +1,4 @@
+import { gradeLogicCircuit, logicCircuitModelLabel } from "../logic/circuit.js";
 import { createCardEngine } from "../binaryCards/placeValueCardsLogic.js";
 import { buildTruthTable } from "../logic/truthTable.js";
 
@@ -46,6 +47,8 @@ export function gradeOrder(question, userAnswer) {
   if (!Array.isArray(parsed) || parsed.length !== expected.length) return false;
   return parsed.every((v, i) => Number(v) === Number(expected[i]));
 }
+
+export { gradeLogicCircuit, logicCircuitModelLabel };
 
 export function gradeFlowchart(question, userAnswer) {
   const expected = question.correctFlow || {};

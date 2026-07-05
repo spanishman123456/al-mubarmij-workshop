@@ -38,12 +38,11 @@ async function loginStudentWithFreshQuiz(page) {
     await expect(page).toHaveURL(/\/student/);
     await completeRequiredOnboardingViaApi(page);
     await page.goto("/quizzes/run/quiz-pre");
-    await page.waitForURL(/\/quizzes\/(run\/quiz-pre|review\/\d+)/, { timeout: 15000 });
-    if (!page.url().includes("/review/")) {
-      await expect(page.getByRole("heading", { name: /الاختبار القبلي/i })).toBeVisible();
-      await expect(page.getByText(/السؤال \d+ من 105/)).toBeVisible({ timeout: 20000 });
-      return nid;
-    }
+    await page.waitForLoadState("networkidle");
+    if (page.url().includes("/review/")) continue;
+    await expect(page.getByRole("heading", { name: /الاختبار القبلي/i })).toBeVisible();
+    await expect(page.getByText(/السؤال \d+ من 108/)).toBeVisible({ timeout: 20000 });
+    return nid;
   }
   throw new Error("No student with an in-progress quiz-pre attempt available in E2E pool");
 }
@@ -96,6 +95,30 @@ async function fillFlowchartSymbolMatch(page) {
   }
 }
 
+async function wireLogicPort(page, fromTestId, toTestId) {
+  const from = page.getByTestId(fromTestId);
+  const to = page.getByTestId(toTestId);
+  await from.scrollIntoViewIfNeeded();
+  await to.scrollIntoViewIfNeeded();
+  const fromBox = await from.boundingBox();
+  const toBox = await to.boundingBox();
+  if (!fromBox || !toBox) throw new Error(`Missing logic port: ${fromTestId} -> ${toTestId}`);
+  await page.mouse.move(fromBox.x + fromBox.width / 2, fromBox.y + fromBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(toBox.x + toBox.width / 2, toBox.y + toBox.height / 2);
+  await page.mouse.up();
+}
+
+async function buildLogicAndCircuit(page) {
+  await expect(page.getByTestId("logic-port-in-a-out")).toBeVisible({ timeout: 10000 });
+  await page.getByTestId("logic-gate-add-AND").click();
+  const gateId = await page.locator('[data-gate-type="AND"]').last().getAttribute("data-testid");
+  const gateKey = gateId.replace("logic-node-", "");
+  await wireLogicPort(page, "logic-port-in-a-out", `logic-port-${gateKey}-in-0`);
+  await wireLogicPort(page, "logic-port-in-b-out", `logic-port-${gateKey}-in-1`);
+  await wireLogicPort(page, `logic-port-${gateKey}-out`, "logic-port-out-1-in-0");
+}
+
 async function waitForServerAnswer(page, questionId, expected) {
   const cookies = await page.context().cookies();
   const csrf = cookies.find((c) => c.name === "platform_csrf")?.value || "";
@@ -137,6 +160,11 @@ test.describe("quiz-pre full E2E scenario", () => {
     await gotoQuestion(page, "pre-19");
     await fillFlowchartSymbolMatch(page);
 
+    // 5b — دارة منطقية AND
+    await gotoQuestion(page, "pre-logic-and");
+    await expect(page.getByTestId("quiz-logic-circuit")).toBeVisible();
+    await buildLogicAndCircuit(page);
+
     // 6 — كتابة كود
     const codeSnippet = "n = int(input())\nprint(abs(n))";
     await gotoQuestion(page, "pre-18");
@@ -150,7 +178,7 @@ test.describe("quiz-pre full E2E scenario", () => {
 
     // 8–9 — تحديث الصفحة واستعادة الإجابات
     await page.reload({ waitUntil: "networkidle" });
-    await expect(page.getByText(/السؤال \d+ من 105/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/السؤال \d+ من 108/)).toBeVisible({ timeout: 15000 });
     await gotoQuestion(page, "pre-18");
     await expect(page.getByTestId("quiz-code-input")).toHaveValue(codeSnippet, { timeout: 15000 });
     await gotoQuestion(page, "pre-18-flow");

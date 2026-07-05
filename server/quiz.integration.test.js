@@ -44,7 +44,7 @@ describe("quiz API integration", () => {
     });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.totalQuestions).toBe(105);
+    expect(body.totalQuestions).toBe(108);
     const q = body.sections.flatMap((s) => s.questions)[0];
     expect(q.correctAnswer).toBeUndefined();
     expect(q.explainAr).toBeUndefined();

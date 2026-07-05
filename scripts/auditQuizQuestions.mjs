@@ -19,6 +19,7 @@ function recommendType(q) {
   if (/رتّب|رتب|ترتيب/i.test(text)) return "order";
   if (/جدول الحقيقة|truth/i.test(text)) return "truth-table";
   if (/مخطط|flowchart|خوارزم/i.test(text)) return "flowchart";
+  if (/دارة|بوابة|AND|OR|NOT|منطق/i.test(text)) return "logic-circuit";
   if (/بطاق/i.test(text)) return "binary-cards";
   if (q.type === "code") return "code-editor";
   if (q.type === "fill") return "fill";
@@ -30,7 +31,7 @@ function recommendType(q) {
 function auditQuestion(q, quizLabel) {
   const needsExternal = EXTERNAL_PHRASES.some((p) => (q.questionAr || "").includes(p));
   const recommended = recommendType(q);
-  const auto = ["mcq", "truefalse", "fill", "match", "order"].includes(q.type || recommended);
+  const auto = ["mcq", "truefalse", "fill", "match", "order", "logic-circuit", "flowchart", "truth-table", "binary-cards", "binary-cards-sheet"].includes(q.type || recommended);
   return {
     id: q.id,
     quiz: quizLabel,

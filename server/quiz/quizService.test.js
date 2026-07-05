@@ -11,13 +11,24 @@ describe("quizService", () => {
     const payload = getPublicQuizPayload("quiz-pre");
     expect(payload).toBeTruthy();
     const flat = payload.sections.flatMap((s) => s.questions);
-    expect(flat.length).toBe(105);
+    expect(flat.length).toBe(108);
     for (const q of flat) {
       expect(q.correctAnswer).toBeUndefined();
       expect(q.correctIndex).toBeUndefined();
       expect(q.correctPairs).toBeUndefined();
       expect(q.explainAr).toBeUndefined();
+      expect(q.circuitGate).toBeUndefined();
+      expect(q.expectedOutputs).toBeUndefined();
     }
+  });
+
+  it("exposes logic-circuit builder hints without answer keys", () => {
+    const payload = getPublicQuizPayload("quiz-pre");
+    const q = payload.sections.flatMap((s) => s.questions).find((x) => x.id === "pre-logic-and");
+    expect(q?.type).toBe("logic-circuit");
+    expect(q?.circuitPreset).toBe("ab-out");
+    expect(q?.allowedGates).toContain("AND");
+    expect(q?.circuitGate).toBeUndefined();
   });
 
   it("grades flowchart question pre-19", () => {
@@ -41,6 +52,32 @@ describe("quizService", () => {
     const result = gradeQuestion({ type: "essay", id: "x" }, "some answer");
     expect(result.gradingStatus).toBe("pending_teacher_review");
     expect(result.autoGraded).toBe(false);
+  });
+
+  it("grades logic circuit question pre-logic-and", () => {
+    const answer = {
+      nodes: [
+        { id: "in-a", type: "INPUT", x: 36, y: 72, value: false, label: "A" },
+        { id: "in-b", type: "INPUT", x: 36, y: 152, value: false, label: "B" },
+        { id: "g-1", type: "AND", x: 200, y: 110, inputCount: 2 },
+        { id: "out-1", type: "OUTPUT", x: 400, y: 112 },
+      ],
+      wires: [
+        { id: "w1", from: "in-a", to: "g-1", toPort: 0 },
+        { id: "w2", from: "in-b", to: "g-1", toPort: 1 },
+        { id: "w3", from: "g-1", to: "out-1", toPort: 0 },
+      ],
+    };
+    const graded = gradeAttempt("quiz-pre", { "pre-logic-and": JSON.stringify(answer) });
+    const item = graded.items.find((i) => i.questionId === "pre-logic-and");
+    expect(item?.correct).toBe(true);
+    expect(item?.autoGraded).toBe(true);
+  });
+
+  it("sanitize adds instruction for logic-circuit", () => {
+    const s = sanitizeQuestion({ type: "logic-circuit", questionAr: "test" });
+    expect(s.instructionAr).toContain("الدارة");
+    expect(s.circuitGate).toBeUndefined();
   });
 
   it("sanitize adds instruction for essay", () => {

@@ -27,6 +27,7 @@ def q(id_, order, question_ar, qtype="mcq", **kw):
         "logicExpr", "logicExprDisplay", "varCount", "resultOnly",
         "cardValues", "target", "targets", "baseLabel",
         "correctFlow", "flowSlots", "flowMatchSymbols", "flowRoleOptions",
+        "circuitPreset", "circuitGate", "expectedOutputs", "allowedGates",
     ):
         if k in kw:
             item[k] = kw[k]
@@ -156,6 +157,55 @@ def build_pre():
             instructionAr="عبّئ عمود الناتج F لكل صف — استخدم 0 أو 1.",
             explainAr="8 صفوف — الناتج = (NOT p AND q) OR r.",
             lessonLink="/lessons/truth-tables",
+        )
+    )
+    o += 1
+
+    items.append(
+        q(
+            "pre-logic-and",
+            o,
+            "سؤال 4-ب: ابْنِ دارة منطقية ببوابة AND — وصّل A و B إلى المصباح (OUT).",
+            "logic-circuit",
+            circuitPreset="ab-out",
+            circuitGate="AND",
+            expectedOutputs=[False, False, False, True],
+            allowedGates=["AND", "NOT", "OR", "XOR", "NAND", "NOR", "XNOR"],
+            instructionAr="أضف بوابة AND ووصّل المدخلين A و B بالمخرج. جرّب قيم 0/1 قبل الإرسال.",
+            explainAr="AND: المخرج 1 فقط عندما A=1 و B=1 — جدول 0001.",
+            lessonLink="/simulations#circuit",
+        )
+    )
+    o += 1
+    items.append(
+        q(
+            "pre-logic-or",
+            o,
+            "سؤال 4-ج: ابْنِ دارة منطقية ببوابة OR — وصّل A و B إلى المصباح (OUT).",
+            "logic-circuit",
+            circuitPreset="ab-out",
+            circuitGate="OR",
+            expectedOutputs=[False, True, True, True],
+            allowedGates=["OR", "AND", "NOT", "XOR", "NOR", "XNOR", "NAND"],
+            instructionAr="أضف بوابة OR ووصّل A و B بالمخرج.",
+            explainAr="OR: المخرج 1 إذا كان A أو B = 1 — جدول 0111.",
+            lessonLink="/simulations#circuit",
+        )
+    )
+    o += 1
+    items.append(
+        q(
+            "pre-logic-not",
+            o,
+            "سؤال 4-د: ابْنِ دارة ببوابة NOT — وصّل A إلى المصباح (OUT).",
+            "logic-circuit",
+            circuitPreset="a-out",
+            circuitGate="NOT",
+            expectedOutputs=[True, False],
+            allowedGates=["NOT", "AND", "OR", "XOR"],
+            instructionAr="أضف بوابة NOT بين المدخل A والمخرج.",
+            explainAr="NOT يعكس A: 0→1 و 1→0.",
+            lessonLink="/simulations#circuit",
         )
     )
     o += 1
