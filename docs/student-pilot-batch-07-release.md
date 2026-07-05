@@ -4,7 +4,7 @@
 **فرع التطوير:** `feature/full-curriculum-expansion`  
 **فرع الإصدار:** `release/student-pilot-batch-07`  
 **Tag:** `student-pilot-batch-07`  
-**Commit الإصدار:** *(يُحدَّث بعد commit التجميد)*  
+**Commit الإصدار:** `457c1cb`  
 
 **الدمج مع main:** ❌  
 **النشر على Render:** ⏳ جاهز للنشر — يتطلب تعيين أسرار Render يدويًا (لا نشر تلقائي من هذا التقرير)
@@ -173,5 +173,7 @@
 ## 12. Commits
 
 ```
-(يُملأ بعد commit التجميد)
+457c1cb release: freeze student-pilot-batch-07 for staging
+415bf08 docs: set batch-7 report commit hash
+55758a4 feat(batch-7): close Day 3, harden auth, expand tests
 ```
