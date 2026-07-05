@@ -26,7 +26,7 @@ def q(id_, order, question_ar, qtype="mcq", **kw):
         "instructionAr", "lessonLink", "modelAnswerAr",
         "logicExpr", "logicExprDisplay", "varCount", "resultOnly",
         "cardValues", "target", "targets", "baseLabel",
-        "correctFlow", "flowSlots",
+        "correctFlow", "flowSlots", "flowMatchSymbols", "flowRoleOptions",
     ):
         if k in kw:
             item[k] = kw[k]
@@ -176,6 +176,22 @@ def build_pre():
             )
         )
         o += 1
+
+    # ── ترتيب خطوات خوارزمية ──
+    items.append(
+        q(
+            "pre-algo-order",
+            o,
+            "سؤال ترتيب: رتّب خطوات خوارزمية «قراءة عددين وطباعة المجموع».",
+            "order",
+            orderItems=["بداية البرنامج", "قراءة العددين", "جمع العددين", "طباعة النتيجة", "نهاية البرنامج"],
+            correctOrder=[0, 1, 2, 3, 4],
+            instructionAr="استخدم أزرار ↑ ↓ لترتيب الخطوات من البداية إلى النهاية.",
+            explainAr="الترتيب الصحيح: بداية → قراءة → جمع → طباعة → نهاية.",
+            lessonLink="/lessons/algorithms",
+        )
+    )
+    o += 1
 
     # ── سؤال 6 ──
     items.append(
@@ -421,6 +437,26 @@ def build_pre():
         )
     )
     o += 1
+    items.append(
+        q(
+            "pre-18-flow",
+            o,
+            "سؤال 18-ب: اختر الرمز المناسب لكل خطوة في مخطط حساب القيمة المطلقة لعدد.",
+            "flowchart",
+            flowSlots=[
+                {"id": "1", "label": "1 — بداية البرنامج"},
+                {"id": "2", "label": "2 — قراءة العدد من المستخدم"},
+                {"id": "3", "label": "3 — هل العدد سالب؟"},
+                {"id": "4", "label": "4 — طباعة القيمة المطلقة"},
+                {"id": "5", "label": "5 — نهاية البرنامج"},
+            ],
+            correctFlow={"1": "oval", "2": "parallelogram", "3": "diamond", "4": "rectangle", "5": "oval"},
+            instructionAr="اختر رمز مخطط التدفق المناسب لكل خطوة — داخل المنصة دون رسم خارجي.",
+            explainAr="بداية/نهاية = بيضاوي، إدخال = متوازي أضلاع، شرط = معيّن، طباعة = مستطيل.",
+            lessonLink="/lessons/algorithms",
+        )
+    )
+    o += 1
 
     # ── سؤال 19 ──
     items.append(
@@ -428,11 +464,26 @@ def build_pre():
             "pre-19",
             o,
             "سؤال 19: اطابق بين رمز مخطط التدفق ووظيفته.",
-            "match",
-            matchLeft=["البيضاوي", "متوازي الأضلاع", "المعيّن (قرار)", "المستطيل"],
-            matchRight=["بداية أو نهاية", "إدخال أو إخراج", "اختبار شرط", "تنفيذ عملية (طباعة/معالجة)"],
-            correctPairs={"0": 0, "1": 1, "2": 2, "3": 3},
-            instructionAr="اختر الوظيفة المناسبة لكل رمز من القائمة — لا حاجة لرسم خارجي.",
+            "flowchart",
+            flowMatchSymbols=[
+                {"id": "oval", "label": "البيضاوي", "emoji": "⬭"},
+                {"id": "parallelogram", "label": "متوازي الأضلاع", "emoji": "▱"},
+                {"id": "diamond", "label": "المعيّن (قرار)", "emoji": "◇"},
+                {"id": "rectangle", "label": "المستطيل", "emoji": "▭"},
+            ],
+            flowRoleOptions=[
+                {"id": "start-end", "label": "بداية أو نهاية"},
+                {"id": "io", "label": "إدخال أو إخراج"},
+                {"id": "decision", "label": "اختبار شرط"},
+                {"id": "process", "label": "تنفيذ عملية (طباعة/معالجة)"},
+            ],
+            correctFlow={
+                "oval": "start-end",
+                "parallelogram": "io",
+                "diamond": "decision",
+                "rectangle": "process",
+            },
+            instructionAr="اختر الوظيفة المناسبة لكل رمز — لا حاجة لرسم خارجي.",
             explainAr="البيضاوي = بداية/نهاية، متوازي الأضلاع = I/O، المعيّن = شرط، المستطيل = عملية.",
             lessonLink="/lessons/algorithms",
         )

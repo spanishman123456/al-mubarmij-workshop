@@ -77,6 +77,7 @@ export function QuizQuestionRenderer({ question, value, onChange, disabled, show
             return (
               <label
                 key={i}
+                data-testid={`quiz-mcq-${i}`}
                 className={`quiz-option flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-right text-sm transition ${
                   picked
                     ? "border-emerald-500/60 bg-emerald-950/40"

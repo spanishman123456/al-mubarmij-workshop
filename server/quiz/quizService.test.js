@@ -11,7 +11,7 @@ describe("quizService", () => {
     const payload = getPublicQuizPayload("quiz-pre");
     expect(payload).toBeTruthy();
     const flat = payload.sections.flatMap((s) => s.questions);
-    expect(flat.length).toBe(103);
+    expect(flat.length).toBe(105);
     for (const q of flat) {
       expect(q.correctAnswer).toBeUndefined();
       expect(q.correctIndex).toBeUndefined();
@@ -20,13 +20,18 @@ describe("quizService", () => {
     }
   });
 
-  it("grades match question pre-19", () => {
+  it("grades flowchart question pre-19", () => {
     const payload = getPublicQuizPayload("quiz-pre");
     const q19 = payload.sections.flatMap((s) => s.questions).find((q) => q.id === "pre-19");
-    expect(q19?.type).toBe("match");
+    expect(q19?.type).toBe("flowchart");
 
     const graded = gradeAttempt("quiz-pre", {
-      "pre-19": JSON.stringify({ 0: 0, 1: 1, 2: 2, 3: 3 }),
+      "pre-19": JSON.stringify({
+        oval: "start-end",
+        parallelogram: "io",
+        diamond: "decision",
+        rectangle: "process",
+      }),
     });
     const item = graded.items.find((i) => i.questionId === "pre-19");
     expect(item?.correct).toBe(true);

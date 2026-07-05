@@ -44,7 +44,7 @@ describe("quiz API integration", () => {
     });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.totalQuestions).toBe(103);
+    expect(body.totalQuestions).toBe(105);
     const q = body.sections.flatMap((s) => s.questions)[0];
     expect(q.correctAnswer).toBeUndefined();
     expect(q.explainAr).toBeUndefined();
@@ -75,7 +75,15 @@ describe("quiz API integration", () => {
       csrf: authStudent.csrf,
       method: "PATCH",
       body: JSON.stringify({
-        answers: { "pre-01a": "101010", "pre-19": JSON.stringify({ 0: 0, 1: 1, 2: 2, 3: 3 }) },
+        answers: {
+          "pre-01a": "101010",
+          "pre-19": JSON.stringify({
+            oval: "start-end",
+            parallelogram: "io",
+            diamond: "decision",
+            rectangle: "process",
+          }),
+        },
       }),
     });
     const sub = await authFetch(baseUrl, `/api/quiz/quiz-pre/attempt/${attemptId}/submit`, {

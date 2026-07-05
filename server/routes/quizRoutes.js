@@ -48,6 +48,10 @@ export function registerQuizRoutes(app, logError) {
         if (pre) attempt = migratePreAssessmentToAttempt(studentId, pre);
       }
       if (!attempt) {
+        const latestSubmitted = getLatestSubmittedAttempt(studentId, quizId);
+        if (latestSubmitted) {
+          return res.json({ ok: true, attempt: latestSubmitted });
+        }
         attempt = createAttempt(studentId, quizId);
       }
 

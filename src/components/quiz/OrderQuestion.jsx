@@ -25,7 +25,7 @@ export function OrderQuestion({ question, value, onChange, disabled }) {
   }
 
   return (
-    <div className="space-y-3" dir="rtl">
+    <div className="space-y-3" dir="rtl" data-testid="quiz-order">
       {question.instructionAr ? (
         <p className="rounded-lg bg-violet-950/40 px-3 py-2 text-sm text-violet-100">{question.instructionAr}</p>
       ) : null}

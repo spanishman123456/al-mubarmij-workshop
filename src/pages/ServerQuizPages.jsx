@@ -242,7 +242,7 @@ export function ServerQuizTakePage({ quizId }) {
           ))}
         </div>
 
-        <fieldset className="quiz-question-card rounded-2xl border border-white/10 bg-black/30 p-5" dir="rtl">
+        <fieldset className="quiz-question-card rounded-2xl border border-white/10 bg-black/30 p-5" dir="rtl" data-testid="quiz-question-card">
           <legend className="px-2 text-lg font-bold">
             السؤال {currentFlatIndex + 1} من {flatQuestions.length}
             <span className="mr-2 text-xs font-normal text-violet-300">({questionTypeLabel(qType)})</span>
@@ -305,6 +305,7 @@ export function ServerQuizTakePage({ quizId }) {
                 <button
                   key={q.id}
                   type="button"
+                  data-testid={`quiz-nav-${q.id}`}
                   onClick={() => goToFlatIndex(i)}
                   className={`h-8 w-8 rounded text-xs font-bold ${
                     i === currentFlatIndex
@@ -329,6 +330,7 @@ export function ServerQuizTakePage({ quizId }) {
           onClick={handleSubmit}
           disabled={submitting}
           className="edu-btn press-scale mt-6 w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-4 text-lg font-bold text-white"
+          data-testid="quiz-submit"
         >
           {isPreAssessment ? "إرسال التقويم القبلي" : "إرسال الاختبار النهائي"}
         </button>

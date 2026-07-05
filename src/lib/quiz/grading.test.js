@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   gradeCardFlip,
   gradeCardSheet,
+  gradeFlowchart,
   gradeTruthTable,
   truthTableModelAnswer,
 } from "./grading.js";
@@ -29,5 +30,21 @@ describe("quiz grading", () => {
       27: { 16: true, 8: true, 4: false, 2: true, 1: true },
     };
     expect(gradeCardSheet(q, JSON.stringify(sheet))).toBe(true);
+  });
+
+  it("grades flowchart slot assignment pre-18-flow", () => {
+    const q = {
+      correctFlow: { 1: "oval", 2: "parallelogram", 3: "diamond", 4: "rectangle", 5: "oval" },
+    };
+    const answer = { 1: "oval", 2: "parallelogram", 3: "diamond", 4: "rectangle", 5: "oval" };
+    expect(gradeFlowchart(q, JSON.stringify(answer))).toBe(true);
+  });
+
+  it("grades flowchart symbol match pre-19", () => {
+    const q = {
+      correctFlow: { oval: "start-end", parallelogram: "io", diamond: "decision", rectangle: "process" },
+    };
+    const answer = { oval: "start-end", parallelogram: "io", diamond: "decision", rectangle: "process" };
+    expect(gradeFlowchart(q, JSON.stringify(answer))).toBe(true);
   });
 });

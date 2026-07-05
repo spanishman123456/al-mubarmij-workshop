@@ -22,7 +22,7 @@ export function QuizCodeEditorQuestion({ question, value, onChange, disabled }) 
   }
 
   return (
-    <div className="space-y-3" dir="rtl">
+    <div className="space-y-3" dir="rtl" data-testid="quiz-code-editor">
       {question.instructionAr ? (
         <p className="rounded-lg bg-violet-950/40 px-3 py-2 text-sm text-violet-100">{question.instructionAr}</p>
       ) : null}
@@ -45,6 +45,7 @@ export function QuizCodeEditorQuestion({ question, value, onChange, disabled }) 
         disabled={disabled}
         dir="ltr"
         spellCheck={false}
+        data-testid="quiz-code-input"
       />
       {!disabled ? (
         <button
