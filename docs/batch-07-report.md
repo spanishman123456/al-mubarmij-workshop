@@ -1,7 +1,7 @@
 # تقرير الدفعة السابعة — إغلاق اليوم الثالث + تأمين + اختبارات
 
 **الفرع:** `feature/full-curriculum-expansion`  
-**Commit (هذا التقرير):** *(يُحدَّث بعد الـ commit)*  
+**Commit (هذا التقرير):** `55758a4`  
 **Commit السابق (تقرير الدفعة 6):** `605f4b3`  
 **Commit تنفيذ الدفعة 6 (كود):** `b03ec62`  
 
@@ -220,7 +220,9 @@ E2E يتحقق من ظهور عناصر UI الحرجة. لقطات يدوية �
 ## 14. Commits
 
 ```
-(يُملأ بعد git commit)
+55758a4 feat(batch-7): close Day 3, harden auth, expand tests
+605f4b3 docs: set batch-6 report commit hash
+b03ec62 feat(batch-6): server auth, IDOR tests, Day 3 labs, Playwright E2E
 ```
 
 ---
