@@ -2,6 +2,7 @@ import {
   getOnboardingStatus,
   saveBingoProgress,
   saveAgreement,
+  savePreAssessmentProgress,
   getAllOnboardingSummary,
 } from "../repositories/onboardingRepository.js";
 import {
@@ -47,6 +48,36 @@ export function registerPlatformRoutes(app, logError) {
       res.json({ ok: true, ...result });
     } catch (err) {
       logError("onboarding.bingo", err, { studentId: req.auth?.userId, path: "/api/onboarding/bingo" });
+      res.status(500).json({ ok: false, error: "failed" });
+    }
+  });
+
+  app.post("/api/onboarding/pre-assessment", requireAuth, requireRole("student"), (req, res) => {
+    try {
+      const studentId = req.auth.userId;
+      const { answers, status, totalQuestions, defer, result } = req.body || {};
+      const onboarding = savePreAssessmentProgress(studentId, {
+        answers,
+        status,
+        totalQuestions,
+        defer: Boolean(defer),
+        result,
+      });
+      console.info(
+        JSON.stringify({
+          scope: "onboarding.pre_assessment",
+          event: defer ? "deferred" : status || "save",
+          studentId,
+          path: "/api/onboarding/pre-assessment",
+          at: new Date().toISOString(),
+        }),
+      );
+      res.json({ ok: true, ...onboarding });
+    } catch (err) {
+      logError("onboarding.pre_assessment", err, {
+        studentId: req.auth?.userId,
+        path: "/api/onboarding/pre-assessment",
+      });
       res.status(500).json({ ok: false, error: "failed" });
     }
   });

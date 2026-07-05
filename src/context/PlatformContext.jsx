@@ -24,7 +24,7 @@ import {
   mergeRemoteAnalytics,
 } from "../lib/platformAnalytics";
 import { reportLoginEvent, reportActivityPatch, fetchAllAnalytics } from "../lib/analyticsApi";
-import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi } from "../lib/platformApi";
+import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi } from "../lib/platformApi";
 import {
   loadValidatedPlatformState,
   resolveSessionUser,
@@ -34,6 +34,7 @@ import {
 } from "../lib/session";
 import { INACTIVITY_LOGOUT_REASON } from "../lib/inactivityConfig.js";
 import { clearActivityTracking, resetActivityTracking } from "../lib/inactivitySync.js";
+import { PRE_ASSESSMENT_STATUS } from "../content/onboarding/onboardingPolicy.js";
 
 const PlatformContext = createContext(null);
 
@@ -406,6 +407,46 @@ export function PlatformProvider({ children }) {
     [persist, user],
   );
 
+  const savePreAssessmentProgress = useCallback(
+    async ({ answers, status, totalQuestions, defer, result }) => {
+      if (!user || user.role !== "student") return;
+      const now = new Date().toISOString();
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const existing = current.preAssessment || {};
+        let nextStatus = status || existing.status || PRE_ASSESSMENT_STATUS.NOT_STARTED;
+        if (defer) nextStatus = PRE_ASSESSMENT_STATUS.DEFERRED;
+        const preAssessment = {
+          ...existing,
+          answers: answers ?? existing.answers ?? {},
+          status: nextStatus,
+          totalQuestions: totalQuestions ?? existing.totalQuestions ?? null,
+          startedAt: existing.startedAt || (nextStatus !== PRE_ASSESSMENT_STATUS.NOT_STARTED ? now : null),
+          updatedAt: now,
+          deferredAt: defer ? now : existing.deferredAt ?? null,
+          submittedAt: nextStatus === PRE_ASSESSMENT_STATUS.SUBMITTED ? now : existing.submittedAt ?? null,
+        };
+        const patch = { preAssessment, updatedAt: now };
+        if (result && nextStatus === PRE_ASSESSMENT_STATUS.SUBMITTED) {
+          patch.quizScores = {
+            ...(current.quizScores || {}),
+            "quiz-pre": { ...result, submitted: true, at: now },
+          };
+          patch.preTest = result;
+        }
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: { ...current, ...patch },
+          },
+        };
+      });
+      return savePreAssessmentApi({ answers, status, totalQuestions, defer, result });
+    },
+    [persist, user],
+  );
+
   const saveDrillResult = useCallback(
     (drillId, result) => {
       if (!user || user.role !== "student") return;
@@ -737,6 +778,7 @@ export function PlatformProvider({ children }) {
       markDayComplete,
       saveWorksheetAnswers,
       saveQuizResult,
+      savePreAssessmentProgress,
       saveDrillResult,
       saveMicrobitProgress,
       savePythonSnippet,
@@ -770,6 +812,7 @@ export function PlatformProvider({ children }) {
       markDayComplete,
       saveWorksheetAnswers,
       saveQuizResult,
+      savePreAssessmentProgress,
       saveDrillResult,
       saveMicrobitProgress,
       savePythonSnippet,

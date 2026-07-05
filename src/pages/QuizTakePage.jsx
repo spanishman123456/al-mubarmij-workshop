@@ -1,8 +1,15 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getQuizById } from "../data/quizzes";
 import { usePlatform } from "../context/PlatformContext";
 import { computeQuizResult, isAutoGradable, isQuestionCorrect, prepareQuizForAttempt } from "../lib/quizEngine";
+import {
+  PRE_ASSESSMENT_DEFER_CONFIRM_AR,
+  PRE_ASSESSMENT_DEFERRED_AR,
+  PRE_ASSESSMENT_INTRO_AR,
+  PRE_ASSESSMENT_STATUS,
+  PRE_ASSESSMENT_SUBMITTED_AR,
+} from "../content/onboarding/onboardingPolicy";
 
 function questionTypeLabel(type) {
   if (type === "fill") return "إكمال فراغ";
@@ -15,17 +22,53 @@ function questionTypeLabel(type) {
 export default function QuizTakePage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
-  const { saveQuizResult, user } = usePlatform();
+  const { saveQuizResult, savePreAssessmentProgress, myProgress, user } = usePlatform();
+  const isPreAssessment = quizId === "quiz-pre";
   const rawQuiz = useMemo(() => getQuizById(quizId ?? ""), [quizId]);
   const [attemptSeed, setAttemptSeed] = useState(() => Date.now());
+  const saveTimerRef = useRef(null);
 
   const quiz = useMemo(
     () => (rawQuiz ? prepareQuizForAttempt(rawQuiz, attemptSeed) : null),
     [rawQuiz, attemptSeed],
   );
 
-  const [answers, setAnswers] = useState(() => ({}));
+  const [answers, setAnswers] = useState(() => myProgress?.preAssessment?.answers || {});
   const [submitted, setSubmitted] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+
+  useEffect(() => {
+    if (!isPreAssessment) return;
+    setAnswers(myProgress?.preAssessment?.answers || {});
+  }, [isPreAssessment, myProgress?.preAssessment?.answers]);
+
+  const persistPreAssessment = useCallback(
+    async (nextAnswers, options = {}) => {
+      if (!isPreAssessment || user?.role !== "student") return;
+      try {
+        await savePreAssessmentProgress({
+          answers: nextAnswers,
+          totalQuestions: quiz?.questions.length,
+          ...options,
+        });
+        setSaveMessage(options.defer ? PRE_ASSESSMENT_DEFER_CONFIRM_AR : "تم حفظ تقدمك.");
+      } catch {
+        setSaveMessage("تعذر حفظ آخر تعديل — تحقق من الاتصال.");
+      }
+    },
+    [isPreAssessment, user?.role, savePreAssessmentProgress, quiz?.questions.length],
+  );
+
+  useEffect(() => {
+    if (!isPreAssessment || submitted) return undefined;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      persistPreAssessment(answers, { status: PRE_ASSESSMENT_STATUS.IN_PROGRESS });
+    }, 800);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [answers, isPreAssessment, submitted, persistPreAssessment]);
 
   if (!quiz) {
     return (
@@ -62,13 +105,32 @@ export default function QuizTakePage() {
     setSubmitted(true);
     if (user?.role === "student") {
       const r = computeQuizResult(quiz, answers);
-      saveQuizResult(quiz.id, {
-        score: r.correct,
-        total: r.total,
-        percent: r.percent,
-        passed: r.passed,
-      });
+      if (isPreAssessment) {
+        savePreAssessmentProgress({
+          answers,
+          status: PRE_ASSESSMENT_STATUS.SUBMITTED,
+          totalQuestions: quiz.questions.length,
+          result: {
+            score: r.correct,
+            total: r.total,
+            percent: r.percent,
+            passed: true,
+          },
+        }).catch(() => setSaveMessage("تعذر حفظ الإرسال — تحقق من الاتصال."));
+      } else {
+        saveQuizResult(quiz.id, {
+          score: r.correct,
+          total: r.total,
+          percent: r.percent,
+          passed: r.passed,
+        });
+      }
     }
+  }
+
+  async function handleDeferPreAssessment() {
+    await persistPreAssessment(answers, { defer: true });
+    navigate("/path/day/day-01");
   }
 
   function handleRetry() {
@@ -92,11 +154,17 @@ export default function QuizTakePage() {
 
         <header className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6">
           <h1 className="text-2xl font-bold">{quiz.titleAr}</h1>
-          <p className="mt-2 text-sm text-slate-300">{quiz.descriptionAr}</p>
-          <p className="mt-3 text-xs text-emerald-300">
-            معيار النجاح: {quiz.passPercent}٪ · عدد الأسئلة: {quiz.questions.length}
-            {quiz.shuffle === false ? " · ترتيب PDF الرسمي" : quiz.shuffle || quiz.questionPool ? " · ترتيب عشوائي" : ""}
+          <p className="mt-2 text-sm text-slate-300">
+            {isPreAssessment ? PRE_ASSESSMENT_INTRO_AR : quiz.descriptionAr}
           </p>
+          {!isPreAssessment ? (
+            <p className="mt-3 text-xs text-emerald-300">
+              معيار النجاح: {quiz.passPercent}٪ · عدد الأسئلة: {quiz.questions.length}
+              {quiz.shuffle === false ? " · ترتيب PDF الرسمي" : quiz.shuffle || quiz.questionPool ? " · ترتيب عشوائي" : ""}
+            </p>
+          ) : (
+            <p className="mt-3 text-xs text-violet-200">{PRE_ASSESSMENT_DEFERRED_AR}</p>
+          )}
           {!submitted && (
             <div className="mt-4">
               <div className="mb-1 flex justify-between text-xs text-slate-400">
@@ -199,8 +267,26 @@ export default function QuizTakePage() {
               onClick={handleSubmit}
               className="edu-btn press-scale w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-4 text-lg font-bold text-white shadow-lg hover:brightness-110"
             >
-              إنهاء الإرسال وحساب النتيجة
+              {isPreAssessment ? "إرسال التقويم القبلي" : "إنهاء الإرسال وحساب النتيجة"}
             </button>
+            {isPreAssessment ? (
+              <>
+                {saveMessage ? <p className="text-center text-sm text-slate-300">{saveMessage}</p> : null}
+                <button
+                  type="button"
+                  onClick={handleDeferPreAssessment}
+                  className="edu-btn press-scale w-full rounded-xl border border-violet-400/50 bg-violet-950/30 py-3 text-base font-bold text-violet-100 hover:bg-violet-900/40"
+                >
+                  إكمال التقويم لاحقًا والانتقال إلى الدرس الأول
+                </button>
+                <Link
+                  to="/onboarding"
+                  className="block text-center text-sm font-semibold text-violet-300 hover:text-white"
+                >
+                  ← العودة للتمهيد
+                </Link>
+              </>
+            ) : null}
           </div>
         )}
 
@@ -208,48 +294,74 @@ export default function QuizTakePage() {
           <div className="animate-fade-in space-y-6">
             <div
               className={`rounded-2xl border-2 p-8 text-center ${
-                result.passed
-                  ? "border-emerald-500/50 bg-emerald-950/40"
-                  : "border-amber-500/50 bg-amber-950/30"
+                isPreAssessment
+                  ? "border-violet-500/40 bg-violet-950/30"
+                  : result.passed
+                    ? "border-emerald-500/50 bg-emerald-950/40"
+                    : "border-amber-500/50 bg-amber-950/30"
               }`}
             >
               <p className="text-2xl font-bold">
-                {result.passed ? "✓ ناجح — أحسنت!" : "لم يتحقق معيار النجاح بعد"}
+                {isPreAssessment
+                  ? PRE_ASSESSMENT_SUBMITTED_AR
+                  : result.passed
+                    ? "✓ ناجح — أحسنت!"
+                    : "لم يتحقق معيار النجاح بعد"}
               </p>
               <p className="mt-3 text-4xl font-black text-white">{result.percent}٪</p>
               <p className="mt-2 text-slate-300">
-                صحيح (أسئلة تُصحَّح آلياً): {result.correct} من {result.total}
-                {result.manualTotal > 0 && (
+                {isPreAssessment ? "نتيجة تشخيصية للمعلم — لا تؤثر في دخولك للدرس" : null}
+                {!isPreAssessment && (
                   <>
-                    {" "}
-                    · أسئلة مفتوحة/برمجية: {result.manualAnswered} من {result.manualTotal} (تصحيح المعلم)
+                    صحيح (أسئلة تُصحَّح آلياً): {result.correct} من {result.total}
+                    {result.manualTotal > 0 && (
+                      <>
+                        {" "}
+                        · أسئلة مفتوحة/برمجية: {result.manualAnswered} من {result.manualTotal} (تصحيح المعلم)
+                      </>
+                    )}
+                    {quiz.passPercent > 0 && (
+                      <>
+                        {" "}
+                        · مطلوب للنجاح: {quiz.passPercent}٪ على الأقل
+                      </>
+                    )}
                   </>
                 )}
-                {quiz.passPercent > 0 && (
+                {isPreAssessment ? (
                   <>
                     {" "}
-                    · مطلوب للنجاح: {quiz.passPercent}٪ على الأقل
+                    · إجابات صحيحة (تصحيح آلي): {result.correct} من {result.total}
                   </>
-                )}
+                ) : null}
               </p>
-              {!result.passed && (
+              {!isPreAssessment && !result.passed && (
                 <p className="mt-4 text-sm text-amber-200/90">
                   راجع الأسئلة أدناه، ثم عد للمسار الدراسي أو أوراق العمل، وحاول مرة أخرى عندما تكون جاهزاً.
                 </p>
               )}
               <div className="mt-6 flex flex-wrap justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleRetry}
-                  className="press-scale rounded-full border border-white/30 px-6 py-2 text-sm font-semibold hover:bg-white/10"
-                >
-                  إعادة الاختبار{quiz.shuffle === false ? "" : " (أسئلة جديدة)"}
-                </button>
+                {isPreAssessment ? (
+                  <Link
+                    to="/path/day/day-01"
+                    className="press-scale rounded-full bg-violet-600 px-6 py-2 text-sm font-semibold text-white hover:bg-violet-500"
+                  >
+                    بدء الدرس الأول
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRetry}
+                    className="press-scale rounded-full border border-white/30 px-6 py-2 text-sm font-semibold hover:bg-white/10"
+                  >
+                    إعادة الاختبار{quiz.shuffle === false ? "" : " (أسئلة جديدة)"}
+                  </button>
+                )}
                 <Link
-                  to="/quizzes"
+                  to={isPreAssessment ? "/onboarding" : "/quizzes"}
                   className="press-scale rounded-full bg-violet-600 px-6 py-2 text-sm font-semibold text-white hover:bg-violet-500"
                 >
-                  قائمة الاختبارات
+                  {isPreAssessment ? "العودة للتمهيد" : "قائمة الاختبارات"}
                 </Link>
               </div>
             </div>

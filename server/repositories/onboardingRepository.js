@@ -1,6 +1,6 @@
 import { queryOne, queryAll, runSql } from "../db/query.js";
 import { persistDatabase } from "../db/index.js";
-import { getStudentProgress } from "./progressRepository.js";
+import { getStudentProgress, saveStudentProgress } from "./progressRepository.js";
 import {
   BINGO_EXPECTED_FILLABLE,
   computeBingoProgress,
@@ -8,16 +8,13 @@ import {
   normalizeBingoStudentState,
 } from "../../src/content/onboarding/validateBingoContent.js";
 import { BINGO_CELLS } from "../../src/content/onboarding/onboardingContent.js";
-
-const DOC_TYPES = ["honor_code", "acceptable_use", "honor_agreement", "tech_contract"];
-
-function isPreAssessmentComplete(studentId) {
-  const row = getStudentProgress(studentId);
-  const progress = row?.progress || {};
-  if (progress.preTest?.percent != null || progress.preTest?.score != null) return true;
-  const quizPre = progress.quizScores?.["quiz-pre"];
-  return Boolean(quizPre?.percent != null || quizPre?.score != null || quizPre?.submitted);
-}
+import {
+  buildOnboardingAccessStatus,
+  DOC_TYPES,
+  getPreAssessmentTeacherLabel,
+  mergePreAssessmentIntoProgress,
+  resolvePreAssessmentStatus,
+} from "../config/onboardingPolicy.js";
 
 export function getOnboardingStatus(studentId) {
   const bingoRow = queryOne(
@@ -47,16 +44,27 @@ export function getOnboardingStatus(studentId) {
       : { status: "not_started" };
   }
 
-  const preAssessment = {
-    status: isPreAssessmentComplete(studentId) ? "completed" : "not_started",
+  const progressRow = getStudentProgress(studentId);
+  const progress = progressRow?.progress || {};
+  const access = buildOnboardingAccessStatus({ bingo, agreements, progress });
+
+  return {
+    bingo,
+    agreements,
+    preAssessment: access.preAssessment,
+    requiredComplete: access.requiredComplete,
+    canAccessDayOne: access.canAccessDayOne,
+    complete: access.complete,
+    requiredDocs: DOC_TYPES,
   };
+}
 
-  const complete =
-    bingo.status === "submitted" &&
-    DOC_TYPES.every((t) => agreements[t].status === "signed") &&
-    preAssessment.status === "completed";
-
-  return { bingo, agreements, preAssessment, complete, requiredDocs: DOC_TYPES };
+export function savePreAssessmentProgress(studentId, payload) {
+  const progressRow = getStudentProgress(studentId);
+  const progress = progressRow?.progress || {};
+  const merged = mergePreAssessmentIntoProgress(progress, payload);
+  saveStudentProgress(studentId, merged);
+  return getOnboardingStatus(studentId);
 }
 
 export function saveBingoProgress(studentId, { cells, status, startedAt, completedAt, submittedAt }) {
@@ -144,5 +152,18 @@ export function getAllOnboardingSummary() {
     agreeMap[row.student_id][row.doc_type] = { status: row.status, signedAt: row.signed_at };
   }
 
-  return { studentIds: [...students], bingo: bingoMap, agreements: agreeMap };
+  const progressRows = queryAll(`SELECT student_id, progress_json FROM student_progress`);
+  const preAssessmentMap = {};
+  for (const row of progressRows) {
+    students.add(row.student_id);
+    const progress = JSON.parse(row.progress_json || "{}");
+    const pa = resolvePreAssessmentStatus(progress);
+    preAssessmentMap[row.student_id] = {
+      ...pa,
+      teacherLabelAr: getPreAssessmentTeacherLabel(pa.status),
+      diagnosticPercent: pa.diagnosticPercent,
+    };
+  }
+
+  return { studentIds: [...students], bingo: bingoMap, agreements: agreeMap, preAssessment: preAssessmentMap };
 }

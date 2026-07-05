@@ -11,6 +11,27 @@ async function loginStudent(page) {
   await expect(page).toHaveURL(/\/student/);
 }
 
+async function completeRequiredOnboardingViaApi(page) {
+  const cookies = await page.context().cookies();
+  const csrf = cookies.find((c) => c.name === "platform_csrf")?.value || "";
+  const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+  const headers = {
+    "Content-Type": "application/json",
+    "X-CSRF-Token": csrf,
+    Cookie: cookieHeader,
+  };
+  await page.request.post("http://127.0.0.1:3011/api/onboarding/bingo", {
+    headers,
+    data: { cells: { c0: "زميل" }, status: "submitted", submittedAt: new Date().toISOString() },
+  });
+  for (const docType of ["honor_code", "acceptable_use", "honor_agreement", "tech_contract"]) {
+    await page.request.post("http://127.0.0.1:3011/api/onboarding/agreement", {
+      headers,
+      data: { docType, signatureText: "توقيع تجريبي", version: "1.0" },
+    });
+  }
+}
+
 async function loginTeacher(page) {
   if (!TEACHER_PASS) {
     test.skip(true, "E2E_TEACHER_PASSWORD not set");
@@ -31,6 +52,18 @@ async function labFlow(page, { wrong, hintButton, checkButton, successPattern })
   await page.reload();
   if (successPattern) await expect(page.getByText(successPattern)).toBeVisible();
 }
+
+test.describe("onboarding pre-assessment gate", () => {
+  test("student completes agreements only and can start day one without pre-test", async ({ page }) => {
+    await loginStudent(page);
+    await completeRequiredOnboardingViaApi(page);
+    await page.goto("/onboarding");
+    await expect(page.getByRole("link", { name: "بدء الدرس الأول" })).toBeVisible({ timeout: 15000 });
+    await page.getByRole("link", { name: "بدء الدرس الأول" }).click();
+    await expect(page).toHaveURL(/\/path\/day\/day-01/);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  });
+});
 
 test.describe("onboarding BINGO", () => {
   test("student opens bingo grid, saves cells, reload persists, teacher sees summary", async ({ page, browser }) => {

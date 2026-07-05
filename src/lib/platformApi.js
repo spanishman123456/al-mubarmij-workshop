@@ -60,6 +60,13 @@ export async function saveBingoApi(_studentId, payload) {
   });
 }
 
+export async function savePreAssessmentApi(payload) {
+  return request("/api/onboarding/pre-assessment", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function saveAgreementApi(_studentId, payload) {
   return request("/api/onboarding/agreement", {
     method: "POST",

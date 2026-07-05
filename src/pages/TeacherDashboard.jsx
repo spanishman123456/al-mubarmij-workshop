@@ -134,11 +134,37 @@ export default function TeacherDashboard() {
       ) : null}
 
       {onboardingSummary ? (
-        <EduCard className="mb-4" accent="cyan" title="التمهيد — BINGO والموافقات">
+        <EduCard className="mb-4" accent="cyan" title="التمهيد — BINGO والموافقات والتقويم القبلي">
           <p className="text-sm text-slate-600">
             طلاب سجّلوا في التمهيد: {onboardingSummary.studentIds?.length ?? 0} — يُحدَّث من قاعدة
             البيانات المركزية.
           </p>
+          {onboardingSummary.preAssessment && Object.keys(onboardingSummary.preAssessment).length > 0 ? (
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[420px] text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-right text-xs text-slate-500">
+                    <th className="py-2 pl-2">الطالب</th>
+                    <th className="py-2 pl-2">التقويم القبلي</th>
+                    <th className="py-2">تشخيصي</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(onboardingSummary.preAssessment)
+                    .slice(0, 12)
+                    .map(([sid, pa]) => (
+                      <tr key={sid} className="border-b border-slate-100">
+                        <td className="py-2 pl-2 font-mono text-xs">{sid.replace("stu-", "")}</td>
+                        <td className="py-2 pl-2">{pa.teacherLabelAr || pa.statusLabelAr}</td>
+                        <td className="py-2">
+                          {pa.diagnosticPercent != null ? `${pa.diagnosticPercent}%` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
         </EduCard>
       ) : null}
 
