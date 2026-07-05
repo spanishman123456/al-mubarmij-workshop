@@ -1,0 +1,147 @@
+[
+  {
+    "id": "karnaugh-intro",
+    "titleAr": "مقدمة خريطة كارنوف",
+    "pdfPageIndex": 190,
+    "printedPageNumber": 191,
+    "route": "/lessons/karnaugh-maps",
+    "implementationStatus": "pending",
+    "integrationMode": "standalone",
+    "mergedInto": null,
+    "qaStatus": "pending",
+    "remainingWork": [
+      "lesson content",
+      "KarnaughMapLab"
+    ]
+  },
+  {
+    "id": "karnaugh-applications",
+    "titleAr": "تطبيقات على خريطة كارنوف",
+    "pdfPageIndex": 192,
+    "printedPageNumber": 193,
+    "route": "/lessons/karnaugh-maps",
+    "implementationStatus": "pending",
+    "integrationMode": "merged",
+    "mergedInto": "karnaugh-maps",
+    "qaStatus": "pending",
+    "remainingWork": [
+      "guided exercises"
+    ]
+  },
+  {
+    "id": "logic-equivalence",
+    "titleAr": "الاقترانات المنطقية والمكافئات",
+    "pdfPageIndex": 194,
+    "printedPageNumber": 195,
+    "route": "/lessons/logic-equivalence",
+    "implementationStatus": "pending",
+    "integrationMode": "standalone",
+    "mergedInto": null,
+    "qaStatus": "pending",
+    "remainingWork": [
+      "truth-table tie-in"
+    ]
+  },
+  {
+    "id": "tuples-intro",
+    "titleAr": "الحقول المترابطة (Tuples)",
+    "pdfPageIndex": 196,
+    "printedPageNumber": 197,
+    "route": "/lessons/python-tuples",
+    "implementationStatus": "pending",
+    "integrationMode": "standalone",
+    "mergedInto": null,
+    "qaStatus": "pending",
+    "remainingWork": [
+      "TupleLab"
+    ]
+  },
+  {
+    "id": "tuples-applications",
+    "titleAr": "تطبيقات على الحقول المترابطة",
+    "pdfPageIndex": 198,
+    "printedPageNumber": 199,
+    "route": "/lessons/python-tuples",
+    "implementationStatus": "pending",
+    "integrationMode": "merged",
+    "mergedInto": "python-tuples",
+    "qaStatus": "pending",
+    "remainingWork": []
+  },
+  {
+    "id": "nested-loops-program",
+    "titleAr": "برنامج الحلقات المتداخلة",
+    "pdfPageIndex": 200,
+    "printedPageNumber": 201,
+    "route": "/lessons/nested-loops-lab",
+    "implementationStatus": "pending",
+    "integrationMode": "standalone",
+    "mergedInto": null,
+    "qaStatus": "pending",
+    "remainingWork": [
+      "NestedLoopsLab"
+    ]
+  },
+  {
+    "id": "nested-loops-applications",
+    "titleAr": "تطبيقات على برنامج الحلقات",
+    "pdfPageIndex": 202,
+    "printedPageNumber": 203,
+    "route": "/lessons/nested-loops-lab",
+    "implementationStatus": "pending",
+    "integrationMode": "merged",
+    "mergedInto": "nested-loops-lab",
+    "qaStatus": "pending",
+    "remainingWork": []
+  },
+  {
+    "id": "karnaugh-answers",
+    "titleAr": "إجابات خريطة كارنوف",
+    "pdfPageIndex": 204,
+    "printedPageNumber": 205,
+    "route": "/teacher/day-04-answers",
+    "implementationStatus": "pending",
+    "integrationMode": "teacher-only",
+    "mergedInto": null,
+    "qaStatus": "pending",
+    "remainingWork": [
+      "teacher API route"
+    ]
+  },
+  {
+    "id": "equivalence-answers",
+    "titleAr": "إجابات الاقترانات المنطقية",
+    "pdfPageIndex": 206,
+    "printedPageNumber": 207,
+    "route": "/teacher/day-04-answers",
+    "implementationStatus": "pending",
+    "integrationMode": "teacher-only",
+    "mergedInto": null,
+    "qaStatus": "pending",
+    "remainingWork": []
+  },
+  {
+    "id": "tuples-answers",
+    "titleAr": "إجابات الحقول المترابطة",
+    "pdfPageIndex": 208,
+    "printedPageNumber": 209,
+    "route": "/teacher/day-04-answers",
+    "implementationStatus": "pending",
+    "integrationMode": "teacher-only",
+    "mergedInto": null,
+    "qaStatus": "pending",
+    "remainingWork": []
+  },
+  {
+    "id": "teacher-guidance",
+    "titleAr": "إرشادات المعلم — اليوم الرابع",
+    "pdfPageIndex": 210,
+    "printedPageNumber": 211,
+    "route": "/teacher/day-04-answers",
+    "implementationStatus": "pending",
+    "integrationMode": "teacher-only",
+    "mergedInto": null,
+    "qaStatus": "pending",
+    "remainingWork": []
+  }
+]

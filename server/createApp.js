@@ -2,6 +2,7 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { initDatabase, getDatabaseStatus } from "./db/index.js";
 import {
   loadStore,
@@ -11,20 +12,34 @@ import {
   mergeAnalytics,
 } from "./analyticsStore.js";
 import { registerPlatformRoutes } from "./routes/platformRoutes.js";
-import { registerAuthRoutes } from "./auth/authRoutes.js";
+import { registerAuthRoutes, ensureRateLimitSchema } from "./auth/authRoutes.js";
 import { requireAuth, requireRole } from "./auth/middleware.js";
 import { ensureSessionSchema } from "./auth/sessionRepository.js";
+import { corsMiddleware } from "./auth/cors.js";
+import { day03TeacherAnswers } from "../src/content/teacher/day03TeacherAnswers.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");
 
-export function getGitCommit() {
+export function getAppCommit() {
+  if (process.env.APP_COMMIT_SHA) return process.env.APP_COMMIT_SHA;
   if (process.env.GIT_COMMIT) return process.env.GIT_COMMIT;
+  if (process.env.RENDER_GIT_COMMIT) return process.env.RENDER_GIT_COMMIT;
+  const gitDir = path.join(__dirname, "..", ".git");
+  if (!existsSync(gitDir)) return "unknown";
   try {
-    return execSync("git rev-parse --short HEAD", { encoding: "utf8", cwd: path.join(__dirname, "..") }).trim();
+    return execSync("git rev-parse --short HEAD", {
+      encoding: "utf8",
+      cwd: path.join(__dirname, ".."),
+    }).trim();
   } catch {
     return "unknown";
   }
+}
+
+/** @deprecated use getAppCommit */
+export function getGitCommit() {
+  return getAppCommit();
 }
 
 export function logError(scope, err, extra = {}) {
@@ -33,6 +48,7 @@ export function logError(scope, err, extra = {}) {
 
 export function createApp() {
   const app = express();
+  app.use(corsMiddleware());
   app.use(express.json({ limit: "512kb" }));
 
   registerAuthRoutes(app, logError);
@@ -47,11 +63,15 @@ export function createApp() {
       ok: true,
       storage: "sqlite",
       database: { ok: dbStatus.ok, exists: dbStatus.exists },
-      appCommit: getGitCommit(),
-      contentVersion: process.env.CONTENT_VERSION || getGitCommit(),
+      appCommit: getAppCommit(),
+      contentVersion: process.env.CONTENT_VERSION || getAppCommit(),
       buildTime: process.env.BUILD_TIME || null,
       port: Number(process.env.PORT) || 3001,
     });
+  });
+
+  app.get("/api/teacher/day-03-answers", requireAuth, requireRole("teacher"), (_req, res) => {
+    res.json({ ok: true, ...day03TeacherAnswers });
   });
 
   app.post("/api/analytics/login", requireAuth, requireRole("student"), (req, res) => {
@@ -115,6 +135,7 @@ export function createApp() {
 export async function prepareApp(app) {
   await initDatabase();
   ensureSessionSchema();
+  ensureRateLimitSchema();
   globalThis.__platformDbReady = true;
   registerPlatformRoutes(app, logError);
 

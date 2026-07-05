@@ -140,15 +140,16 @@ export default function DayLessonPage() {
           ) : null}
 
           {day.id === "day-03" ? (
-            <EduCard title="دروس اليوم الثالث — 🚧 قيد التوسيع" accent="cyan">
+            <EduCard title="دروس اليوم الثالث" accent="cyan">
               <div className="mt-2 flex flex-col gap-2 text-sm">
                 <Link to="/lessons/python-constants">1. الثوابت</Link>
-                <Link to="/lessons/python-multi-arrays">2. مصفوفات متعددة المتغيرات</Link>
+                <Link to="/lessons/python-multi-arrays">2. مصفوفات متعددة الأبعاد</Link>
                 <Link to="/lessons/python-break-continue">3. break / continue / pass / else</Link>
                 <Link to="/lessons/divisors-activity">4. نشاط المقسومات</Link>
-                <Link to="/lessons/collatz">5. تخمين Collatz</Link>
-                <Link to="/lessons/truth-tables">6. جداول الحقيقة</Link>
-                <Link to="/lessons/logic-gates">7. البوابات المنطقية</Link>
+                <Link to="/lessons/numbers-steps-activity">5. نشاط الأرقام والخطوات</Link>
+                <Link to="/lessons/collatz">6. تخمين Collatz</Link>
+                <Link to="/lessons/truth-tables">7. جداول الحقيقة</Link>
+                <Link to="/lessons/logic-gates">8. البوابات المنطقية</Link>
               </div>
             </EduCard>
           ) : null}

@@ -1,36 +1,55 @@
-import { findStudentByNationalId, verifyTeacher } from "./users.js";
-import { createSession, deleteSession } from "./sessionRepository.js";
-import { attachSession, sessionCookieOptions } from "./middleware.js";
+import { findStudentByNationalId, verifyTeacher, GENERIC_AUTH_ERROR } from "./users.js";
+import {
+  createSession,
+  deleteSession,
+  deleteSessionsForUser,
+  logFailedLoginAttempt,
+} from "./sessionRepository.js";
+import {
+  checkLoginRateLimit,
+  recordLoginFailure,
+  clearLoginAttempts,
+  ensureRateLimitSchema,
+} from "./rateLimit.js";
+import {
+  attachSession,
+  setAuthCookies,
+  clearAuthCookies,
+  requireCsrfAndOrigin,
+} from "./middleware.js";
 
-function setSessionCookie(res, token) {
-  const opts = sessionCookieOptions();
-  const parts = [
-    `${opts.name}=${encodeURIComponent(token)}`,
-    "HttpOnly",
-    `Path=${opts.path}`,
-    `Max-Age=${Math.floor(opts.maxAgeMs / 1000)}`,
-    `SameSite=${opts.sameSite}`,
-  ];
-  if (opts.secure) parts.push("Secure");
-  res.setHeader("Set-Cookie", parts.join("; "));
-}
-
-function clearSessionCookie(res) {
-  const opts = sessionCookieOptions();
-  res.setHeader("Set-Cookie", `${opts.name}=; HttpOnly; Path=${opts.path}; Max-Age=0; SameSite=${opts.sameSite}`);
+function rotateSession(req, res, userId, role) {
+  if (req.auth?.token) deleteSession(req.auth.token);
+  deleteSessionsForUser(userId);
+  const { token, csrfToken } = createSession(userId, role);
+  setAuthCookies(res, token, csrfToken);
+  return { token, csrfToken };
 }
 
 export function registerAuthRoutes(app, logError) {
   app.use("/api", attachSession);
+  app.use("/api", requireCsrfAndOrigin);
 
   app.post("/api/auth/student", (req, res) => {
     try {
       const { nationalId } = req.body || {};
+      const idKey = String(nationalId || "").replace(/\D/g, "").slice(-4) || "x";
+      const rate = checkLoginRateLimit(req.ip, `stu:${idKey}`);
+      if (!rate.allowed) {
+        logFailedLoginAttempt({ ip: req.ip, reason: "rate_limited" });
+        return res.status(429).json({ ok: false, error: GENERIC_AUTH_ERROR });
+      }
+
       const student = findStudentByNationalId(nationalId);
-      if (!student) return res.status(401).json({ ok: false, error: "Invalid credentials" });
-      const { token } = createSession(student.id, "student");
-      setSessionCookie(res, token);
-      res.json({ ok: true, user: student });
+      if (!student) {
+        recordLoginFailure(req.ip, `stu:${idKey}`, "invalid_student");
+        logFailedLoginAttempt({ ip: req.ip, reason: "invalid_student" });
+        return res.status(401).json({ ok: false, error: GENERIC_AUTH_ERROR });
+      }
+
+      clearLoginAttempts(req.ip, `stu:${idKey}`);
+      rotateSession(req, res, student.id, "student");
+      res.json({ ok: true, user: { id: student.id, role: student.role, nameAr: student.nameAr } });
     } catch (err) {
       logError("auth.student", err);
       res.status(500).json({ ok: false, error: "failed" });
@@ -40,11 +59,23 @@ export function registerAuthRoutes(app, logError) {
   app.post("/api/auth/teacher", (req, res) => {
     try {
       const { nationalId, password } = req.body || {};
+      const idKey = String(nationalId || "").replace(/\D/g, "").slice(-4) || "x";
+      const rate = checkLoginRateLimit(req.ip, `tch:${idKey}`);
+      if (!rate.allowed) {
+        logFailedLoginAttempt({ ip: req.ip, reason: "rate_limited" });
+        return res.status(429).json({ ok: false, error: GENERIC_AUTH_ERROR });
+      }
+
       const teacher = verifyTeacher(nationalId, password);
-      if (!teacher) return res.status(401).json({ ok: false, error: "Invalid credentials" });
-      const { token } = createSession(teacher.id, "teacher");
-      setSessionCookie(res, token);
-      res.json({ ok: true, user: teacher });
+      if (!teacher) {
+        recordLoginFailure(req.ip, `tch:${idKey}`, "invalid_teacher");
+        logFailedLoginAttempt({ ip: req.ip, reason: "invalid_teacher" });
+        return res.status(401).json({ ok: false, error: GENERIC_AUTH_ERROR });
+      }
+
+      clearLoginAttempts(req.ip, `tch:${idKey}`);
+      rotateSession(req, res, teacher.id, "teacher");
+      res.json({ ok: true, user: { id: teacher.id, role: teacher.role, nameAr: teacher.nameAr } });
     } catch (err) {
       logError("auth.teacher", err);
       res.status(500).json({ ok: false, error: "failed" });
@@ -53,12 +84,17 @@ export function registerAuthRoutes(app, logError) {
 
   app.post("/api/auth/logout", (req, res) => {
     if (req.auth?.token) deleteSession(req.auth.token);
-    clearSessionCookie(res);
+    clearAuthCookies(res);
     res.json({ ok: true });
   });
 
   app.get("/api/auth/me", (req, res) => {
     if (!req.auth?.userId) return res.status(401).json({ ok: false, error: "Unauthorized" });
-    res.json({ ok: true, user: { id: req.auth.userId, role: req.auth.role } });
+    res.json({
+      ok: true,
+      user: { id: req.auth.userId, role: req.auth.role },
+    });
   });
 }
+
+export { ensureRateLimitSchema };

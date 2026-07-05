@@ -2,20 +2,83 @@ import { Link } from "react-router-dom";
 import { PageShell, EduCard } from "../../components/layout/PageShell";
 import { day03TeacherAnswers } from "../../content/teacher/day03TeacherAnswers";
 
-export default function TeacherDay03AnswersPage() {
+function TeacherItem({ item }) {
   return (
-    <PageShell title={day03TeacherAnswers.titleAr} subtitle="للمعلم فقط — pdfPage ~152–174">
+    <div className="mb-3 rounded border border-amber-100 bg-amber-50/50 p-3 text-sm">
+      <p className="font-bold">{item.q}</p>
+      <p className="mt-1 text-emerald-800">الإجابة: {item.a}</p>
+      {item.steps?.length ? (
+        <ol className="mt-2 list-decimal pr-5 text-slate-700">
+          {item.steps.map((s, j) => (
+            <li key={j}>{s}</li>
+          ))}
+        </ol>
+      ) : null}
+      {item.teachingNotes ? <p className="mt-2 text-xs text-slate-600">📝 {item.teachingNotes}</p> : null}
+      {item.expectedErrors?.length ? (
+        <p className="mt-1 text-xs text-rose-700">أخطاء متوقعة: {item.expectedErrors.join("؛ ")}</p>
+      ) : null}
+      {item.feedback ? <p className="mt-1 text-xs text-violet-700">تغذية راجعة: {item.feedback}</p> : null}
+    </div>
+  );
+}
+
+export default function TeacherDay03AnswersPage() {
+  const { titleAr, teacherGuidance, sections } = day03TeacherAnswers;
+
+  return (
+    <PageShell title={titleAr} subtitle="للمعلم فقط — pdfPage 152–174">
       <Link to="/teacher" className="mb-4 inline-block text-sm font-semibold text-violet-700">
         ← لوحة المعلم
       </Link>
-      {day03TeacherAnswers.sections.map((sec) => (
-        <EduCard key={sec.id} title={sec.titleAr} className="mb-4" accent="amber">
-          {sec.guidanceAr ? <p className="mb-3 text-sm text-violet-800">📋 {sec.guidanceAr}</p> : null}
-          {sec.answers.map((item, i) => (
-            <div key={i} className="mb-3 rounded border border-amber-100 bg-amber-50/50 p-3 text-sm">
-              <p className="font-bold">{item.q}</p>
-              <p className="mt-1 text-emerald-800">الإجابة: {item.a}</p>
-            </div>
+
+      {teacherGuidance ? (
+        <EduCard
+          key="teacher-guidance-top"
+          title={`${teacherGuidance.titleAr} (pdf ${teacherGuidance.pdfPageIndex})`}
+          className="mb-4"
+          accent="violet"
+        >
+          {teacherGuidance.overviewAr ? (
+            <p className="mb-2 text-sm text-slate-800">{teacherGuidance.overviewAr}</p>
+          ) : null}
+          {teacherGuidance.pacingAr ? (
+            <p className="mb-2 text-sm text-slate-700">
+              <span className="font-semibold">الإيقاع: </span>
+              {teacherGuidance.pacingAr}
+            </p>
+          ) : null}
+          {teacherGuidance.sequenceAr?.length ? (
+            <ol className="mb-2 list-decimal pr-5 text-sm text-slate-700">
+              {teacherGuidance.sequenceAr.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ol>
+          ) : null}
+          {teacherGuidance.materialsAr ? (
+            <p className="mb-2 text-xs text-slate-600">
+              <span className="font-semibold">المواد: </span>
+              {teacherGuidance.materialsAr}
+            </p>
+          ) : null}
+          {teacherGuidance.assessmentAr ? (
+            <p className="text-xs text-violet-800">
+              <span className="font-semibold">تقييم سريع: </span>
+              {teacherGuidance.assessmentAr}
+            </p>
+          ) : null}
+        </EduCard>
+      ) : null}
+
+      {sections.map((sec) => (
+        <EduCard key={sec.id} title={`${sec.titleAr} (pdf ${sec.pdfPageIndex})`} className="mb-4" accent="amber">
+          {sec.lessonRoute ? (
+            <p className="mb-2 text-xs text-violet-700">
+              الدرس: <code dir="ltr">{sec.lessonRoute}</code>
+            </p>
+          ) : null}
+          {sec.items.map((item, i) => (
+            <TeacherItem key={i} item={item} />
           ))}
         </EduCard>
       ))}

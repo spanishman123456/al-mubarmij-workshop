@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:server": "node scripts/start-dev-server.mjs",
+    "dev:server:check": "node scripts/start-dev-server.mjs --check-only",
     "dev:server:raw": "node server/index.js",
     "build": "vite build",
     "start": "node server/index.js",
@@ -18,6 +19,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "express": "^4.21.2",
     "fflate": "^0.8.3",
     "framer-motion": "^12.38.0",

@@ -1,8 +1,7 @@
-import { createHash } from "node:crypto";
 import { STUDENTS_ROSTER } from "../../src/data/studentsRoster.js";
+import { verifyPassword, TEACHER_BCRYPT_HASH } from "./password.js";
 
-const TEACHER_PASSWORD_HASH =
-  "493d9fe4443a3b77c93f8bdc778ed995d310251af2e6a328c23475b05ce9335e";
+export const GENERIC_AUTH_ERROR = "Invalid credentials";
 
 export const TEACHER_PROFILE = {
   id: "teacher-1",
@@ -10,10 +9,6 @@ export const TEACHER_PROFILE = {
   nationalId: "2297033843",
   nameAr: "معلم وحدة برمجة الحاسب — موهبة",
 };
-
-function sha256Hex(text) {
-  return createHash("sha256").update(String(text || ""), "utf8").digest("hex");
-}
 
 export function studentIdFromNationalId(nationalId) {
   const nid = String(nationalId || "").replace(/\D/g, "");
@@ -36,7 +31,7 @@ export function findStudentByNationalId(nationalId) {
 export function verifyTeacher(nationalId, password) {
   const nid = String(nationalId || "").replace(/\D/g, "");
   if (nid !== TEACHER_PROFILE.nationalId) return null;
-  if (sha256Hex(password) !== TEACHER_PASSWORD_HASH) return null;
+  if (!verifyPassword(password, TEACHER_BCRYPT_HASH)) return null;
   return { ...TEACHER_PROFILE };
 }
 

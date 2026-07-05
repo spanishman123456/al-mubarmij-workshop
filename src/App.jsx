@@ -52,6 +52,7 @@ import {
   MultiDimArraysLessonPage,
   BreakContinuePassLessonPage,
   DivisorsActivityLessonPage,
+  NumbersStepsActivityLessonPage,
   CollatzLessonPage,
   TruthTablesLessonPage,
   LogicGatesLessonPage,
@@ -249,6 +250,7 @@ function AppRoutes() {
         <Route path="/lessons/python-multi-arrays" element={<ProtectedRoute><MultiDimArraysLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/python-break-continue" element={<ProtectedRoute><BreakContinuePassLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/divisors-activity" element={<ProtectedRoute><DivisorsActivityLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/numbers-steps-activity" element={<ProtectedRoute><NumbersStepsActivityLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/collatz" element={<ProtectedRoute><CollatzLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/truth-tables" element={<ProtectedRoute><TruthTablesLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/logic-gates" element={<ProtectedRoute><LogicGatesLessonPage /></ProtectedRoute>} />

@@ -15,15 +15,15 @@ TOPICS = [
     ("loop-else", "else المرتبطة بالحلقة", 157, 158, "/lessons/python-break-continue", "done", "merged", "python-break-continue", "passed", []),
     ("divisors-activity", "نشاط المقسومات", 170, 171, "/lessons/divisors-activity", "done", "activity", "divisors-activity", "passed", []),
     ("collatz", "تخمين Collatz", 172, 173, "/lessons/collatz", "done", "standalone", None, "passed", []),
-    ("numbers-steps-activity", "نشاط الأرقام والخطوات", 173, 174, "/lessons/collatz", "partial", "merged", "collatz", "not-tested", ["محاكاة أرقام/خطوات منفصلة عن Collatz"]),
+    ("numbers-steps-activity", "نشاط الأرقام والخطوات", 173, 174, "/lessons/numbers-steps-activity", "done", "activity", "numbers-steps-activity", "passed", []),
     ("truth-derive", "اشتقاق جداول الحقيقة", 160, 161, "/lessons/truth-tables", "done", "merged", "truth-tables", "passed", []),
     ("truth-ref-guide", "الدليل المرجعي لجداول الحقيقة والمنطق", 158, 159, "/lessons/truth-tables", "done", "merged", "truth-tables", "passed", []),
     ("truth-tables", "جداول الحقيقة", 160, 161, "/lessons/truth-tables", "done", "standalone", None, "passed", []),
-    ("truth-answers", "إجابات جداول الحقيقة", 162, 163, "/teacher/day-03-answers", "partial", "teacher-only", None, "not-tested", ["صفحة إجابات المعلم"]),
+    ("truth-answers", "إجابات جداول الحقيقة", 162, 163, "/teacher/day-03-answers", "done", "teacher-only", None, "passed", []),
     ("gates-ref-guide", "الدليل المرجعي للبوابات المنطقية", 163, 164, "/lessons/logic-gates", "done", "merged", "logic-gates", "passed", []),
     ("logic-gates", "البوابات المنطقية", 165, 166, "/lessons/logic-gates", "done", "standalone", None, "passed", []),
-    ("gates-answers", "إجابات البوابات المنطقية", 167, 168, "/teacher/day-03-answers", "partial", "teacher-only", None, "not-tested", ["صفحة إجابات المعلم"]),
-    ("teacher-guidance", "المحتوى والإرشادات المخصصة للمعلم", 169, 170, "/teacher/day-03-answers", "partial", "teacher-only", None, "not-tested", ["إرشادات تدريس موسّعة"]),
+    ("gates-answers", "إجابات البوابات المنطقية", 167, 168, "/teacher/day-03-answers", "done", "teacher-only", None, "passed", []),
+    ("teacher-guidance", "المحتوى والإرشادات المخصصة للمعلم", 169, 170, "/teacher/day-03-answers", "done", "teacher-only", None, "passed", []),
 ]
 
 records = []

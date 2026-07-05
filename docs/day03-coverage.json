@@ -88,14 +88,12 @@
     "titleAr": "نشاط الأرقام والخطوات",
     "pdfPageIndex": 173,
     "printedPageNumber": 174,
-    "route": "/lessons/collatz",
-    "implementationStatus": "partial",
-    "integrationMode": "merged",
-    "mergedInto": "collatz",
-    "qaStatus": "not-tested",
-    "remainingWork": [
-      "محاكاة أرقام/خطوات منفصلة عن Collatz"
-    ]
+    "route": "/lessons/numbers-steps-activity",
+    "implementationStatus": "done",
+    "integrationMode": "activity",
+    "mergedInto": "numbers-steps-activity",
+    "qaStatus": "passed",
+    "remainingWork": []
   },
   {
     "id": "truth-derive",
@@ -139,13 +137,11 @@
     "pdfPageIndex": 162,
     "printedPageNumber": 163,
     "route": "/teacher/day-03-answers",
-    "implementationStatus": "partial",
+    "implementationStatus": "done",
     "integrationMode": "teacher-only",
     "mergedInto": null,
-    "qaStatus": "not-tested",
-    "remainingWork": [
-      "صفحة إجابات المعلم"
-    ]
+    "qaStatus": "passed",
+    "remainingWork": []
   },
   {
     "id": "gates-ref-guide",
@@ -177,13 +173,11 @@
     "pdfPageIndex": 167,
     "printedPageNumber": 168,
     "route": "/teacher/day-03-answers",
-    "implementationStatus": "partial",
+    "implementationStatus": "done",
     "integrationMode": "teacher-only",
     "mergedInto": null,
-    "qaStatus": "not-tested",
-    "remainingWork": [
-      "صفحة إجابات المعلم"
-    ]
+    "qaStatus": "passed",
+    "remainingWork": []
   },
   {
     "id": "teacher-guidance",
@@ -191,12 +185,10 @@
     "pdfPageIndex": 169,
     "printedPageNumber": 170,
     "route": "/teacher/day-03-answers",
-    "implementationStatus": "partial",
+    "implementationStatus": "done",
     "integrationMode": "teacher-only",
     "mergedInto": null,
-    "qaStatus": "not-tested",
-    "remainingWork": [
-      "إرشادات تدريس موسّعة"
-    ]
+    "qaStatus": "passed",
+    "remainingWork": []
   }
 ]

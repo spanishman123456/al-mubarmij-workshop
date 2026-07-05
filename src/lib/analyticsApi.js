@@ -1,3 +1,5 @@
+import { mutationHeaders } from "./csrfCookie.js";
+
 const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 function apiUrl(path) {
@@ -20,7 +22,7 @@ export async function reportLoginEvent(_studentId, event) {
     const res = await fetch(apiUrl("/api/analytics/login"), {
       ...fetchOpts,
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: mutationHeaders(),
       body: JSON.stringify({ event }),
     });
     if (!res.ok) throw new Error(await res.text() || res.statusText);
@@ -36,7 +38,7 @@ export async function reportActivityPatch(_studentId, patch) {
     const res = await fetch(apiUrl("/api/analytics/activity"), {
       ...fetchOpts,
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: mutationHeaders(),
       body: JSON.stringify({ patch }),
     });
     if (!res.ok) throw new Error(await res.text() || res.statusText);
@@ -63,7 +65,7 @@ export async function syncStudentAnalytics(_studentId, analytics) {
     const res = await fetch(apiUrl("/api/analytics/sync"), {
       ...fetchOpts,
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: mutationHeaders(),
       body: JSON.stringify({ analytics }),
     });
     if (!res.ok) throw new Error(await res.text() || res.statusText);

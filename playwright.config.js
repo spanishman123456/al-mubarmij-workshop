@@ -1,7 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const PORT = 5173;
 const API_PORT = 3011;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const E2E_DB = path.join(__dirname, "server", "data", "platform.e2e.db");
 
 export default defineConfig({
   testDir: "e2e",
@@ -21,7 +25,7 @@ export default defineConfig({
       url: `http://127.0.0.1:${API_PORT}/api/health`,
       reuseExistingServer: false,
       timeout: 60_000,
-      env: { PORT: String(API_PORT) },
+      env: { PORT: String(API_PORT), PLATFORM_DB_PATH: E2E_DB },
     },
     {
       command: `npm run dev -- --host 127.0.0.1 --port ${PORT}`,

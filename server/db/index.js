@@ -34,9 +34,26 @@ function atomicWriteFile(targetPath, buffer) {
   const dir = path.dirname(targetPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(tmpPath, buffer);
-  if (process.platform === "win32" && fs.existsSync(targetPath)) {
-    fs.rmSync(targetPath, { force: true });
+
+  if (process.platform === "win32") {
+    let lastErr;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      try {
+        fs.copyFileSync(tmpPath, targetPath);
+        fs.rmSync(tmpPath, { force: true });
+        return;
+      } catch (err) {
+        lastErr = err;
+        const waitMs = 20 * (attempt + 1);
+        const until = Date.now() + waitMs;
+        while (Date.now() < until) {
+          /* brief spin-wait for AV / file handle release on Windows */
+        }
+      }
+    }
+    throw lastErr;
   }
+
   fs.renameSync(tmpPath, targetPath);
 }
 

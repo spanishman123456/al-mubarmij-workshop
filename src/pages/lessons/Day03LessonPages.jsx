@@ -3,6 +3,7 @@ import { constantsLesson } from "../../content/lessons/day03/constantsLesson";
 import { multiDimArraysLesson } from "../../content/lessons/day03/multiDimArraysLesson";
 import { breakContinuePassLesson } from "../../content/lessons/day03/breakContinuePassLesson";
 import { divisorsActivityLesson } from "../../content/lessons/day03/divisorsActivityLesson";
+import { numbersStepsActivityLesson } from "../../content/lessons/day03/numbersStepsActivityLesson";
 import { collatzLesson } from "../../content/lessons/day03/collatzLesson";
 import { truthTablesLesson } from "../../content/lessons/day03/truthTablesLesson";
 import { logicGatesLesson } from "../../content/lessons/day03/logicGatesLesson";
@@ -10,6 +11,7 @@ import { IfStatementLab } from "../../components/lesson/IfStatementLab";
 import { MultiDimGridLab } from "../../components/lesson/MultiDimGridLab";
 import { LoopControlLab } from "../../components/lesson/LoopControlLab";
 import { DivisorsLab } from "../../components/lesson/DivisorsLab";
+import { NumbersStepsLab } from "../../components/lesson/NumbersStepsLab";
 import { CollatzSimulator } from "../../components/lesson/CollatzSimulator";
 import { TruthTableBuilder } from "../../components/sims/TruthTableBuilder";
 import { LogicGatesSim } from "../../components/sims/LogicSims";
@@ -56,8 +58,17 @@ export function BreakContinuePassLessonPage() {
 export function DivisorsActivityLessonPage() {
   const { user } = usePlatform();
   return (
-    <StandardLessonPage lesson={divisorsActivityLesson} backTo={BACK} nextLink={{ to: "/lessons/collatz", label: "التالي →" }}>
+    <StandardLessonPage lesson={divisorsActivityLesson} backTo={BACK} nextLink={{ to: "/lessons/numbers-steps-activity", label: "التالي: الأرقام والخطوات →" }}>
       <Lab><DivisorsLab lessonId={divisorsActivityLesson.id} userId={user?.id} /></Lab>
+    </StandardLessonPage>
+  );
+}
+
+export function NumbersStepsActivityLessonPage() {
+  const { user } = usePlatform();
+  return (
+    <StandardLessonPage lesson={numbersStepsActivityLesson} backTo={BACK} nextLink={{ to: "/lessons/collatz", label: "التالي: Collatz →" }}>
+      <Lab><NumbersStepsLab lessonId={numbersStepsActivityLesson.id} userId={user?.id} /></Lab>
     </StandardLessonPage>
   );
 }

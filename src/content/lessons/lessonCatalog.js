@@ -25,6 +25,7 @@ import { multiDimArraysLesson } from "./day03/multiDimArraysLesson.js";
 import { breakContinuePassLesson } from "./day03/breakContinuePassLesson.js";
 import { divisorsActivityLesson } from "./day03/divisorsActivityLesson.js";
 import { collatzLesson } from "./day03/collatzLesson.js";
+import { numbersStepsActivityLesson } from "./day03/numbersStepsActivityLesson.js";
 import { truthTablesLesson } from "./day03/truthTablesLesson.js";
 import { logicGatesLesson } from "./day03/logicGatesLesson.js";
 
@@ -55,6 +56,7 @@ export const lessonCatalog = [
   multiDimArraysLesson,
   breakContinuePassLesson,
   divisorsActivityLesson,
+  numbersStepsActivityLesson,
   collatzLesson,
   truthTablesLesson,
   logicGatesLesson,

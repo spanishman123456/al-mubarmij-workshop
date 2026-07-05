@@ -24,7 +24,7 @@ import {
   mergeRemoteAnalytics,
 } from "../lib/platformAnalytics";
 import { reportLoginEvent, reportActivityPatch, fetchAllAnalytics } from "../lib/analyticsApi";
-import { loginStudentApi, loginTeacherApi, logoutApi } from "../lib/platformApi";
+import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi } from "../lib/platformApi";
 import {
   loadValidatedPlatformState,
   resolveSessionUser,
@@ -114,6 +114,26 @@ export function PlatformProvider({ children }) {
   const sessionUserId = state.sessionUserId;
   const isStudentSession = Boolean(user?.role === "student");
 
+  const refreshTeacherAnalytics = useCallback(async () => {
+    setAnalyticsSyncStatus((s) => ({ ...s, loading: true, error: null }));
+    const res = await fetchAllAnalytics();
+    if (res.ok) {
+      setRemoteAnalyticsByStudent(res.analyticsByStudent || {});
+      setAnalyticsSyncStatus({
+        loading: false,
+        error: null,
+        fetchedAt: res.fetchedAt || new Date().toISOString(),
+      });
+      return { ok: true };
+    }
+    setAnalyticsSyncStatus({
+      loading: false,
+      error: res.error || "تعذّر جلب البيانات من الخادم",
+      fetchedAt: null,
+    });
+    return { ok: false, error: res.error };
+  }, []);
+
   const loginTeacher = useCallback(
     async (username, password) => {
       const found = await findTeacher(username, password);
@@ -125,9 +145,10 @@ export function PlatformProvider({ children }) {
         return { ok: false, message: "تعذّر إنشاء جلسة الخادم." };
       }
       persist((prev) => ({ ...prev, ...createSessionPatch(found.id) }));
+      await refreshTeacherAnalytics();
       return { ok: true, user: found };
     },
-    [persist],
+    [persist, refreshTeacherAnalytics],
   );
 
   const loginStudentByNationalId = useCallback(
@@ -158,42 +179,22 @@ export function PlatformProvider({ children }) {
         return next;
       });
 
-      reportLoginEvent(student.id, {
-        at: updatedAnalytics.lastLoginAt,
-        sessionId,
-        success: true,
-        userAgent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : "",
-      }).then((res) => {
-        if (!res.ok) {
-          console.error("[platform] login sync failed", res.error);
-        }
-      });
+      try {
+        await reportLoginEvent(student.id, {
+          at: updatedAnalytics.lastLoginAt,
+          sessionId,
+          success: true,
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : "",
+        });
+      } catch (err) {
+        console.error("[platform] login sync failed", err?.message || err);
+      }
 
       resetActivityTracking();
       return { ok: true, user: student };
     },
     [persist],
   );
-
-  const refreshTeacherAnalytics = useCallback(async () => {
-    setAnalyticsSyncStatus((s) => ({ ...s, loading: true, error: null }));
-    const res = await fetchAllAnalytics();
-    if (res.ok) {
-      setRemoteAnalyticsByStudent(res.analyticsByStudent || {});
-      setAnalyticsSyncStatus({
-        loading: false,
-        error: null,
-        fetchedAt: res.fetchedAt || new Date().toISOString(),
-      });
-      return { ok: true };
-    }
-    setAnalyticsSyncStatus({
-      loading: false,
-      error: res.error || "تعذّر جلب البيانات من الخادم",
-      fetchedAt: null,
-    });
-    return { ok: false, error: res.error };
-  }, []);
 
   const logout = useCallback(
     ({ reason } = {}) => {
@@ -700,11 +701,25 @@ export function PlatformProvider({ children }) {
   }, [state, remoteAnalyticsByStudent]);
 
   useEffect(() => {
+    if (!authReady) return;
     const userNow = state.sessionUserId ? resolveSessionUser(state.sessionUserId) : null;
-    if (userNow?.role === "teacher") {
-      refreshTeacherAnalytics();
-    }
-  }, [state.sessionUserId, refreshTeacherAnalytics]);
+    if (userNow?.role !== "teacher") return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await fetchAuthMeApi();
+        if (cancelled || me.user?.role !== "teacher") return;
+        await refreshTeacherAnalytics();
+      } catch {
+        /* local session without server cookie — login flow will refresh */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state.sessionUserId, authReady, refreshTeacherAnalytics]);
 
   const value = useMemo(
     () => ({

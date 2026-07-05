@@ -1,3 +1,5 @@
+import { mutationHeaders } from "./csrfCookie.js";
+
 const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 function url(path) {
@@ -5,10 +7,15 @@ function url(path) {
 }
 
 async function request(path, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+  const headers =
+    method !== "GET" && method !== "HEAD"
+      ? mutationHeaders(options.headers || {})
+      : { ...(options.headers || {}) };
   const res = await fetch(url(path), {
     cache: "no-store",
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    headers,
     ...options,
   });
   const data = await res.json().catch(() => ({}));
@@ -95,4 +102,8 @@ export async function fetchHealthApi() {
 
 export async function fetchLessonSummaryApi() {
   return request("/api/lesson/summary");
+}
+
+export async function fetchTeacherDay03AnswersApi() {
+  return request("/api/teacher/day-03-answers");
 }
