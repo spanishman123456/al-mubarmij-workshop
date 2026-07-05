@@ -11,6 +11,7 @@ import LessonPage from "./pages/LessonPage";
 import WorksheetsPage from "./pages/WorksheetsPage";
 import QuizzesPage from "./pages/QuizzesPage";
 import QuizTakePage from "./pages/QuizTakePage";
+import QuizReviewPage from "./pages/QuizReviewPage";
 import LoginPage from "./pages/LoginPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
@@ -346,6 +347,14 @@ function AppRoutes() {
           }
         />
         <Route path="/quizzes/take/:quizId" element={<QuizTakeRedirect />} />
+        <Route
+          path="/quizzes/review/:attemptId"
+          element={
+            <ProtectedRoute>
+              <QuizReviewPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/simulations"

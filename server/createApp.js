@@ -12,6 +12,7 @@ import {
   mergeAnalytics,
 } from "./analyticsStore.js";
 import { registerPlatformRoutes } from "./routes/platformRoutes.js";
+import { registerQuizRoutes } from "./routes/quizRoutes.js";
 import { registerAuthRoutes, ensureRateLimitSchema } from "./auth/authRoutes.js";
 import { requireAuth, requireRole } from "./auth/middleware.js";
 import { ensureSessionSchema } from "./auth/sessionRepository.js";
@@ -158,6 +159,7 @@ export async function prepareApp(app) {
   ensureRateLimitSchema();
   globalThis.__platformDbReady = true;
   registerPlatformRoutes(app, logError);
+  registerQuizRoutes(app, logError);
 
   if (process.env.NODE_ENV === "production") {
     app.use(express.static(DIST));

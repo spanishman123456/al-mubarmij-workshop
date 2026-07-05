@@ -20,7 +20,7 @@ def q(id_, order, question_ar, qtype="mcq", **kw):
         "questionAr": question_ar,
         "explainAr": kw.get("explainAr", "من التقويم الرسمي — ملف PDF المعتمد."),
     }
-    for k in ("optionsAr", "correctIndex", "correctAnswer", "acceptAnswers", "codeSnippetAr"):
+    for k in ("optionsAr", "correctIndex", "correctAnswer", "acceptAnswers", "codeSnippetAr", "matchLeft", "matchRight", "correctPairs", "orderItems", "correctOrder", "instructionAr", "lessonLink", "modelAnswerAr"):
         if k in kw:
             item[k] = kw[k]
     return item
@@ -140,8 +140,11 @@ def build_pre():
         q(
             "pre-04",
             o,
-            "سؤال 4: ارسم جدول الحقيقة لتمثيل العبارة المنطقية: (¬p ∧ q) ∨ r",
+            "سؤال 4: أكمل جدول الحقيقة لتمثيل العبارة المنطقية: (¬p ∧ q) ∨ r",
             "essay",
+            instructionAr="اكتب جدول الحقيقة داخل المنصة: 8 صفوف للمتغيرات p, q, r مع عمود للناتج. استخدم 0 و1.",
+            modelAnswerAr="جدول 8 صفوف — راجع درس جداول الحقيقة.",
+            lessonLink="/lessons/truth-tables",
         )
     )
     o += 1
@@ -349,8 +352,9 @@ def build_pre():
         q(
             "pre-15",
             o,
-            "سؤال 15: ارسم مسار أويلر (Euler Path) يبدأ بالرقم 1 ويعطي كل زاوية رقماً صحيحاً متزايداً.",
+            "سؤال 15: صِف مسار أويلر (Euler Path) يبدأ بالرقم 1 ويعطي كل زاوية رقماً صحيحاً متزايداً.",
             "essay",
+            instructionAr="اكتب تسلسل الأرقام على الحواف داخل المنصة — لا حاجة لرسم خارجي.",
         )
     )
     o += 1
@@ -412,8 +416,14 @@ def build_pre():
         q(
             "pre-19",
             o,
-            "سؤال 19: اطابق بين العملية ووظيفتها في مخطط البرنامج (قراءة، شرط، طباعة، إنهاء).",
-            "essay",
+            "سؤال 19: اطابق بين رمز مخطط التدفق ووظيفته.",
+            "match",
+            matchLeft=["البيضاوي", "متوازي الأضلاع", "المعيّن (قرار)", "المستطيل"],
+            matchRight=["بداية أو نهاية", "إدخال أو إخراج", "اختبار شرط", "تنفيذ عملية (طباعة/معالجة)"],
+            correctPairs={"0": 0, "1": 1, "2": 2, "3": 3},
+            instructionAr="اختر الوظيفة المناسبة لكل رمز من القائمة — لا حاجة لرسم خارجي.",
+            explainAr="البيضاوي = بداية/نهاية، متوازي الأضلاع = I/O، المعيّن = شرط، المستطيل = عملية.",
+            lessonLink="/lessons/algorithms",
         )
     )
     o += 1

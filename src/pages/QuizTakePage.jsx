@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { getQuizById } from "../data/quizzes";
 import { usePlatform } from "../context/PlatformContext";
 import { computeQuizResult, isAutoGradable, isQuestionCorrect, prepareQuizForAttempt } from "../lib/quizEngine";
+import { QuizQuestionRenderer, questionTypeLabel } from "../components/quiz/QuizQuestionRenderer";
 import {
   PRE_ASSESSMENT_DEFER_CONFIRM_AR,
   PRE_ASSESSMENT_DEFERRED_AR,
@@ -10,17 +11,19 @@ import {
   PRE_ASSESSMENT_STATUS,
   PRE_ASSESSMENT_SUBMITTED_AR,
 } from "../content/onboarding/onboardingPolicy";
+import { ServerQuizTakePage } from "./ServerQuizPages";
 
-function questionTypeLabel(type) {
-  if (type === "fill") return "إكمال فراغ";
-  if (type === "truefalse") return "صح / خطأ";
-  if (type === "essay") return "سؤال مقالي / رسم";
-  if (type === "code") return "سؤال برمجي";
-  return "اختيار من متعدد";
-}
+const SERVER_QUIZZES = new Set(["quiz-pre", "quiz-post"]);
 
 export default function QuizTakePage() {
   const { quizId } = useParams();
+  if (SERVER_QUIZZES.has(quizId ?? "")) {
+    return <ServerQuizTakePage quizId={quizId} />;
+  }
+  return <LegacyQuizTakePage quizId={quizId ?? ""} />;
+}
+
+function LegacyQuizTakePage({ quizId }) {
   const navigate = useNavigate();
   const { saveQuizResult, savePreAssessmentProgress, myProgress, user } = usePlatform();
   const isPreAssessment = quizId === "quiz-pre";
