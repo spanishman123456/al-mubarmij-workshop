@@ -16,6 +16,7 @@ import {
   filterByLastLogin,
   todayKey,
 } from "../lib/platformAnalytics";
+import { getPublishedDaysCount } from "../config/publication";
 
 function formatDate(iso) {
   return formatLoginDateTime(iso) === "لم يسجل الدخول" ? "—" : formatLoginDateTime(iso);
@@ -68,6 +69,7 @@ export default function TeacherDashboard() {
     (x) => getAttendanceStatus(x.analytics, x.stats).key === "needs_followup",
   );
   const onlineNow = allStudentsProgress.filter((x) => getPresenceStatus(x.analytics).key === "online");
+  const publishedDays = getPublishedDaysCount();
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -96,12 +98,16 @@ export default function TeacherDashboard() {
           <Link to="/teacher/day-01-answers" className="edu-btn edu-btn-outline text-sm">
             إجابات المعلم — اليوم 1
           </Link>
+          {publishedDays >= 2 ? (
           <Link to="/teacher/day-02-answers" className="edu-btn edu-btn-outline text-sm">
             إجابات المعلم — اليوم 2
           </Link>
+          ) : null}
+          {publishedDays >= 3 ? (
           <Link to="/teacher/day-03-answers" className="edu-btn edu-btn-outline text-sm">
             إجابات المعلم — اليوم 3
           </Link>
+          ) : null}
           <button
             type="button"
             onClick={handleRefresh}

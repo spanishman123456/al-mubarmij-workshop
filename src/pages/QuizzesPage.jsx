@@ -5,6 +5,7 @@ import { curriculumDays } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell } from "../components/layout/PageShell";
 import { getQuizQuestionCount } from "../lib/quizEngine";
+import { getPublishedDaysCount, isCurriculumDayPublished } from "../config/publication";
 
 function unitTitle(unitId) {
   if (!unitId) return "جميع الوحدات";
@@ -22,9 +23,14 @@ export default function QuizzesPage() {
   const comprehensive = quizzes.filter(
     (q) => q.unitId == null && !["quiz-pre", "quiz-post"].includes(q.id) && !q.id.startsWith("quiz-day"),
   );
-  const prePost = quizzes.filter((q) => ["quiz-pre", "quiz-post"].includes(q.id));
+  const prePost = quizzes.filter((q) => {
+    if (!["quiz-pre", "quiz-post"].includes(q.id)) return false;
+    if (q.id === "quiz-post" && getPublishedDaysCount() < 15) return false;
+    return true;
+  });
   const dayQuizzes = curriculumDays
     .filter((d) => d.quizId && !["quiz-pre", "quiz-post"].includes(d.quizId))
+    .filter((d) => isCurriculumDayPublished(d.id))
     .map((d) => ({
       day: d,
       quiz: quizzes.find((q) => q.id === d.quizId),

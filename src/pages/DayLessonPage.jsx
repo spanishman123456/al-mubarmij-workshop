@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { getDayById } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
+import { isCurriculumDayPublished, LOCKED_MESSAGE_AR } from "../config/publication";
 
 const SIM_LINKS = {
   "number-converter": "/simulations#number-converter",
@@ -36,6 +37,19 @@ export default function DayLessonPage() {
       <PageShell title="الدرس">
         <EduCard>
           <Link to="/path" className="edu-btn edu-btn-outline inline-flex">
+            العودة للمسار
+          </Link>
+        </EduCard>
+      </PageShell>
+    );
+  }
+
+  if (user?.role === "student" && !isCurriculumDayPublished(dayId)) {
+    return (
+      <PageShell title="المحتوى غير متاح بعد" badge="الجدول التدريبي">
+        <EduCard accent="amber">
+          <p className="text-lg font-semibold text-slate-800">{LOCKED_MESSAGE_AR}</p>
+          <Link to="/path" className="edu-btn edu-btn-outline mt-4 inline-flex">
             العودة للمسار
           </Link>
         </EduCard>

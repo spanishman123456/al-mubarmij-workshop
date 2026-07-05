@@ -13,6 +13,10 @@ services:
         value: /opt/render/project/src/server/data/platform.db
       - key: CONTENT_VERSION
         value: student-pilot-batch-07
+      - key: PUBLISHED_DAYS
+        value: "1"
+      - key: VITE_PUBLISHED_DAYS
+        value: "1"
       # Set in Render dashboard (secrets — not in git):
       # TEACHER_BCRYPT_HASH — npm run hash:teacher-password locally
       # APP_URL — https://your-service.onrender.com

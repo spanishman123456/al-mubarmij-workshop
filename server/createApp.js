@@ -17,6 +17,8 @@ import { requireAuth, requireRole } from "./auth/middleware.js";
 import { ensureSessionSchema } from "./auth/sessionRepository.js";
 import { corsMiddleware } from "./auth/cors.js";
 import { day03TeacherAnswers } from "../src/content/teacher/day03TeacherAnswers.js";
+import { getDayPublicationMap, getPublishedDaysCount } from "./config/publication.js";
+import { requirePublishedTeacherDay } from "./auth/publishedContent.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");
@@ -73,8 +75,23 @@ export function createApp() {
     });
   });
 
-  app.get("/api/teacher/day-03-answers", requireAuth, requireRole("teacher"), (_req, res) => {
-    res.json({ ok: true, ...day03TeacherAnswers });
+  app.get(
+    "/api/teacher/day-03-answers",
+    requireAuth,
+    requireRole("teacher"),
+    requirePublishedTeacherDay(3),
+    (_req, res) => {
+      res.json({ ok: true, ...day03TeacherAnswers });
+    },
+  );
+
+  app.get("/api/config/publication", (_req, res) => {
+    const publishedDays = getPublishedDaysCount();
+    res.json({
+      ok: true,
+      publishedDays,
+      publicationStatus: getDayPublicationMap(publishedDays),
+    });
   });
 
   app.post("/api/analytics/login", requireAuth, requireRole("student"), (req, res) => {

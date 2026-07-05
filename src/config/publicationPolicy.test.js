@@ -1,0 +1,54 @@
+import { describe, expect, it } from "vitest";
+import {
+  getDayPublicationMap,
+  isLessonIdPublished,
+  isPathPublished,
+  parsePublishedDays,
+  PublicationStatus,
+} from "./publicationPolicy.js";
+
+describe("publicationPolicy", () => {
+  it("parsePublishedDays defaults to 15 when unset", () => {
+    expect(parsePublishedDays(undefined)).toBe(15);
+    expect(parsePublishedDays("")).toBe(15);
+  });
+
+  it("parsePublishedDays clamps to 1..15", () => {
+    expect(parsePublishedDays("1")).toBe(1);
+    expect(parsePublishedDays("3")).toBe(3);
+    expect(parsePublishedDays("99")).toBe(15);
+    expect(parsePublishedDays("0")).toBe(15);
+  });
+
+  it("maps day01 published and day02-day04 draft when PUBLISHED_DAYS=1", () => {
+    const map = getDayPublicationMap(1);
+    expect(map).toMatchObject({
+      day01: PublicationStatus.PUBLISHED,
+      day02: PublicationStatus.DRAFT,
+      day03: PublicationStatus.DRAFT,
+      day04: PublicationStatus.DRAFT,
+    });
+  });
+
+  it("blocks day 2 lesson routes for students", () => {
+    expect(isPathPublished("/lessons/conversions-intro", 1, "student")).toBe(false);
+    expect(isPathPublished("/lessons/number-systems", 1, "student")).toBe(true);
+    expect(isPathPublished("/onboarding/bingo", 1, "student")).toBe(true);
+    expect(isPathPublished("/quizzes/run/quiz-pre", 1, "student")).toBe(true);
+    expect(isPathPublished("/quizzes/run/quiz-day-02", 1, "student")).toBe(false);
+    expect(isPathPublished("/path/day/day-02", 1, "student")).toBe(false);
+    expect(isPathPublished("/path/day/day-01", 1, "student")).toBe(true);
+  });
+
+  it("blocks teacher day-02 answers when only day 1 published", () => {
+    expect(isPathPublished("/teacher/day-01-answers", 1, "teacher")).toBe(true);
+    expect(isPathPublished("/teacher/day-02-answers", 1, "teacher")).toBe(false);
+    expect(isPathPublished("/teacher/day-03-answers", 1, "teacher")).toBe(false);
+  });
+
+  it("rejects unpublished lesson ids on server save", () => {
+    expect(isLessonIdPublished("number-systems", 1)).toBe(true);
+    expect(isLessonIdPublished("conversions-intro", 1)).toBe(false);
+    expect(isLessonIdPublished("python-constants", 1)).toBe(false);
+  });
+});

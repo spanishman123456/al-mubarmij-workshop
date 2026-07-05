@@ -60,6 +60,7 @@ import {
 import TeacherDay01AnswersPage from "./pages/teacher/TeacherDay01AnswersPage.jsx";
 import TeacherDay02AnswersPage from "./pages/teacher/TeacherDay02AnswersPage.jsx";
 import TeacherDay03AnswersPage from "./pages/teacher/TeacherDay03AnswersPage.jsx";
+import { PublishedContentGate } from "./components/auth/PublishedContentGate.jsx";
 
 function NotFoundRedirect() {
   const { user, authReady } = usePlatform();
@@ -89,6 +90,7 @@ function AppRoutes() {
 
       <div key={location.pathname} className="page-enter">
       <OnboardingGate>
+      <PublishedContentGate>
       <Routes location={location}>
         <Route
           path="/login"
@@ -386,6 +388,7 @@ function AppRoutes() {
 
         <Route path="*" element={<NotFoundRedirect />} />
       </Routes>
+      </PublishedContentGate>
       </OnboardingGate>
       </div>
     </div>

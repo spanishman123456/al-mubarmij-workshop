@@ -13,6 +13,7 @@ import {
   getTeacherLessonSummary,
 } from "../repositories/progressRepository.js";
 import { requireAuth, requireRole, requireProgressAccess } from "../auth/middleware.js";
+import { rejectUnpublishedLessonProgress } from "../auth/publishedContent.js";
 
 export function registerPlatformRoutes(app, logError) {
   app.get("/api/onboarding/status/:studentId", requireAuth, requireProgressAccess, (req, res) => {
@@ -93,7 +94,7 @@ export function registerPlatformRoutes(app, logError) {
     }
   });
 
-  app.post("/api/lesson/progress", requireAuth, requireRole("student"), (req, res) => {
+  app.post("/api/lesson/progress", requireAuth, requireRole("student"), rejectUnpublishedLessonProgress, (req, res) => {
     try {
       const { lessonId, sectionId, progress, completed } = req.body || {};
       if (!lessonId) return res.status(400).json({ ok: false, error: "lessonId required" });
@@ -105,7 +106,7 @@ export function registerPlatformRoutes(app, logError) {
     }
   });
 
-  app.post("/api/lesson/attempt", requireAuth, requireRole("student"), (req, res) => {
+  app.post("/api/lesson/attempt", requireAuth, requireRole("student"), rejectUnpublishedLessonProgress, (req, res) => {
     try {
       const { lessonId, exerciseId, answer, correct, hintsUsed, errorType, durationMs } = req.body || {};
       if (!lessonId || !exerciseId) {

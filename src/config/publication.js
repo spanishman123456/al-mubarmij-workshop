@@ -1,43 +1,27 @@
-/** Publication flags — students see `published` content only. */
+import {
+  getDayPublicationMap,
+  getPublishedDaysFromClientEnv,
+  isCurriculumDayVisible,
+  isLessonIdPublished,
+  isPathPublished,
+  LOCKED_MESSAGE_AR,
+  PublicationStatus,
+} from "./publicationPolicy.js";
 
-export const PublicationStatus = {
-  DRAFT: "draft",
-  PUBLISHED: "published",
-};
+export { LOCKED_MESSAGE_AR, PublicationStatus, getDayPublicationMap, isLessonIdPublished };
 
-/** Day 4+ expanded lesson routes (batch 8+) — not yet for students. */
-export const DRAFT_LESSON_ROUTES = new Set([
-  "/lessons/karnaugh-maps",
-  "/lessons/logic-equivalence",
-  "/lessons/python-tuples",
-  "/lessons/nested-loops-lab",
-]);
+export function getPublishedDaysCount() {
+  return getPublishedDaysFromClientEnv();
+}
 
-/** Curriculum day pages 4–15 remain as before (generic content + sims). */
-export const PUBLISHED_CURRICULUM_DAY_IDS = new Set([
-  "day-01",
-  "day-02",
-  "day-03",
-  "day-04",
-  "day-05",
-  "day-06",
-  "day-07",
-  "day-08",
-  "day-09",
-  "day-10",
-  "day-11",
-  "day-12",
-  "day-13",
-  "day-14",
-  "day-15",
-]);
+export function getPublicationStatusMap() {
+  return getDayPublicationMap(getPublishedDaysCount());
+}
 
-export function isLessonRoutePublished(pathname) {
-  const path = pathname.split("?")[0].replace(/\/$/, "") || "/";
-  if (DRAFT_LESSON_ROUTES.has(path)) return false;
-  return true;
+export function isLessonRoutePublished(pathname, role = "student") {
+  return isPathPublished(pathname, getPublishedDaysCount(), role);
 }
 
 export function isCurriculumDayPublished(dayId) {
-  return PUBLISHED_CURRICULUM_DAY_IDS.has(dayId);
+  return isCurriculumDayVisible(dayId, getPublishedDaysCount());
 }

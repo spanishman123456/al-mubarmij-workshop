@@ -3,6 +3,7 @@ import { WEEKS_15, curriculumDays, getDayById } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
+import { getPublishedDaysCount, isCurriculumDayPublished, LOCKED_MESSAGE_AR } from "../config/publication";
 
 const SIM_LABELS = {
   "number-converter": "محوّل الأنظمة",
@@ -19,17 +20,19 @@ export default function LearningPathPage() {
   const { user, myProgress } = usePlatform();
   const completed = new Set(myProgress?.completedDays ?? []);
   const wsStatus = myProgress?.worksheetStatus ?? {};
+  const publishedDays = getPublishedDaysCount();
+  const visibleDays = curriculumDays.filter((d) => isCurriculumDayPublished(d.id));
 
   const hero =
     user?.role === "student" && myProgress ? (
       <div className="max-w-lg rounded-xl bg-white/10 p-4 backdrop-blur-sm">
         <ProgressBar
-          value={Math.round((completed.size / curriculumDays.length) * 100)}
-          label="تقدمك في الرحلة التعليمية (15 يومًا)"
+          value={Math.round((completed.size / Math.max(visibleDays.length, 1)) * 100)}
+          label={`تقدمك في الرحلة التعليمية (${publishedDays === 15 ? "15" : publishedDays} يومًا)`}
           variant="dark"
         />
         <p className="mt-2 text-sm text-violet-100">
-          {completed.size} من {curriculumDays.length} يومًا مكتمل
+          {completed.size} من {visibleDays.length} يومًا مكتمل
         </p>
       </div>
     ) : null;
@@ -56,13 +59,14 @@ export default function LearningPathPage() {
               {week.dayIds.map((dayId) => {
                 const day = getDayById(dayId);
                 if (!day) return null;
+                const published = isCurriculumDayPublished(dayId);
                 const done = completed.has(dayId);
                 const wsDone = day.worksheetId && wsStatus[day.worksheetId] === "completed";
 
                 return (
                   <article
                     key={dayId}
-                    className={`path-day-card ${done ? "path-day-card--done" : ""}`}
+                    className={`path-day-card ${done ? "path-day-card--done" : ""} ${!published ? "opacity-90" : ""}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <span className="path-day-num">{day.dayNumber}</span>
@@ -109,7 +113,7 @@ export default function LearningPathPage() {
                     </ul>
 
                     <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-                      {day.worksheetId ? (
+                      {published && day.worksheetId ? (
                         <Link
                           to={`/worksheets/${day.worksheetId}`}
                           className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
@@ -121,7 +125,7 @@ export default function LearningPathPage() {
                           ورقة عمل {wsDone ? "✓" : ""}
                         </Link>
                       ) : null}
-                      {day.quizId ? (
+                      {published && day.quizId ? (
                         <Link
                           to={`/quizzes/run/${day.quizId}`}
                           className="rounded-lg bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
@@ -129,7 +133,8 @@ export default function LearningPathPage() {
                           اختبار
                         </Link>
                       ) : null}
-                      {day.simulationIds?.slice(0, 2).map((sid) => (
+                      {published
+                        ? day.simulationIds?.slice(0, 2).map((sid) => (
                         <Link
                           key={sid}
                           to={`/simulations#${sid}`}
@@ -137,15 +142,22 @@ export default function LearningPathPage() {
                         >
                           {SIM_LABELS[sid] ?? sid}
                         </Link>
-                      ))}
+                      ))
+                        : null}
                     </div>
 
+                    {published ? (
                     <Link
                       to={`/path/day/${dayId}`}
                       className="edu-btn edu-btn-primary mt-4 w-full text-center"
                     >
                       ابدأ الدرس
                     </Link>
+                    ) : (
+                    <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-center text-sm font-semibold text-amber-900">
+                      {LOCKED_MESSAGE_AR}
+                    </div>
+                    )}
                   </article>
                 );
               })}
