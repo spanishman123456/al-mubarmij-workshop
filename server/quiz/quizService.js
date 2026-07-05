@@ -2,6 +2,15 @@ import {
   OFFICIAL_PRE_TEST_QUESTIONS,
   OFFICIAL_POST_TEST_QUESTIONS,
 } from "../../src/data/officialPdfAssessments.js";
+import {
+  gradeCardFlip,
+  gradeCardSheet,
+  gradeFlowchart,
+  gradeMatch,
+  gradeOrder,
+  gradeTruthTable,
+  truthTableModelAnswer,
+} from "../../src/lib/quiz/grading.js";
 import { buildSectionGroups, getSectionsForQuiz } from "./quizSections.js";
 
 const BANKS = {
@@ -9,7 +18,10 @@ const BANKS = {
   "quiz-post": OFFICIAL_POST_TEST_QUESTIONS,
 };
 
-const KEY_FIELDS = ["correctIndex", "correctAnswer", "acceptAnswers", "correctPairs", "correctOrder", "explainAr"];
+const KEY_FIELDS = [
+  "correctIndex", "correctAnswer", "acceptAnswers", "correctPairs", "correctOrder",
+  "correctFlow", "target", "targets", "logicExpr", "explainAr", "modelAnswerAr",
+];
 
 export function isServerBankQuiz(quizId) {
   return quizId === "quiz-pre" || quizId === "quiz-post";
@@ -35,8 +47,17 @@ export function sanitizeQuestion(q) {
     out.instructionAr =
       out.instructionAr || "اكتب إجابتك داخل المنصة — لا حاجة لدفتر خارجي. استخدم نقاطًا مرقمة إن طُلب.";
   }
-  if (out.type === "code") {
-    out.instructionAr = out.instructionAr || "اكتب الكود في المحرر أدناه. يمكنك تعديل إجابتك قبل الإرسال النهائي.";
+  if (out.type === "code" || out.type === "code-editor") {
+    out.instructionAr = out.instructionAr || "اكتب الكود في المحرر أدناه. يمكنك تشغيله للتجربة قبل الإرسال.";
+  }
+  if (out.type === "truth-table") {
+    out.instructionAr = out.instructionAr || "عبّئ عمود الناتج في جدول الحقيقة.";
+  }
+  if (out.type === "binary-cards" || out.type === "binary-cards-sheet") {
+    out.instructionAr = out.instructionAr || "اقلب البطاقات داخل المنصة — لا حاجة لدفتر خارجي.";
+  }
+  if (out.type === "flowchart") {
+    out.instructionAr = out.instructionAr || "اختر الرمز المناسب لكل خطوة في المخطط.";
   }
   return out;
 }
@@ -66,39 +87,32 @@ function normalizeAnswerText(value) {
 
 export function isAutoGradable(question) {
   const type = question.type || "mcq";
-  return ["mcq", "truefalse", "fill", "match", "order"].includes(type);
+  return [
+    "mcq", "truefalse", "fill", "match", "order",
+    "truth-table", "binary-cards", "binary-cards-sheet", "flowchart",
+  ].includes(type);
 }
 
-function gradeMatch(question, userAnswer) {
-  try {
-    const parsed = typeof userAnswer === "string" ? JSON.parse(userAnswer) : userAnswer;
-    const expected = question.correctPairs || {};
-    const keys = Object.keys(expected);
-    if (!keys.length) return false;
-    return keys.every((k) => String(parsed?.[k]) === String(expected[k]));
-  } catch {
-    return false;
-  }
-}
-
-function gradeOrder(question, userAnswer) {
-  try {
-    const parsed = typeof userAnswer === "string" ? JSON.parse(userAnswer) : userAnswer;
-    const expected = question.correctOrder || [];
-    if (!Array.isArray(parsed) || parsed.length !== expected.length) return false;
-    return parsed.every((v, i) => Number(v) === Number(expected[i]));
-  } catch {
-    return false;
-  }
+function hasUserAnswer(userAnswer) {
+  if (userAnswer === undefined || userAnswer === null) return false;
+  if (typeof userAnswer === "string") return userAnswer.trim() !== "";
+  return true;
 }
 
 export function gradeQuestion(question, userAnswer) {
   const type = question.type || "mcq";
-  if (!isAutoGradable(question)) {
-    const hasAnswer = userAnswer !== undefined && userAnswer !== null && String(userAnswer).trim() !== "";
+  const manualTypes = ["essay", "code", "code-editor"];
+  if (manualTypes.includes(type)) {
     return {
       correct: null,
-      gradingStatus: hasAnswer ? "pending_teacher_review" : "unanswered",
+      gradingStatus: hasUserAnswer(userAnswer) ? "pending_teacher_review" : "unanswered",
+      autoGraded: false,
+    };
+  }
+  if (!isAutoGradable(question)) {
+    return {
+      correct: null,
+      gradingStatus: hasUserAnswer(userAnswer) ? "pending_teacher_review" : "unanswered",
       autoGraded: false,
     };
   }
@@ -112,7 +126,15 @@ export function gradeQuestion(question, userAnswer) {
     correct = gradeMatch(question, userAnswer);
   } else if (type === "order") {
     correct = gradeOrder(question, userAnswer);
-  } else if (userAnswer !== undefined && userAnswer !== null && userAnswer !== "") {
+  } else if (type === "truth-table") {
+    correct = gradeTruthTable(question, userAnswer);
+  } else if (type === "binary-cards") {
+    correct = gradeCardFlip(question, userAnswer);
+  } else if (type === "binary-cards-sheet") {
+    correct = gradeCardSheet(question, userAnswer);
+  } else if (type === "flowchart") {
+    correct = gradeFlowchart(question, userAnswer);
+  } else if (hasUserAnswer(userAnswer)) {
     correct = Number(userAnswer) === question.correctIndex;
   }
 
@@ -187,14 +209,13 @@ export function buildReviewPayload(quizId, answers, teacherNotes = {}) {
     };
 
     if (item?.autoGraded) {
-      review.modelAnswer =
-        q.type === "fill"
-          ? q.correctAnswer
-          : q.type === "match"
-            ? q.matchRight
-            : q.type === "order"
-              ? (q.orderItems || []).map((_, i) => q.orderItems[q.correctOrder[i]])
-              : q.optionsAr?.[q.correctIndex];
+      if (q.type === "fill") review.modelAnswer = q.correctAnswer;
+      else if (q.type === "match") review.modelAnswer = q.matchRight;
+      else if (q.type === "order") review.modelAnswer = (q.orderItems || []).map((_, i) => q.orderItems[q.correctOrder[i]]);
+      else if (q.type === "truth-table") review.modelAnswer = truthTableModelAnswer(q);
+      else if (q.type === "binary-cards") review.modelAnswer = `مجموع البطاقات = ${q.target}`;
+      else if (q.type === "binary-cards-sheet") review.modelAnswer = (q.targets || []).join("، ");
+      else review.modelAnswer = q.optionsAr?.[q.correctIndex];
       review.correctPairs = q.type === "match" ? q.correctPairs : undefined;
       review.correctOrder = q.type === "order" ? q.correctOrder : undefined;
     } else if (item?.gradingStatus === "pending_teacher_review") {

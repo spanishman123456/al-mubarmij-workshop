@@ -267,7 +267,7 @@ export function ServerQuizTakePage({ quizId }) {
           />
 
           <p className="mt-3 text-xs text-slate-500">
-            {qType === "essay" || qType === "code"
+            {["essay", "code", "code-editor"].includes(qType)
               ? "يُراجع المعلم هذا السؤال بعد الإرسال."
               : "تُصحَّح هذه الإجابة آلياً بعد الإرسال النهائي."}
           </p>

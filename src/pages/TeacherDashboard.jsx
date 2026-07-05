@@ -108,6 +108,9 @@ export default function TeacherDashboard() {
             إجابات المعلم — اليوم 3
           </Link>
           ) : null}
+          <Link to="/teacher/quiz-review" className="edu-btn edu-btn-outline text-sm">
+            مراجعة الاختبارات
+          </Link>
           <button
             type="button"
             onClick={handleRefresh}

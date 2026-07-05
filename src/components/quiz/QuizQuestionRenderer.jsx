@@ -1,13 +1,21 @@
 import { MatchQuestion } from "./MatchQuestion";
 import { OrderQuestion } from "./OrderQuestion";
+import { QuizTruthTableQuestion } from "./QuizTruthTableQuestion";
+import { QuizCardFlipQuestion, QuizCardSheetQuestion } from "./QuizCardFlipQuestion";
+import { QuizCodeEditorQuestion } from "./QuizCodeEditorQuestion";
+import { QuizFlowchartBuilderQuestion } from "./QuizFlowchartBuilderQuestion";
 
 export function questionTypeLabel(type) {
   if (type === "fill") return "إكمال";
   if (type === "truefalse") return "صح / خطأ";
   if (type === "essay") return "مقالي";
-  if (type === "code") return "برمجي";
+  if (type === "code" || type === "code-editor") return "برمجي";
   if (type === "match") return "مطابقة";
   if (type === "order") return "ترتيب";
+  if (type === "truth-table") return "جدول حقيقة";
+  if (type === "binary-cards") return "بطاقات";
+  if (type === "binary-cards-sheet") return "ورقة بطاقات";
+  if (type === "flowchart") return "مخطط تدفق";
   return "اختيار";
 }
 
@@ -48,16 +56,16 @@ export function QuizQuestionRenderer({ question, value, onChange, disabled, show
           disabled={disabled}
           dir="rtl"
         />
-      ) : qType === "code" ? (
-        <textarea
-          className="edu-input min-h-[180px] w-full resize-y bg-black/40 font-mono text-sm text-emerald-100 placeholder:text-slate-500"
-          placeholder="اكتب الكود هنا..."
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
-          dir="ltr"
-          spellCheck={false}
-        />
+      ) : qType === "code" || qType === "code-editor" ? (
+        <QuizCodeEditorQuestion question={question} value={value} onChange={onChange} disabled={disabled} />
+      ) : qType === "truth-table" ? (
+        <QuizTruthTableQuestion question={question} value={value} onChange={onChange} disabled={disabled} />
+      ) : qType === "binary-cards" ? (
+        <QuizCardFlipQuestion question={question} value={value} onChange={onChange} disabled={disabled} />
+      ) : qType === "binary-cards-sheet" ? (
+        <QuizCardSheetQuestion question={question} value={value} onChange={onChange} disabled={disabled} />
+      ) : qType === "flowchart" ? (
+        <QuizFlowchartBuilderQuestion question={question} value={value} onChange={onChange} disabled={disabled} />
       ) : qType === "match" ? (
         <MatchQuestion question={question} value={value} onChange={onChange} disabled={disabled} />
       ) : qType === "order" ? (

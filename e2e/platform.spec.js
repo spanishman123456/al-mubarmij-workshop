@@ -74,6 +74,28 @@ test.describe("binary cards lesson", () => {
   });
 });
 
+test.describe("pre-assessment quiz interactive", () => {
+  test("student uses card flip on quiz-pre and sees paginated UI", async ({ page }) => {
+    await loginStudent(page);
+    await page.goto("/quizzes/run/quiz-pre");
+    await expect(page.getByText("الاختبار القبلي").or(page.getByRole("heading", { name: /الاختبار القبلي/i }))).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText(/السؤال 1 من/)).toBeVisible({ timeout: 15000 });
+    const nextBtn = page.getByRole("button", { name: "التالي" });
+    for (let i = 0; i < 9; i += 1) {
+      if (await page.getByTestId("quiz-card-4").count()) break;
+      if (await nextBtn.isEnabled()) await nextBtn.click();
+    }
+    const card = page.getByTestId("quiz-card-4");
+    if (await card.count()) {
+      await card.click();
+      await expect(card).toHaveAttribute("aria-pressed", "true");
+    }
+    await expect(page.getByText("تم حفظ تقدمك.")).toBeVisible({ timeout: 10000 });
+  });
+});
+
 test.describe("onboarding pre-assessment gate", () => {
   test("student completes agreements only and can start day one without pre-test", async ({ page }) => {
     await loginStudent(page);
