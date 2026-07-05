@@ -5,7 +5,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createApp, prepareApp } from "./createApp.js";
 import { closeDatabase, resetDatabaseForTests } from "./db/index.js";
-import { loginStudent, loginTeacher, authFetch } from "./testHelpers.js";
+import { loginStudent, loginTeacher, authFetch, testTeacherPassword } from "./testHelpers.js";
 import { createSession, getSession, deleteSession } from "./auth/sessionRepository.js";
 
 const TEST_DB = fileURLToPath(new URL("./data/auth.session.test.db", import.meta.url));
@@ -99,7 +99,7 @@ describe("session security", () => {
   });
 
   it("teacher can access day-03 answers API", async () => {
-    const { cookie, csrf } = await loginTeacher(baseUrl, "2297033843", "babamama");
+    const { cookie, csrf } = await loginTeacher(baseUrl, "2297033843", testTeacherPassword());
     const res = await authFetch(baseUrl, "/api/teacher/day-03-answers", { cookie, csrf });
     expect(res.ok).toBe(true);
     const body = await res.json();

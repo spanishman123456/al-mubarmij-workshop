@@ -1,5 +1,5 @@
 import { STUDENTS_ROSTER } from "../../src/data/studentsRoster.js";
-import { verifyPassword, TEACHER_BCRYPT_HASH } from "./password.js";
+import { verifyPassword, getTeacherBcryptHash } from "./password.js";
 
 export const GENERIC_AUTH_ERROR = "Invalid credentials";
 
@@ -31,7 +31,7 @@ export function findStudentByNationalId(nationalId) {
 export function verifyTeacher(nationalId, password) {
   const nid = String(nationalId || "").replace(/\D/g, "");
   if (nid !== TEACHER_PROFILE.nationalId) return null;
-  if (!verifyPassword(password, TEACHER_BCRYPT_HASH)) return null;
+  if (!verifyPassword(password, getTeacherBcryptHash())) return null;
   return { ...TEACHER_PROFILE };
 }
 

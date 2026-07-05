@@ -2,7 +2,7 @@
 
 | الدرس | أقسام | أمثلة | موجه | مستقل | تحقق | أخطاء | تلميحات | تفاعلي | حفظ |
 |---|---:|---:|---:|---:|---:|---:|---|---|---|
-| `python-constants` | 2 | 2 | 2 | 2 | 1 | 2 | lab hints | IfStatementLab | API |
+| `python-constants` | 2 | 2 | 2 | 2 | 1 | 2 | lab hints | ConstantsLab | API |
 | `python-multi-arrays` | 3 | 2 | 2 | 2 | 1 | 2 | yes (labs) | MultiDimGridLab | API |
 | `python-break-continue` | 4 | 3 | 2 | 2 | 1 | 2 | yes (labs) | LoopControlLab | API |
 | `divisors-activity` | 2 | — | — | — | — | — | yes (labs) | DivisorsLab | API |

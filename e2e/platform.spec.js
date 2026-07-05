@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 const STUDENT_NID = "1165814631";
 const TEACHER_NID = "2297033843";
-const TEACHER_PASS = "babamama";
+const TEACHER_PASS = process.env.E2E_TEACHER_PASSWORD || "";
 
 async function loginStudent(page) {
   await page.goto("/login");
@@ -12,6 +12,9 @@ async function loginStudent(page) {
 }
 
 async function loginTeacher(page) {
+  if (!TEACHER_PASS) {
+    test.skip(true, "E2E_TEACHER_PASSWORD not set");
+  }
   await page.goto("/login");
   await page.getByRole("button", { name: "دخول المعلم" }).click();
   await page.getByTestId("teacher-national-id").fill(TEACHER_NID);

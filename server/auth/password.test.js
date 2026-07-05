@@ -1,9 +1,16 @@
-import { describe, it, expect } from "vitest";
-import { verifyPassword, TEACHER_BCRYPT_HASH } from "./password.js";
+import { describe, it, expect, beforeAll } from "vitest";
+import { verifyPassword, ensureTestTeacherCredentials } from "./password.js";
 
 describe("password hashing", () => {
-  it("verifies demo teacher password with bcrypt", () => {
-    expect(verifyPassword("babamama", TEACHER_BCRYPT_HASH)).toBe(true);
-    expect(verifyPassword("wrong", TEACHER_BCRYPT_HASH)).toBe(false);
+  let hash;
+  let password;
+
+  beforeAll(() => {
+    ({ hash, password } = ensureTestTeacherCredentials());
+  });
+
+  it("verifies teacher password with bcrypt", () => {
+    expect(verifyPassword(password, hash)).toBe(true);
+    expect(verifyPassword("wrong-password", hash)).toBe(false);
   });
 });

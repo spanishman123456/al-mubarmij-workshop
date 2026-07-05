@@ -1,9 +1,4 @@
-/** حساب المعلم — الطلاب يدخلون برقم الهوية من سجل Excel */
-
-import bcrypt from "bcryptjs";
-
-const TEACHER_BCRYPT_HASH =
-  "$2b$10$NGhTMh4FzzNhtIu2UTyhb.EboMQ6Yx6SV4DUZlaueD1xXJeqN0mWG";
+/** حساب المعلم — التحقق من كلمة المرور على الخادم فقط */
 
 export const TEACHER_PROFILE = {
   id: "teacher-1",
@@ -12,14 +7,16 @@ export const TEACHER_PROFILE = {
   nameAr: "معلم وحدة برمجة الحاسب — موهبة",
 };
 
-export async function findTeacher(username, password) {
+/** Client-side: national ID format only — password verified by POST /api/auth/teacher */
+export function isTeacherNationalId(username) {
   const nid = String(username || "").replace(/\D/g, "");
-  if (nid !== TEACHER_PROFILE.nationalId) return null;
-  const ok = bcrypt.compareSync(String(password || ""), TEACHER_BCRYPT_HASH);
-  if (!ok) return null;
-  return TEACHER_PROFILE;
+  return nid === TEACHER_PROFILE.nationalId;
 }
 
 export function findTeacherById(id) {
   return TEACHER_PROFILE.id === id ? TEACHER_PROFILE : null;
+}
+
+export function findTeacherProfileByNationalId(username) {
+  return isTeacherNationalId(username) ? TEACHER_PROFILE : null;
 }

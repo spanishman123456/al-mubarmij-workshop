@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "coverage:day03": "python scripts/generate-day03-coverage.py",
+    "hash:teacher-password": "node scripts/hash-teacher-password.mjs",
+    "backup:db": "node scripts/backup-db.mjs",
     "extract:pdf-inventory": "python scripts/extract-pdf-inventory.py",
     "test:makecode-compile": "node scripts/compileMakecodeGames.mjs",
     "preview": "vite preview"

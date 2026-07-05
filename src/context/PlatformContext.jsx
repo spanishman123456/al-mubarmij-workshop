@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { findTeacher } from "../data/demoUsers";
+import { findTeacherProfileByNationalId, findTeacherById } from "../data/demoUsers";
 import {
   findStudentByNationalId,
   rosterStudentToUser,
@@ -136,17 +136,18 @@ export function PlatformProvider({ children }) {
 
   const loginTeacher = useCallback(
     async (username, password) => {
-      const found = await findTeacher(username, password);
-      if (!found) return { ok: false, message: "بيانات الدخول غير صحيحة." };
+      const profileHint = findTeacherProfileByNationalId(username);
+      if (!profileHint) return { ok: false, message: "بيانات الدخول غير صحيحة." };
       try {
-        await loginTeacherApi(username, password);
+        const data = await loginTeacherApi(username, password);
+        const found = findTeacherById(data.user?.id) || profileHint;
+        persist((prev) => ({ ...prev, ...createSessionPatch(found.id) }));
+        await refreshTeacherAnalytics();
+        return { ok: true, user: found };
       } catch (err) {
         console.error("[platform] server auth failed", err);
-        return { ok: false, message: "تعذّر إنشاء جلسة الخادم." };
+        return { ok: false, message: "بيانات الدخول غير صحيحة." };
       }
-      persist((prev) => ({ ...prev, ...createSessionPatch(found.id) }));
-      await refreshTeacherAnalytics();
-      return { ok: true, user: found };
     },
     [persist, refreshTeacherAnalytics],
   );

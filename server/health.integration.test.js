@@ -5,14 +5,13 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createApp, prepareApp, getAppCommit } from "./createApp.js";
 import { closeDatabase, resetDatabaseForTests } from "./db/index.js";
-import { loginStudent, loginTeacher, authFetch } from "./testHelpers.js";
+import { loginStudent, loginTeacher, authFetch, testTeacherPassword } from "./testHelpers.js";
 
 const TEST_DB = fileURLToPath(new URL("./data/platform.integration.test.db", import.meta.url));
 const STUDENT_A_NID = "1165814631";
 const STUDENT_B_NID = "1167676921";
 const STUDENT_A = "stu-1165814631";
 const STUDENT_B = "stu-1167676921";
-const TEACHER_PASSWORD = "babamama";
 
 describe("API health + progress integration", () => {
   let baseUrl;
@@ -35,7 +34,7 @@ describe("API health + progress integration", () => {
 
     authA = await loginStudent(baseUrl, STUDENT_A_NID);
     authB = await loginStudent(baseUrl, STUDENT_B_NID);
-    authTeacher = await loginTeacher(baseUrl, "2297033843", TEACHER_PASSWORD);
+    authTeacher = await loginTeacher(baseUrl, "2297033843", testTeacherPassword());
   });
 
   afterAll(async () => {

@@ -80,6 +80,12 @@ export function deleteSessionsForUser(userId) {
   persistDatabase();
 }
 
+export function deleteSessionsForRole(role) {
+  if (!role) return;
+  runSql(`DELETE FROM auth_sessions WHERE role = ?`, [role]);
+  persistDatabase();
+}
+
 export function purgeExpiredSessions() {
   runSql(`DELETE FROM auth_sessions WHERE expires_at < ?`, [new Date().toISOString()]);
   persistDatabase();

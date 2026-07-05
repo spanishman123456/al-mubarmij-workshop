@@ -17,7 +17,7 @@ LESSONS = [
 ]
 
 INTERACTIVE = {
-    "python-constants": "IfStatementLab",
+    "python-constants": "ConstantsLab",
     "python-multi-arrays": "MultiDimGridLab",
     "python-break-continue": "LoopControlLab",
     "divisors-activity": "DivisorsLab",

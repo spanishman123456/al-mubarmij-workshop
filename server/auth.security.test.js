@@ -5,7 +5,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createApp, prepareApp } from "./createApp.js";
 import { closeDatabase, resetDatabaseForTests } from "./db/index.js";
-import { loginStudent, loginTeacher, authFetch } from "./testHelpers.js";
+import { loginStudent, loginTeacher, authFetch, testTeacherPassword } from "./testHelpers.js";
 
 const TEST_DB = fileURLToPath(new URL("./data/auth.security.test.db", import.meta.url));
 const STUDENT_A = "stu-1165814631";
@@ -32,7 +32,7 @@ describe("server auth / IDOR protection", () => {
 
     authA = await loginStudent(baseUrl, "1165814631");
     authB = await loginStudent(baseUrl, "1167676921");
-    authTeacher = await loginTeacher(baseUrl, "2297033843", "babamama");
+    authTeacher = await loginTeacher(baseUrl, "2297033843", testTeacherPassword());
   });
 
   afterAll(async () => {

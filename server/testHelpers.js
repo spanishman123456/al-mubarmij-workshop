@@ -1,4 +1,9 @@
 /** Helpers for integration / security tests (cookie session auth + CSRF). */
+import { getTestTeacherPassword } from "./auth/password.js";
+
+export function testTeacherPassword() {
+  return getTestTeacherPassword();
+}
 
 function allSetCookies(res) {
   if (typeof res.headers.getSetCookie === "function") {

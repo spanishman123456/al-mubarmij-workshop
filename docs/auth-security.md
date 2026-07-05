@@ -13,8 +13,10 @@
 
 | الدور | الآلية | ملاحظة |
 |---|---|---|
-| المعلم | **bcrypt** (cost 10) | لا SHA-256 مباشر |
+| المعلم | **bcrypt** hash في `TEACHER_BCRYPT_HASH` (env) | لا plaintext في الكود؛ `npm run hash:teacher-password` |
 | الطالب | رقم الهوية فقط | ⚠️ **خطر قبل الإنتاج** — يُنصح بOTP أو رمز فصل أو SSO موهبة |
+
+**تدوير كلمة المعلم:** عيّن hash جديد في Render، ثم `REVOKE_TEACHER_SESSIONS=1` لمرة واحدة عند إعادة التشغيل.
 
 ## ما لا يُخزَّن
 

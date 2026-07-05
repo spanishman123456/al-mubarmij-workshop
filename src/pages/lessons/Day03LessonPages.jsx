@@ -8,6 +8,7 @@ import { collatzLesson } from "../../content/lessons/day03/collatzLesson";
 import { truthTablesLesson } from "../../content/lessons/day03/truthTablesLesson";
 import { logicGatesLesson } from "../../content/lessons/day03/logicGatesLesson";
 import { IfStatementLab } from "../../components/lesson/IfStatementLab";
+import { ConstantsLab } from "../../components/lesson/ConstantsLab";
 import { MultiDimGridLab } from "../../components/lesson/MultiDimGridLab";
 import { LoopControlLab } from "../../components/lesson/LoopControlLab";
 import { DivisorsLab } from "../../components/lesson/DivisorsLab";
@@ -32,7 +33,7 @@ export function ConstantsLessonPage() {
   const { user } = usePlatform();
   return (
     <StandardLessonPage lesson={constantsLesson} backTo={BACK} nextLink={{ to: "/lessons/python-multi-arrays", label: "التالي →" }}>
-      <Lab><IfStatementLab lessonId={constantsLesson.id} userId={user?.id} initialCode={constantsLesson.interactiveExample.defaultValue} /></Lab>
+      <Lab><ConstantsLab lessonId={constantsLesson.id} userId={user?.id} initialCode={constantsLesson.interactiveExample.defaultValue} /></Lab>
     </StandardLessonPage>
   );
 }

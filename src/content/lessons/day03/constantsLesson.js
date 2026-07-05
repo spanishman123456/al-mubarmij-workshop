@@ -25,7 +25,7 @@ export const constantsLesson = {
     { id: "e1", titleAr: "PI", code: "PI = 3.14159\nr = 5\nprint(PI * r * r)", steps: ["PI=3.14159", "area≈78.54"], result: "area" },
     { id: "e2", titleAr: "MAX", code: "MAX = 100\nx = 150\nprint(x > MAX)", steps: ["150>100", "True"], result: "True" },
   ],
-  interactiveExample: { type: "if-lab", defaultValue: "MAX_SCORE = 100\nscore = 85\nprint(score <= MAX_SCORE)" },
+  interactiveExample: { type: "constants-lab", defaultValue: "MAX_SCORE = 100\nscore = 85\nprint(score <= MAX_SCORE)" },
   commonMistakes: [
     { titleAr: "lower case", bodyAr: "pi vs PI — الوضوح.", step: "name" },
     { titleAr: "reassign", bodyAr: "تغيير ثابت يربك القارئ.", step: "logic" },

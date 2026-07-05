@@ -9,7 +9,7 @@
     "quickCheckQuestions": 1,
     "commonMistakes": 2,
     "graduatedHints": "lab hints",
-    "interactive": "IfStatementLab",
+    "interactive": "ConstantsLab",
     "progressPersistence": "useLessonProgress + POST /api/lesson/progress, /api/lesson/attempt"
   },
   {
