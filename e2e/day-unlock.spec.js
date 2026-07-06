@@ -56,6 +56,8 @@ test.describe("sequential day unlock", () => {
     await page.goto("/path");
     await dayCard(page, "day-02").getByTestId("path-day-cta-day-02").click();
     await expect(page).toHaveURL(/\/path\/day\/day-02/);
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /اليوم الثاني — التحويلات/i })).toBeVisible();
+    await expect(page.getByText("المحتوى غير متاح بعد")).toHaveCount(0);
+    await expect(page.getByText(/سيتم فتح الدرس التالي وفق الجدول/i)).toHaveCount(0);
   });
 });

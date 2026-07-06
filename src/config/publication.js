@@ -51,13 +51,26 @@ export function getStudentDayState(dayId, dayUnlockMap) {
   return dayUnlockMap?.[dayId] || DayStudentState.DRAFT;
 }
 
+/** Server unlock state wins over stale VITE_PUBLISHED_DAYS in the client bundle. */
+export function canStudentAccessDayContent(dayId, dayUnlockMap, myStats) {
+  const state = getStudentDayState(dayId, dayUnlockMap);
+  if (state === DayStudentState.LOCKED) return false;
+  if (
+    state === DayStudentState.AVAILABLE ||
+    state === DayStudentState.IN_PROGRESS ||
+    state === DayStudentState.COMPLETED
+  ) {
+    return true;
+  }
+  return isCurriculumDayPublished(dayId, resolvePublishedDaysCount(myStats));
+}
+
 export function isStudentDayRouteAllowed(pathname, dayUnlockMap, role = "student", myStats = null) {
-  const publishedDays = resolvePublishedDaysCount(myStats);
-  if (role !== "student") return isPathPublished(pathname, publishedDays, role);
-  if (!isPathPublished(pathname, publishedDays, role)) return false;
+  if (role !== "student") {
+    return isPathPublished(pathname, resolvePublishedDaysCount(myStats), role);
+  }
   const day = routeContentDay(pathname);
   if (day == null || day === 0) return true;
   const dayId = day <= 9 ? `day-0${day}` : `day-${day}`;
-  const state = getStudentDayState(dayId, dayUnlockMap);
-  return state !== DayStudentState.DRAFT && state !== DayStudentState.LOCKED;
+  return canStudentAccessDayContent(dayId, dayUnlockMap, myStats);
 }

@@ -4,8 +4,9 @@ import { getDayById } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import {
-  isCurriculumDayPublished,
-  LOCKED_MESSAGE_AR,
+  canStudentAccessDayContent,
+  getStudentDayState,
+  DAY_SCHEDULE_MESSAGE_AR,
   DAY_LOCKED_MESSAGE_AR,
   DayStudentState,
 } from "../config/publication";
@@ -39,7 +40,8 @@ export default function DayLessonPage() {
   const [completeError, setCompleteError] = useState(null);
   const [completing, setCompleting] = useState(false);
   const dayUnlock = myStats?.dayUnlock?.dayCompletions?.[dayId];
-  const studentState = myStats?.dayUnlock?.dayUnlockMap?.[dayId];
+  const dayUnlockMap = myStats?.dayUnlock?.dayUnlockMap;
+  const studentState = getStudentDayState(dayId, dayUnlockMap);
   const done = dayUnlock?.completed || myProgress?.completedDays?.includes(dayId);
   const incomplete = dayUnlock?.incompleteItems || [];
 
@@ -55,24 +57,17 @@ export default function DayLessonPage() {
     );
   }
 
-  if (user?.role === "student" && !isCurriculumDayPublished(dayId)) {
+  if (user?.role === "student" && !canStudentAccessDayContent(dayId, dayUnlockMap, myStats)) {
+    const locked = studentState === DayStudentState.LOCKED;
     return (
-      <PageShell title="المحتوى غير متاح بعد" badge="الجدول التدريبي">
+      <PageShell
+        title={locked ? "اليوم مقفل" : "المحتوى غير متاح بعد"}
+        badge={locked ? "المسار التعليمي" : "الجدول التدريبي"}
+      >
         <EduCard accent="amber">
-          <p className="text-lg font-semibold text-slate-800">{LOCKED_MESSAGE_AR}</p>
-          <Link to="/path" className="edu-btn edu-btn-outline mt-4 inline-flex">
-            العودة للمسار
-          </Link>
-        </EduCard>
-      </PageShell>
-    );
-  }
-
-  if (user?.role === "student" && studentState === DayStudentState.LOCKED) {
-    return (
-      <PageShell title="اليوم مقفل" badge="المسار التعليمي">
-        <EduCard accent="amber">
-          <p className="text-lg font-semibold text-slate-800">{DAY_LOCKED_MESSAGE_AR}</p>
+          <p className="text-lg font-semibold text-slate-800">
+            {locked ? DAY_LOCKED_MESSAGE_AR : DAY_SCHEDULE_MESSAGE_AR}
+          </p>
           <Link to="/path" className="edu-btn edu-btn-outline mt-4 inline-flex">
             العودة للمسار
           </Link>
