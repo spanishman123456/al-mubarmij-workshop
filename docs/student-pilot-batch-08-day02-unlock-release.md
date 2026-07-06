@@ -13,8 +13,11 @@
 
 ```text
 PUBLISHED_DAYS=2
+VITE_PUBLISHED_DAYS=2
 STUDENT_UNLOCK_POLICY=sequential
 ```
+
+**مهم:** يجب ضبط `VITE_PUBLISHED_DAYS` بنفس قيمة `PUBLISHED_DAYS` عند البناء على Render، وإلا قد يظهر اليوم الثاني «متاح الآن» بدون زر دخول (تم إصلاح ذلك في commit لاحق، لكن المتغيران يجب أن يتطابقا).
 
 **لا تغيّر Render إلى `feature/full-curriculum-expansion` مباشرة** — استخدم هذا الفرع فقط.
 

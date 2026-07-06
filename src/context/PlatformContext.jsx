@@ -70,6 +70,7 @@ function mapComputedToStats(computed) {
     lastPythonRunAt: computed.lastPythonRunAt ?? null,
     pythonActivityNoteAr: computed.pythonActivityNoteAr ?? null,
     dayUnlock: computed.dayUnlock ?? null,
+    publishedDays: computed.publishedDays ?? computed.dayUnlock?.publishedDays ?? null,
   };
 }
 

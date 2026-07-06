@@ -21,7 +21,7 @@ export function PublishedContentGate({ children }) {
   const role = user.role;
   const dayUnlockMap = myStats?.dayUnlock?.dayUnlockMap;
 
-  if (isStudentDayRouteAllowed(pathname, dayUnlockMap, role)) return children;
+  if (isStudentDayRouteAllowed(pathname, dayUnlockMap, role, myStats)) return children;
 
   if (role === "student") {
     const day = routeContentDay(pathname);

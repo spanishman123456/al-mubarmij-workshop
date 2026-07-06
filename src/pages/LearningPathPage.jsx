@@ -4,13 +4,13 @@ import { usePlatform } from "../context/PlatformContext";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import {
-  getPublishedDaysCount,
+  resolvePublishedDaysCount,
   isCurriculumDayPublished,
-  LOCKED_MESSAGE_AR,
   DayStudentState,
   DAY_SCHEDULE_MESSAGE_AR,
   DAY_LOCKED_MESSAGE_AR,
 } from "../config/publication";
+import { canStudentAccessDayResources, getPathDayCardAction } from "../lib/pathDayCardUi";
 
 const SIM_LABELS = {
   "number-converter": "محوّل الأنظمة",
@@ -35,8 +35,8 @@ export default function LearningPathPage() {
   const { user, myProgress, myStats } = usePlatform();
   const completed = new Set(myProgress?.completedDays ?? []);
   const wsStatus = myProgress?.worksheetStatus ?? {};
-  const publishedDays = getPublishedDaysCount();
-  const visibleDays = curriculumDays.filter((d) => isCurriculumDayPublished(d.id));
+  const publishedDays = resolvePublishedDaysCount(myStats);
+  const visibleDays = curriculumDays.filter((d) => isCurriculumDayPublished(d.id, publishedDays));
   const dayUnlockMap = myStats?.dayUnlock?.dayUnlockMap || {};
 
   const hero =
@@ -75,21 +75,20 @@ export default function LearningPathPage() {
               {week.dayIds.map((dayId) => {
                 const day = getDayById(dayId);
                 if (!day) return null;
-                const published = isCurriculumDayPublished(dayId);
+                const published = isCurriculumDayPublished(dayId, publishedDays);
                 const studentState =
                   user?.role === "student" ? dayUnlockMap[dayId] || DayStudentState.DRAFT : null;
                 const badge = studentState ? STATE_BADGE[studentState] : null;
                 const done = studentState === DayStudentState.COMPLETED || completed.has(dayId);
                 const wsDone = day.worksheetId && wsStatus[day.worksheetId] === "completed";
-                const canStart =
-                  user?.role !== "student" ||
-                  studentState === DayStudentState.AVAILABLE ||
-                  studentState === DayStudentState.IN_PROGRESS ||
-                  studentState === DayStudentState.COMPLETED;
+                const canAccessResources =
+                  user?.role !== "student" ? published : canStudentAccessDayResources(studentState);
+                const cardAction = user?.role === "student" ? getPathDayCardAction(studentState) : null;
 
                 return (
                   <article
                     key={dayId}
+                    data-day-id={dayId}
                     className={`path-day-card ${done ? "path-day-card--done" : ""} ${!published ? "opacity-90" : ""}`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -129,7 +128,7 @@ export default function LearningPathPage() {
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-                      {published && canStart && day.worksheetId ? (
+                      {canAccessResources && day.worksheetId ? (
                         <Link
                           to={`/worksheets/${day.worksheetId}`}
                           className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
@@ -141,7 +140,7 @@ export default function LearningPathPage() {
                           ورقة عمل {wsDone ? "✓" : ""}
                         </Link>
                       ) : null}
-                      {published && canStart && day.quizId ? (
+                      {canAccessResources && day.quizId ? (
                         <Link
                           to={`/quizzes/run/${day.quizId}`}
                           className="rounded-lg bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
@@ -151,20 +150,28 @@ export default function LearningPathPage() {
                       ) : null}
                     </div>
 
-                    {canStart && published ? (
+                    {user?.role !== "student" && published ? (
                       <Link
                         to={`/path/day/${dayId}`}
                         className="edu-btn edu-btn-primary mt-4 w-full text-center"
                       >
-                        {studentState === DayStudentState.COMPLETED ? "مراجعة اليوم" : "ابدأ الدرس"}
+                        {done ? "مراجعة اليوم" : "ابدأ الدرس"}
                       </Link>
-                    ) : studentState === DayStudentState.LOCKED ? (
+                    ) : cardAction?.kind === "link" ? (
+                      <Link
+                        to={`/path/day/${dayId}`}
+                        className="edu-btn edu-btn-primary mt-4 w-full text-center"
+                        data-testid={`path-day-cta-${dayId}`}
+                      >
+                        {cardAction.label}
+                      </Link>
+                    ) : cardAction?.kind === "locked" ? (
                       <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-center text-sm font-semibold text-slate-700">
                         {DAY_LOCKED_MESSAGE_AR}
                       </div>
                     ) : (
                       <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-center text-sm font-semibold text-amber-900">
-                        {published ? LOCKED_MESSAGE_AR : DAY_SCHEDULE_MESSAGE_AR}
+                        {DAY_SCHEDULE_MESSAGE_AR}
                       </div>
                     )}
                   </article>

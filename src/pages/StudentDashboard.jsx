@@ -8,7 +8,7 @@ import { MawhibaBrand } from "../components/branding/MawhibaBrand";
 import { getAttendanceStatus, maskNationalId, defaultAnalytics } from "../lib/platformAnalytics";
 import { defaultProgressForStudent } from "../lib/platformStore";
 import { LtrValue, formatFraction, formatPercent } from "../components/LtrValue";
-import { getPublishedDaysCount } from "../config/publication";
+import { resolvePublishedDaysCount } from "../config/publication";
 
 const QUICK_LINKS = [
   { to: "/path", title: "المسار الدراسي", desc: "15 يومًا من الدروس والأنشطة" },
@@ -72,7 +72,7 @@ export default function StudentDashboard() {
     logout,
     progressSyncStatus: syncStatusRaw,
   } = usePlatform();
-  const publishedDays = getPublishedDaysCount();
+  const publishedDays = resolvePublishedDaysCount(myStats);
   const progressSyncStatus = syncStatusRaw ?? {
     loading: false,
     saving: false,

@@ -18,6 +18,40 @@ export async function loginStudent(page, nid = STUDENT_NID) {
   await expect(page).toHaveURL(/\/student/);
 }
 
+async function csrfFromPageCookies(page) {
+  const cookies = await page.context().cookies();
+  return cookies.find((c) => c.name === "platform_csrf")?.value || "";
+}
+
+async function syncStudentProgress(page, progress) {
+  const csrf = await csrfFromPageCookies(page);
+  const sync = await page.request.post("/api/progress/sync", {
+    headers: { "X-CSRF-Token": csrf },
+    data: { progress },
+  });
+  expect(sync.ok()).toBeTruthy();
+}
+
+/** Mark day 1 complete via API after student login. */
+export async function seedStudentDay1Complete(page, nid = STUDENT_NID) {
+  await loginStudent(page, nid);
+  await syncStudentProgress(page, {
+    completedDays: ["day-01"],
+    dayCompletionTimes: { "day-01": new Date().toISOString() },
+  });
+}
+
+export async function isDay2LockedForStudent(page) {
+  const res = await page.request.get("/api/student/day-unlock");
+  const map = (await res.json()).dayUnlockMap;
+  return map?.["day-02"] === "locked";
+}
+
+/** Login student without day 1 completion (for locked-day E2E). */
+export async function seedStudentDay1Incomplete(page, nid) {
+  await loginStudent(page, nid);
+}
+
 /** Scroll to lesson progress footer and mark complete if needed. */
 export async function assertLessonProgressSaved(page) {
   const completeBtn = page.getByRole("button", { name: /أكملت هذا الدرس/i });
