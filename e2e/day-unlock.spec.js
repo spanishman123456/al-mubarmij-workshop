@@ -32,12 +32,12 @@ test.describe("sequential day unlock", () => {
     await expect(page.getByRole("heading", { name: /اليوم مقفل|المحتوى غير متاح/i })).toBeVisible();
   });
 
-  test("day 3 shows draft schedule message", async ({ page }) => {
+  test("unpublished day shows draft schedule message for students", async ({ page }) => {
     await loginStudent(page, ELIGIBLE_STUDENT);
     await page.goto("/path");
-    const day3 = dayCard(page, "day-03");
-    await expect(day3.getByText("غير منشور")).toBeVisible();
-    await expect(day3.getByText(/سيتم فتحه وفق الجدول/i)).toBeVisible();
+    const day5 = dayCard(page, "day-05");
+    await expect(day5.getByText("غير منشور")).toBeVisible();
+    await expect(day5.getByText(/سيتم فتحه وفق الجدول/i)).toBeVisible();
   });
 
   test("eligible student sees start button on day 2 even if VITE_PUBLISHED_DAYS=1", async ({ page }) => {

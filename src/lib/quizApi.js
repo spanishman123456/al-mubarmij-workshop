@@ -27,6 +27,10 @@ async function request(path, options = {}) {
   return data;
 }
 
+export async function fetchTeacherQuizPreviewApi(quizId) {
+  return request(`/api/teacher/quiz/${quizId}/preview`);
+}
+
 export async function fetchQuizPublicApi(quizId) {
   return request(`/api/quiz/${quizId}/public`);
 }

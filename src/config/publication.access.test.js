@@ -3,6 +3,7 @@ import { DayStudentState } from "../lib/dayUnlockPolicy.js";
 import {
   canStudentAccessDayContent,
   isStudentDayRouteAllowed,
+  resolvePublishedDaysForRole,
 } from "./publication.js";
 
 describe("publication day access", () => {
@@ -23,5 +24,16 @@ describe("publication day access", () => {
   it("blocks day-03 as draft when only two days published", () => {
     const map = { "day-03": DayStudentState.DRAFT };
     expect(canStudentAccessDayContent("day-03", map, statsPublished2)).toBe(false);
+  });
+
+  it("allows teacher to open any path day regardless of unlock map", () => {
+    const map = { "day-02": DayStudentState.LOCKED, "day-05": DayStudentState.DRAFT };
+    expect(isStudentDayRouteAllowed("/path/day/day-02", map, "teacher", statsPublished2)).toBe(true);
+    expect(isStudentDayRouteAllowed("/path/day/day-05", map, "teacher", statsPublished2)).toBe(true);
+  });
+
+  it("teacher resolves all 15 curriculum days for preview filters", () => {
+    expect(resolvePublishedDaysForRole("teacher", null)).toBe(15);
+    expect(resolvePublishedDaysForRole("student", statsPublished2)).toBe(2);
   });
 });

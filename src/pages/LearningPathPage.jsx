@@ -4,11 +4,14 @@ import { usePlatform } from "../context/PlatformContext";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import {
-  resolvePublishedDaysCount,
+  resolvePublishedDaysForRole,
   isCurriculumDayPublished,
+  resolvePublishedDaysCount,
   DayStudentState,
   DAY_SCHEDULE_MESSAGE_AR,
   DAY_LOCKED_MESSAGE_AR,
+  TEACHER_PREVIEW_BADGE_AR,
+  isTeacherRole,
 } from "../config/publication";
 import { canStudentAccessDayResources, getPathDayCardAction } from "../lib/pathDayCardUi";
 
@@ -35,7 +38,8 @@ export default function LearningPathPage() {
   const { user, myProgress, myStats } = usePlatform();
   const completed = new Set(myProgress?.completedDays ?? []);
   const wsStatus = myProgress?.worksheetStatus ?? {};
-  const publishedDays = resolvePublishedDaysCount(myStats);
+  const publishedDays = resolvePublishedDaysForRole(user?.role, myStats);
+  const isTeacher = isTeacherRole(user?.role);
   const visibleDays = curriculumDays.filter((d) => isCurriculumDayPublished(d.id, publishedDays));
   const dayUnlockMap = myStats?.dayUnlock?.dayUnlockMap || {};
 
@@ -76,13 +80,14 @@ export default function LearningPathPage() {
                 const day = getDayById(dayId);
                 if (!day) return null;
                 const published = isCurriculumDayPublished(dayId, publishedDays);
+                const studentPublished = isCurriculumDayPublished(dayId, resolvePublishedDaysCount(myStats));
                 const studentState =
                   user?.role === "student" ? dayUnlockMap[dayId] || DayStudentState.DRAFT : null;
                 const badge = studentState ? STATE_BADGE[studentState] : null;
                 const done = studentState === DayStudentState.COMPLETED || completed.has(dayId);
                 const wsDone = day.worksheetId && wsStatus[day.worksheetId] === "completed";
                 const canAccessResources =
-                  user?.role !== "student" ? published : canStudentAccessDayResources(studentState);
+                  isTeacher || canStudentAccessDayResources(studentState);
                 const cardAction = user?.role === "student" ? getPathDayCardAction(studentState) : null;
 
                 return (
@@ -93,7 +98,11 @@ export default function LearningPathPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <span className="path-day-num">{day.dayNumber}</span>
-                      {badge ? (
+                      {isTeacher && !studentPublished ? (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                          {TEACHER_PREVIEW_BADGE_AR}
+                        </span>
+                      ) : badge ? (
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${badge.className}`}>
                           {badge.label}
                         </span>
@@ -150,12 +159,13 @@ export default function LearningPathPage() {
                       ) : null}
                     </div>
 
-                    {user?.role !== "student" && published ? (
+                    {isTeacher ? (
                       <Link
                         to={`/path/day/${dayId}`}
                         className="edu-btn edu-btn-primary mt-4 w-full text-center"
+                        data-testid={`path-day-cta-${dayId}`}
                       >
-                        {done ? "مراجعة اليوم" : "ابدأ الدرس"}
+                        معاينة اليوم
                       </Link>
                     ) : cardAction?.kind === "link" ? (
                       <Link

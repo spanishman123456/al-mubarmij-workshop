@@ -13,6 +13,7 @@ import { getStudentProgress } from "../repositories/progressRepository.js";
 import {
   buildReviewPayload,
   getPublicQuizPayload,
+  getTeacherPreviewQuizPayload,
   gradeAttempt,
   isServerBankQuiz,
 } from "../quiz/quizService.js";
@@ -141,6 +142,21 @@ export function registerQuizRoutes(app, logError) {
       });
     } catch (err) {
       logError("quiz.review", err);
+      res.status(500).json({ ok: false, error: "failed" });
+    }
+  });
+
+  app.get("/api/teacher/quiz/:quizId/preview", requireAuth, requireRole("teacher"), (req, res) => {
+    try {
+      const { quizId } = req.params;
+      if (!isServerBankQuiz(quizId)) {
+        return res.status(404).json({ ok: false, error: "not_server_quiz" });
+      }
+      const payload = getTeacherPreviewQuizPayload(quizId);
+      if (!payload) return res.status(404).json({ ok: false, error: "not_found" });
+      res.json({ ok: true, ...payload });
+    } catch (err) {
+      logError("quiz.teacher.preview", err);
       res.status(500).json({ ok: false, error: "failed" });
     }
   });

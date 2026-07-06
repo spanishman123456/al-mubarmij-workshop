@@ -6,7 +6,7 @@ import { worksheets15Days } from "../data/worksheets15Days";
 import { WEEKS_15 } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
-import { isCurriculumDayPublished } from "../config/publication";
+import { isCurriculumDayPublished, resolvePublishedDaysForRole } from "../config/publication";
 
 function unitTitle(unitId) {
   return curriculumUnits.find((u) => u.id === unitId)?.titleAr ?? unitId;
@@ -14,8 +14,9 @@ function unitTitle(unitId) {
 
 export default function WorksheetsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { myProgress } = usePlatform();
+  const { myProgress, user } = usePlatform();
   const wsStatus = myProgress?.worksheetStatus ?? {};
+  const publishedDays = resolvePublishedDaysForRole(user?.role, null);
 
   const view = searchParams.get("view") === "units" ? "units" : "path";
   const weekFilter = Number(searchParams.get("week")) || 0;
@@ -24,10 +25,10 @@ export default function WorksheetsPage() {
     unitParam && curriculumUnits.some((u) => u.id === unitParam) ? unitParam : "all";
 
   const pathList = useMemo(() => {
-    let list = worksheets15Days.filter((w) => isCurriculumDayPublished(w.dayId));
+    let list = worksheets15Days.filter((w) => isCurriculumDayPublished(w.dayId, publishedDays));
     if (weekFilter > 0) list = list.filter((w) => w.weekNumber === weekFilter);
     return list;
-  }, [weekFilter]);
+  }, [weekFilter, publishedDays]);
 
   const unitList = useMemo(() => {
     if (unitFilter === "all") return worksheets;

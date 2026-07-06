@@ -20,6 +20,8 @@ export function PublishedContentGate({ children }) {
   if (!authReady || !user) return children;
 
   const role = user.role;
+  if (role === "teacher") return children;
+
   const dayUnlockMap = myStats?.dayUnlock?.dayUnlockMap;
 
   if (

@@ -66,11 +66,21 @@ export function canStudentAccessDayContent(dayId, dayUnlockMap, myStats) {
 }
 
 export function isStudentDayRouteAllowed(pathname, dayUnlockMap, role = "student", myStats = null) {
-  if (role !== "student") {
-    return isPathPublished(pathname, resolvePublishedDaysCount(myStats), role);
-  }
+  if (role === "teacher") return true;
   const day = routeContentDay(pathname);
   if (day == null || day === 0) return true;
   const dayId = day <= 9 ? `day-0${day}` : `day-${day}`;
   return canStudentAccessDayContent(dayId, dayUnlockMap, myStats);
+}
+
+export const TEACHER_PREVIEW_BADGE_AR = "معاينة المعلم — غير منشور للطلاب بعد";
+
+export function isTeacherRole(role) {
+  return role === "teacher";
+}
+
+/** Days visible to students per publish policy; teachers preview all curriculum days. */
+export function resolvePublishedDaysForRole(role, myStats) {
+  if (isTeacherRole(role)) return 15;
+  return resolvePublishedDaysCount(myStats);
 }

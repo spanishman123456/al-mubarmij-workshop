@@ -191,6 +191,20 @@ export function gradeAttempt(quizId, answers) {
   };
 }
 
+function modelAnswerForQuestion(q) {
+  const type = q.type || "mcq";
+  if (type === "fill") return q.correctAnswer;
+  if (type === "match") return q.matchRight;
+  if (type === "order") return (q.orderItems || []).map((_, i) => q.orderItems[q.correctOrder[i]]);
+  if (type === "truth-table") return truthTableModelAnswer(q);
+  if (type === "binary-cards") return `مجموع البطاقات = ${q.target}`;
+  if (type === "binary-cards-sheet") return (q.targets || []).join("، ");
+  if (type === "flowchart") return q.correctFlow;
+  if (type === "logic-circuit") return logicCircuitModelLabel(q);
+  if (["essay", "code", "code-editor"].includes(type)) return q.modelAnswerAr || "يُراجع المعلم هذه الإجابة.";
+  return q.optionsAr?.[q.correctIndex];
+}
+
 export function buildReviewPayload(quizId, answers, teacherNotes = {}) {
   const graded = gradeAttempt(quizId, answers);
   if (!graded) return null;
@@ -218,14 +232,7 @@ export function buildReviewPayload(quizId, answers, teacherNotes = {}) {
     };
 
     if (item?.autoGraded) {
-      if (q.type === "fill") review.modelAnswer = q.correctAnswer;
-      else if (q.type === "match") review.modelAnswer = q.matchRight;
-      else if (q.type === "order") review.modelAnswer = (q.orderItems || []).map((_, i) => q.orderItems[q.correctOrder[i]]);
-      else if (q.type === "truth-table") review.modelAnswer = truthTableModelAnswer(q);
-      else if (q.type === "binary-cards") review.modelAnswer = `مجموع البطاقات = ${q.target}`;
-      else if (q.type === "binary-cards-sheet") review.modelAnswer = (q.targets || []).join("، ");
-      else if (q.type === "logic-circuit") review.modelAnswer = logicCircuitModelLabel(q);
-      else review.modelAnswer = q.optionsAr?.[q.correctIndex];
+      review.modelAnswer = modelAnswerForQuestion(q);
       review.correctPairs = q.type === "match" ? q.correctPairs : undefined;
       review.correctOrder = q.type === "order" ? q.correctOrder : undefined;
     } else if (item?.gradingStatus === "pending_teacher_review") {
@@ -246,5 +253,34 @@ export function buildReviewPayload(quizId, answers, teacherNotes = {}) {
       manualPending: graded.manualPending,
     },
     questions,
+  };
+}
+
+export function getTeacherPreviewQuizPayload(quizId) {
+  const bank = getQuizBank(quizId);
+  if (!bank) return null;
+  const questions = bank.map((q) => {
+    const sanitized = sanitizeQuestion(q);
+    return {
+      ...sanitized,
+      id: q.id,
+      pdfOrder: q.pdfOrder,
+      type: q.type || "mcq",
+      questionAr: q.questionAr,
+      explainAr: q.explainAr,
+      lessonLink: q.lessonLink || null,
+      modelAnswer: modelAnswerForQuestion(q),
+      correctPairs: q.type === "match" ? q.correctPairs : undefined,
+      correctOrder: q.type === "order" ? q.correctOrder : undefined,
+    };
+  });
+  return {
+    quizId,
+    titleAr: quizId === "quiz-pre" ? "الاختبار القبلي" : "الاختبار البعدي",
+    mode: "teacher_preview",
+    diagnostic: quizId === "quiz-pre",
+    totalQuestions: questions.length,
+    questions,
+    sectionMeta: getSectionsForQuiz(quizId).map(({ id, titleAr }) => ({ id, titleAr })),
   };
 }

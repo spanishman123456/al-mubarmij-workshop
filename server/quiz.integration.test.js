@@ -5,15 +5,17 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createApp, prepareApp } from "./createApp.js";
 import { closeDatabase, resetDatabaseForTests } from "./db/index.js";
-import { loginStudent, authFetch } from "./testHelpers.js";
+import { loginStudent, loginTeacher, authFetch, testTeacherPassword } from "./testHelpers.js";
 
 const TEST_DB = fileURLToPath(new URL("./data/quiz.integration.test.db", import.meta.url));
 const STUDENT_NID = "1165814631";
+const TEACHER_NID = "2297033843";
 
 describe("quiz API integration", () => {
   let baseUrl;
   let server;
   let authStudent;
+  let authTeacher;
   let submittedAttemptId;
 
   beforeAll(async () => {
@@ -28,6 +30,7 @@ describe("quiz API integration", () => {
     });
     baseUrl = `http://127.0.0.1:${server.address().port}`;
     authStudent = await loginStudent(baseUrl, STUDENT_NID);
+    authTeacher = await loginTeacher(baseUrl, TEACHER_NID, testTeacherPassword());
   });
 
   afterAll(async () => {
@@ -112,5 +115,49 @@ describe("quiz API integration", () => {
       body: JSON.stringify({ answers: { "pre-01a": "000000" } }),
     });
     expect(patch.status).toBe(409);
+  });
+
+  it("teacher preview returns model answers without creating attempt", async () => {
+    const res = await authFetch(baseUrl, "/api/teacher/quiz/quiz-pre/preview", {
+      cookie: authTeacher.cookie,
+      csrf: authTeacher.csrf,
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.mode).toBe("teacher_preview");
+    expect(body.totalQuestions).toBe(108);
+    expect(body.questions[0].modelAnswer).toBeTruthy();
+    expect(body.questions[0].explainAr).toBeTruthy();
+  });
+
+  it("student cannot access teacher quiz preview", async () => {
+    const res = await authFetch(baseUrl, "/api/teacher/quiz/quiz-pre/preview", {
+      cookie: authStudent.cookie,
+      csrf: authStudent.csrf,
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("student public quiz has no answer keys", async () => {
+    const res = await authFetch(baseUrl, "/api/quiz/quiz-post/public", {
+      cookie: authStudent.cookie,
+      csrf: authStudent.csrf,
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const q = body.sections.flatMap((s) => s.questions)[0];
+    expect(q.correctAnswer).toBeUndefined();
+    expect(q.explainAr).toBeUndefined();
+  });
+
+  it("teacher preview for post assessment is available", async () => {
+    const res = await authFetch(baseUrl, "/api/teacher/quiz/quiz-post/preview", {
+      cookie: authTeacher.cookie,
+      csrf: authTeacher.csrf,
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.quizId).toBe("quiz-post");
+    expect(body.questions.length).toBeGreaterThan(0);
   });
 });

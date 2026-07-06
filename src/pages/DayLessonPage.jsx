@@ -9,6 +9,10 @@ import {
   DAY_SCHEDULE_MESSAGE_AR,
   DAY_LOCKED_MESSAGE_AR,
   DayStudentState,
+  TEACHER_PREVIEW_BADGE_AR,
+  isTeacherRole,
+  isCurriculumDayPublished,
+  resolvePublishedDaysForRole,
 } from "../config/publication";
 
 const SIM_LINKS = {
@@ -42,6 +46,8 @@ export default function DayLessonPage() {
   const dayUnlock = myStats?.dayUnlock?.dayCompletions?.[dayId];
   const dayUnlockMap = myStats?.dayUnlock?.dayUnlockMap;
   const studentState = getStudentDayState(dayId, dayUnlockMap);
+  const isTeacher = isTeacherRole(user?.role);
+  const studentPublished = isCurriculumDayPublished(dayId, resolvePublishedDaysForRole("student", myStats));
   const done = dayUnlock?.completed || myProgress?.completedDays?.includes(dayId);
   const incomplete = dayUnlock?.incompleteItems || [];
 
@@ -95,6 +101,15 @@ export default function DayLessonPage() {
       <Link to="/path" className="mb-6 inline-flex text-sm font-semibold text-violet-700 hover:text-violet-900">
         ← المسار الدراسي
       </Link>
+
+      {isTeacher && !studentPublished ? (
+        <EduCard className="mb-6" accent="amber">
+          <p className="font-semibold text-amber-900">{TEACHER_PREVIEW_BADGE_AR}</p>
+          <p className="mt-2 text-sm text-amber-800">
+            أنت تعرض هذا اليوم كمعلم. الطلاب لا يرونه حتى يُنشر وفق سياسة النشر وفتح الأيام.
+          </p>
+        </EduCard>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">

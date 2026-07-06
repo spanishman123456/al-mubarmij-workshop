@@ -5,7 +5,7 @@ import { curriculumDays } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell } from "../components/layout/PageShell";
 import { getQuizQuestionCount } from "../lib/quizEngine";
-import { getPublishedDaysCount, isCurriculumDayPublished } from "../config/publication";
+import { getPublishedDaysCount, isCurriculumDayPublished, isTeacherRole, resolvePublishedDaysForRole } from "../config/publication";
 
 function unitTitle(unitId) {
   if (!unitId) return "جميع الوحدات";
@@ -13,8 +13,11 @@ function unitTitle(unitId) {
 }
 
 export default function QuizzesPage() {
-  const { myProgress } = usePlatform();
+  const { myProgress, user } = usePlatform();
   const scores = myProgress?.quizScores ?? {};
+  const isTeacher = isTeacherRole(user?.role);
+  const studentPublishedDays = resolvePublishedDaysForRole("student", null);
+  const publishedDays = resolvePublishedDaysForRole(user?.role, null);
 
   const byUnit = curriculumUnits.map((u) => ({
     unit: u,
@@ -23,14 +26,19 @@ export default function QuizzesPage() {
   const comprehensive = quizzes.filter(
     (q) => q.unitId == null && !["quiz-pre", "quiz-post"].includes(q.id) && !q.id.startsWith("quiz-day"),
   );
-  const prePost = quizzes.filter((q) => {
-    if (!["quiz-pre", "quiz-post"].includes(q.id)) return false;
-    if (q.id === "quiz-post" && getPublishedDaysCount() < 15) return false;
-    return true;
-  });
+  const prePost = quizzes
+    .filter((q) => ["quiz-pre", "quiz-post"].includes(q.id))
+    .map((q) => ({
+      quiz: q,
+      locked: !isTeacher && q.id === "quiz-post" && studentPublishedDays < 15,
+      lockedReason:
+        q.id === "quiz-post"
+          ? "يفتح في نهاية المسار — أسئلة مختلفة عن القبلي لقياس التحسن."
+          : null,
+    }));
   const dayQuizzes = curriculumDays
     .filter((d) => d.quizId && !["quiz-pre", "quiz-post"].includes(d.quizId))
-    .filter((d) => isCurriculumDayPublished(d.id))
+    .filter((d) => isCurriculumDayPublished(d.id, publishedDays))
     .map((d) => ({
       day: d,
       quiz: quizzes.find((q) => q.id === d.quizId),
@@ -47,12 +55,21 @@ export default function QuizzesPage() {
         <section className="mb-10">
           <h2 className="text-xl font-bold text-slate-900">التقويم القبلي والبعدي</h2>
           <p className="mt-1 text-sm text-slate-600">
-            القبلي يقيس مستواك قبل البدء ({PRE_TEST_QUESTION_BANK.length} سؤالاً تغطي محاور المنهج)؛ البعدي
-            بعد إتمام المنهج ({POST_TEST_QUESTION_BANK.length} سؤالاً مختلفاً) — للمقارنة مع المعلم.
+            القبلي تشخيصي قبل البدء ({PRE_TEST_QUESTION_BANK.length} سؤالاً من بنك PDF الرسمي)؛ البعدي
+            مستقل ({POST_TEST_QUESTION_BANK.length} سؤالاً مختلفاً) — يُقارَن مع القبلي لقياس التحسن.
+            {isTeacher ? " يمكنك معاينة الاختبارين مع الإجابات النموذجية." : ""}
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {prePost.map((q) => (
-              <QuizCard key={q.id} quiz={q} score={scores[q.id]} variant="prepost" />
+            {prePost.map(({ quiz, locked, lockedReason }) => (
+              <QuizCard
+                key={quiz.id}
+                quiz={quiz}
+                score={scores[quiz.id]}
+                variant="prepost"
+                locked={locked}
+                lockedReason={lockedReason}
+                previewLink={isTeacher ? `/quizzes/run/${quiz.id}` : undefined}
+              />
             ))}
           </div>
         </section>
@@ -117,7 +134,7 @@ export default function QuizzesPage() {
   );
 }
 
-function QuizCard({ quiz, score, variant, badge }) {
+function QuizCard({ quiz, score, variant, badge, locked, lockedReason, previewLink }) {
   const questionCount = getQuizQuestionCount(quiz);
   const passLabel =
     quiz.passPercent > 0 ? `نجاح من ${quiz.passPercent}٪` : "بدون معيار نجاح إلزامي";
@@ -141,9 +158,19 @@ function QuizCard({ quiz, score, variant, badge }) {
         {questionCount} أسئلة · {passLabel}
         {score ? ` · نتيجتك: ${score.percent}%` : ""}
       </p>
-      <Link to={`/quizzes/run/${quiz.id}`} className="edu-btn edu-btn-primary mt-4 w-fit text-sm">
-        {score ? "إعادة" : "ابدأ"}
-      </Link>
+      {locked ? (
+        <>
+          <p className="mt-3 text-sm font-semibold text-amber-800">مقفل حتى نهاية المسار</p>
+          {lockedReason ? <p className="mt-1 text-xs text-amber-700">{lockedReason}</p> : null}
+        </>
+      ) : (
+        <Link
+          to={previewLink || `/quizzes/run/${quiz.id}`}
+          className="edu-btn edu-btn-primary mt-4 w-fit text-sm"
+        >
+          {previewLink ? "معاينة المعلم" : score ? "إعادة" : "ابدأ"}
+        </Link>
+      )}
     </article>
   );
 }

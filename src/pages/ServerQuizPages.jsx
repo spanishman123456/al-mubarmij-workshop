@@ -12,9 +12,11 @@ import {
   fetchQuizAttemptApi,
   fetchQuizPublicApi,
   fetchQuizReviewApi,
+  fetchTeacherQuizPreviewApi,
   saveQuizAttemptApi,
   submitQuizAttemptApi,
 } from "../lib/quizApi";
+import { TEACHER_PREVIEW_BADGE_AR } from "../config/publication";
 import { usePlatform } from "../context/PlatformContext";
 
 function isAnswered(value) {
@@ -26,17 +28,20 @@ function isAnswered(value) {
 export function ServerQuizTakePage({ quizId }) {
   const navigate = useNavigate();
   const { savePreAssessmentProgress, user } = usePlatform();
+  const isTeacher = user?.role === "teacher";
   const isPreAssessment = quizId === "quiz-pre";
   const saveTimerRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [quiz, setQuiz] = useState(null);
+  const [teacherPreview, setTeacherPreview] = useState(null);
   const [attempt, setAttempt] = useState(null);
   const [answers, setAnswers] = useState({});
   const [meta, setMeta] = useState({ sectionIndex: 0, questionIndex: 0, flagged: {} });
   const [saveMessage, setSaveMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   const submitted = attempt?.status === "submitted";
 
@@ -44,14 +49,21 @@ export function ServerQuizTakePage({ quizId }) {
     let cancelled = false;
     (async () => {
       try {
-        const [pub, att] = await Promise.all([fetchQuizPublicApi(quizId), fetchQuizAttemptApi(quizId)]);
-        if (cancelled) return;
-        setQuiz(pub);
-        setAttempt(att.attempt);
-        setAnswers(att.attempt.answers || {});
-        setMeta({ sectionIndex: 0, questionIndex: 0, flagged: {}, ...(att.attempt.meta || {}) });
-        if (att.attempt.status === "submitted") {
-          navigate(`/quizzes/review/${att.attempt.id}`, { replace: true });
+        if (isTeacher) {
+          const preview = await fetchTeacherQuizPreviewApi(quizId);
+          if (cancelled) return;
+          setTeacherPreview(preview);
+          setQuiz({ titleAr: preview.titleAr, sections: [] });
+        } else {
+          const [pub, att] = await Promise.all([fetchQuizPublicApi(quizId), fetchQuizAttemptApi(quizId)]);
+          if (cancelled) return;
+          setQuiz(pub);
+          setAttempt(att.attempt);
+          setAnswers(att.attempt.answers || {});
+          setMeta({ sectionIndex: 0, questionIndex: 0, flagged: {}, ...(att.attempt.meta || {}) });
+          if (att.attempt.status === "submitted") {
+            navigate(`/quizzes/review/${att.attempt.id}`, { replace: true });
+          }
         }
       } catch {
         if (!cancelled) setError("تعذر تحميل الاختبار — تحقق من الاتصال.");
@@ -62,7 +74,7 @@ export function ServerQuizTakePage({ quizId }) {
     return () => {
       cancelled = true;
     };
-  }, [quizId, navigate]);
+  }, [quizId, navigate, isTeacher]);
 
   const flatQuestions = useMemo(() => {
     if (!quiz?.sections) return [];
@@ -175,6 +187,18 @@ export function ServerQuizTakePage({ quizId }) {
       <div className="min-h-screen bg-[#0a0e1a] pb-24 pt-24 text-center font-ar text-white">
         <p>جاري تحميل الاختبار…</p>
       </div>
+    );
+  }
+
+  if (isTeacher && teacherPreview) {
+    return (
+      <TeacherQuizPreviewView
+        preview={teacherPreview}
+        quizId={quizId}
+        previewIndex={previewIndex}
+        setPreviewIndex={setPreviewIndex}
+        onBack={() => navigate("/quizzes")}
+      />
     );
   }
 
@@ -349,6 +373,127 @@ export function ServerQuizTakePage({ quizId }) {
         ) : (
           saveMessage && <p className="mt-2 text-center text-sm text-slate-300">{saveMessage}</p>
         )}
+      </div>
+    </div>
+  );
+}
+
+function formatModelAnswer(q) {
+  const v = q.modelAnswer;
+  if (v == null) return "—";
+  if (Array.isArray(v)) return v.join(" → ");
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}
+
+function TeacherQuizPreviewView({ preview, quizId, previewIndex, setPreviewIndex, onBack }) {
+  const questions = preview.questions || [];
+  const current = questions[previewIndex];
+  const isPre = quizId === "quiz-pre";
+
+  if (!current) {
+    return (
+      <div className="min-h-screen bg-[#0a0e1a] pb-24 pt-24 text-center font-ar text-white">
+        <p>لا توجد أسئلة في هذا الاختبار.</p>
+        <button type="button" onClick={onBack} className="edu-btn edu-btn-outline press-scale mt-4">
+          العودة
+        </button>
+      </div>
+    );
+  }
+
+  const qType = current.type || "mcq";
+
+  return (
+    <div className="min-h-screen bg-[#0a0e1a] pb-24 pt-24 font-ar text-white" data-testid="teacher-quiz-preview">
+      <div className="mx-auto max-w-3xl animate-slide-up px-4">
+        <button type="button" onClick={onBack} className="press-scale mb-6 text-sm text-slate-400 transition hover:text-white">
+          ← العودة للاختبارات
+        </button>
+
+        <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-950/30 p-4 text-sm text-amber-100">
+          <p className="font-bold">معاينة المعلم</p>
+          <p className="mt-1">{TEACHER_PREVIEW_BADGE_AR}</p>
+          <p className="mt-2 text-xs text-amber-200/90">
+            لا تُنشأ محاولة طالب ولا تُحسب نتيجة — للمراجعة والإشراف فقط.
+            {isPre ? " الاختبار القبلي تشخيصي ولا يمنع تقدم الطالب." : " الاختبار البعدي مستقل عن القبلي لقياس التحسن."}
+          </p>
+        </div>
+
+        <header className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6">
+          <h1 className="text-2xl font-bold">{preview.titleAr}</h1>
+          <p className="mt-2 text-sm text-slate-300">
+            {questions.length} سؤالاً · وضع المعاينة مع الإجابات النموذجية والشرح
+          </p>
+        </header>
+
+        <fieldset className="quiz-question-card rounded-2xl border border-white/10 bg-black/30 p-5" dir="rtl">
+          <legend className="px-2 text-lg font-bold">
+            السؤال {previewIndex + 1} من {questions.length}
+            <span className="mr-2 text-xs font-normal text-violet-300">({questionTypeLabel(qType)})</span>
+          </legend>
+          <p className="mb-4 whitespace-pre-wrap text-right leading-relaxed text-slate-200">{current.questionAr}</p>
+
+          {current.codeSnippetAr ? (
+            <pre
+              className="mb-4 overflow-x-auto rounded-xl border border-white/10 bg-black/50 p-4 text-left text-sm text-emerald-200"
+              dir="ltr"
+            >
+              {current.codeSnippetAr}
+            </pre>
+          ) : null}
+
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-sm">
+            <p className="font-bold text-emerald-200">الإجابة النموذجية</p>
+            <p className="mt-2 whitespace-pre-wrap text-emerald-100" dir="auto">
+              {formatModelAnswer(current)}
+            </p>
+          </div>
+
+          {current.explainAr ? (
+            <p className="mt-4 border-t border-white/10 pt-4 text-sm text-slate-300">
+              <span className="font-semibold text-violet-300">الشرح: </span>
+              {current.explainAr}
+            </p>
+          ) : null}
+        </fieldset>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="edu-btn edu-btn-outline text-sm"
+            disabled={previewIndex === 0}
+            onClick={() => setPreviewIndex((i) => Math.max(0, i - 1))}
+          >
+            السابق
+          </button>
+          <button
+            type="button"
+            className="edu-btn edu-btn-outline text-sm"
+            disabled={previewIndex >= questions.length - 1}
+            onClick={() => setPreviewIndex((i) => Math.min(questions.length - 1, i + 1))}
+          >
+            التالي
+          </button>
+        </div>
+
+        <div className="mt-4 max-h-32 overflow-y-auto rounded-xl border border-white/10 bg-black/20 p-3">
+          <p className="mb-2 text-xs font-bold text-slate-400">قائمة الأسئلة</p>
+          <div className="flex flex-wrap gap-1">
+            {questions.map((q, i) => (
+              <button
+                key={q.id}
+                type="button"
+                onClick={() => setPreviewIndex(i)}
+                className={`h-8 w-8 rounded text-xs font-bold ${
+                  i === previewIndex ? "bg-violet-600 text-white" : "bg-white/10 text-slate-400"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
