@@ -12,6 +12,13 @@ import { PyAppPreview } from "../components/python/PyAppPreview";
 import { ProjectExportPanel } from "../components/python/ProjectExportPanel";
 import { AppModeHelp } from "../components/python/AppModeHelp";
 import { StepLearningPanel } from "../components/python/StepLearningPanel";
+import { PythonCodeEditor } from "../components/python/PythonCodeEditor";
+import {
+  CODE_ASSIST_LABELS_AR,
+  getBuildTimeAssistMode,
+  parseAssistMode,
+} from "../config/pythonLabSettings.js";
+import { fetchPlatformSettingsPublic, savePythonAssistMode } from "../lib/platformSettingsApi.js";
 import { getStepPlan } from "../data/stepLearningPlans.js";
 import {
   checkStep,
@@ -46,6 +53,8 @@ export default function PythonLab() {
   const [unitFilter, setUnitFilter] = useState("all");
   const [savedProjectId, setSavedProjectId] = useState(null);
   const [projectTitle, setProjectTitle] = useState("");
+  const [assistMode, setAssistMode] = useState(getBuildTimeAssistMode);
+  const [assistSaving, setAssistSaving] = useState(false);
 
   const exercise = useMemo(
     () => pythonExercises.find((e) => e.id === activeId) ?? pythonExercises[0],
@@ -189,6 +198,23 @@ export default function PythonLab() {
     ensureSkulptLoaded().catch(() => {});
     return () => stopAppSession();
   }, [stopAppSession]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchPlatformSettingsPublic();
+        if (!cancelled && data.pythonCodeAssist) {
+          setAssistMode(parseAssistMode(data.pythonCodeAssist));
+        }
+      } catch {
+        /* fallback to build-time default */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id || user.role !== "student" || draftRestoredRef.current) return;
@@ -407,6 +433,22 @@ export default function PythonLab() {
     window.alert(ok ? "تم إرسال المشروع للمعلم بنجاح." : "تعذر الإرسال — احفظ المشروع أولاً.");
   }
 
+  async function handleAssistModeChange(next) {
+    const mode = parseAssistMode(next);
+    setAssistMode(mode);
+    if (user?.role !== "teacher") return;
+    setAssistSaving(true);
+    try {
+      await savePythonAssistMode(mode);
+    } catch {
+      window.alert("تعذر حفظ إعداد المساعدة — حاول لاحقًا.");
+    } finally {
+      setAssistSaving(false);
+    }
+  }
+
+  const activeUnitId = runMode === "console" ? exercise?.unitId : appTemplate?.unitId;
+
   const errorPanel = feedback ? (
     <div
       className="min-h-[180px] space-y-3 rounded-xl border border-amber-500/35 bg-amber-950/25 p-4 text-right"
@@ -552,17 +594,38 @@ export default function PythonLab() {
           </>
         )}
 
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+          <p className="text-sm text-slate-300">
+            المساعدة أثناء كتابة الكود:{" "}
+            <span className="font-bold text-violet-200">{CODE_ASSIST_LABELS_AR[assistMode]}</span>
+          </p>
+          {user?.role === "teacher" ? (
+            <label className="flex items-center gap-2 text-sm text-slate-400">
+              <span>إعداد المعلم:</span>
+              <select
+                className="edu-select-dark text-sm"
+                value={assistMode}
+                disabled={assistSaving}
+                onChange={(e) => handleAssistModeChange(e.target.value)}
+                data-testid="python-assist-mode-select"
+              >
+                <option value="full">مفعّلة</option>
+                <option value="reduced">مخفّضة</option>
+                <option value="off">متوقفة</option>
+              </select>
+            </label>
+          ) : null}
+        </div>
+
         <div className="grid gap-6 lg:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm text-slate-400">الكود</label>
-            <textarea
-              dir="ltr"
-              className="code-editor min-h-[min(70vh,480px)] w-full resize-y"
+            <PythonCodeEditor
               value={code}
-              onChange={(e) => setCode(e.target.value)}
-              spellCheck={false}
-              autoCapitalize="off"
-              autoCorrect="off"
+              onChange={setCode}
+              assistMode={assistMode}
+              unitId={activeUnitId}
+              appMode={runMode === "app"}
             />
             {runMode === "console" ? (
               <p className="mt-2 text-xs leading-relaxed text-slate-500">

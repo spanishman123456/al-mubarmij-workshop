@@ -128,4 +128,4 @@ export function resetDatabaseForTests() {
   }
 }
 
-export { getDbPath as DB_PATH, getDbBackupPath as DB_BACKUP_PATH, writeCount as __writeCountForTests };
+export { getDbPath, getDbPath as DB_PATH, getDbBackupPath as DB_BACKUP_PATH, writeCount as __writeCountForTests };

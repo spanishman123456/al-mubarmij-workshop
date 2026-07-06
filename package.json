@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "hash:teacher-password": "node scripts/hash-teacher-password.mjs",
-    "backup:db": "node scripts/backup-db.mjs",
+    "deploy:render-pilot": "node scripts/render-deploy-pilot.mjs",
     "extract:pdf-inventory": "python scripts/extract-pdf-inventory.py",
     "test:makecode-compile": "node scripts/compileMakecodeGames.mjs",
     "preview": "vite preview"

@@ -1,0 +1,27 @@
+name: Deploy student pilot to Render
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Git commit SHA to deploy
+        required: false
+        default: "457c1cb"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          COMMIT: ${{ github.event.inputs.commit }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL secret is not set"
+            exit 1
+          fi
+          URL="${DEPLOY_HOOK}&ref=${COMMIT}"
+          echo "Deploying commit ${COMMIT}..."
+          curl -fsS -X POST "$URL"
+          echo "Deploy triggered."
