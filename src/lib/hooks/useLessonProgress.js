@@ -56,6 +56,7 @@ export function useLessonProgress({ studentId, lessonId, sectionId = "main", aut
       setSaving(true);
       try {
         await saveLessonProgressApi(studentId, lessonId, sectionId, next, markCompleted || completed);
+        window.dispatchEvent(new CustomEvent("platform:lesson-progress-saved"));
       } finally {
         setSaving(false);
       }

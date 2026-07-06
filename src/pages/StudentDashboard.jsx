@@ -5,6 +5,8 @@ import { curriculumDays } from "../data/curriculum15Days";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { MawhibaBrand } from "../components/branding/MawhibaBrand";
 import { getAttendanceStatus, maskNationalId } from "../lib/platformAnalytics";
+import { LtrValue, formatFraction, formatPercent } from "../components/LtrValue";
+import { getPublishedDaysCount } from "../config/publication";
 
 const QUICK_LINKS = [
   { to: "/path", title: "المسار الدراسي", desc: "15 يومًا من الدروس والأنشطة" },
@@ -19,7 +21,9 @@ const QUICK_LINKS = [
 function formatDate(iso) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleString("ar-SA", { dateStyle: "short", timeStyle: "short" });
+    return (
+      <LtrValue>{new Date(iso).toLocaleString("ar-SA", { dateStyle: "short", timeStyle: "short" })}</LtrValue>
+    );
   } catch {
     return "—";
   }
@@ -57,7 +61,8 @@ function DashboardError({ onLogout }) {
 }
 
 export default function StudentDashboard() {
-  const { user, authReady, myStats, myProgress, myAnalytics, logout } = usePlatform();
+  const { user, authReady, myStats, myProgress, myAnalytics, logout, progressSyncStatus } = usePlatform();
+  const publishedDays = getPublishedDaysCount();
 
   if (!authReady) {
     return <DashboardLoading />;
@@ -70,7 +75,7 @@ export default function StudentDashboard() {
   const pre = myProgress.preTest?.percent;
   const post = myProgress.postTest?.percent;
   const growth = pre != null && post != null ? post - pre : null;
-  const attendance = getAttendanceStatus(myAnalytics, myStats);
+  const attendance = myStats?.attendanceStatus || getAttendanceStatus(myAnalytics, myStats);
   const wsPending = Object.entries(myProgress.worksheetStatus || {}).filter(
     ([, s]) => s !== "completed",
   ).length;
@@ -78,6 +83,11 @@ export default function StudentDashboard() {
   const recentDays = curriculumDays
     .filter((d) => !(myProgress.completedDays || []).includes(d.id))
     .slice(0, 3);
+
+  const completedLessons = myStats?.completedLessons ?? myStats?.completedDays ?? 0;
+  const totalLessons = myStats?.totalPublishedLessons ?? publishedDays;
+  const requiredDone = myStats?.completedRequiredItems ?? 0;
+  const requiredTotal = myStats?.requiredItems ?? 0;
 
   return (
     <PageShell
@@ -103,7 +113,7 @@ export default function StudentDashboard() {
         <div className="flex flex-wrap gap-4 text-sm text-slate-700">
           <p>
             <span className="font-bold text-slate-900">الهوية: </span>
-            {maskNationalId(user.nationalId)}
+            <LtrValue>{maskNationalId(user.nationalId)}</LtrValue>
           </p>
           <p>
             <span className="font-bold text-slate-900">الصف: </span>
@@ -121,22 +131,64 @@ export default function StudentDashboard() {
         <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-800">
           آخر نشاط: {formatDate(myAnalytics.lastActivityAt)}
         </span>
+        {progressSyncStatus.fetchedAt ? (
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+            آخر تحديث: {formatDate(progressSyncStatus.fetchedAt)}
+          </span>
+        ) : null}
+        {progressSyncStatus.saving ? (
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">جاري الحفظ...</span>
+        ) : null}
       </div>
 
       <EduCard accent="violet">
-        <ProgressBar value={myStats?.overallPercent ?? 0} label="التقدم العام في المنهج" />
+        <ProgressBar value={myStats?.overallPercent ?? 0} label="التقدم في المحتوى المتاح" />
+        {requiredTotal > 0 ? (
+          <p className="mt-2 text-sm text-slate-600">
+            أكملت{" "}
+            <LtrValue>{formatFraction(requiredDone, requiredTotal)}</LtrValue> عناصر إلزامية —{" "}
+            <LtrValue>{formatPercent(myStats?.overallPercent ?? 0)}</LtrValue>
+          </p>
+        ) : null}
+        {myStats?.pathProgress?.pathLabelAr ? (
+          <p className="mt-1 text-xs text-slate-500">{myStats.pathProgress.pathLabelAr}</p>
+        ) : null}
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Stat label="الدروس المكتملة" value={`${myStats?.completedDays ?? 0} / ${myStats?.totalDays ?? 15}`} />
-          <Stat label="أوراق العمل المنجزة" value={myStats?.worksheetsDone ?? 0} />
-          <Stat label="أوراق معلّقة" value={wsPending} />
-          <Stat label="أكواد بايثون" value={myProgress.pythonSnippets?.length ?? 0} />
-          <Stat label="مشاريع رسومية" value={myProgress.graphicProjects?.length ?? 0} />
-          <Stat label="التقويم القبلي" value={pre != null ? `${pre}%` : "لم يُجرَ"} />
-          <Stat label="التقويم البعدي" value={post != null ? `${post}%` : "لم يُجرَ"} />
-          <Stat label="نمو الأداء" value={growth != null ? (growth >= 0 ? `+${growth}%` : `${growth}%`) : "—"} />
+          <Stat
+            label="الدروس المكتملة (منشورة)"
+            value={<LtrValue>{formatFraction(completedLessons, totalLessons)}</LtrValue>}
+          />
+          <Stat label="أوراق العمل المنجزة" value={<LtrValue>{myStats?.worksheetsDone ?? 0}</LtrValue>} />
+          <Stat label="أوراق معلّقة" value={<LtrValue>{wsPending}</LtrValue>} />
+          <Stat label="أكواد بايثون" value={<LtrValue>{myProgress.pythonSnippets?.length ?? 0}</LtrValue>} />
+          <Stat label="مشاريع رسومية" value={<LtrValue>{myProgress.graphicProjects?.length ?? 0}</LtrValue>} />
+          <Stat
+            label="التقويم القبلي (تشخيصي)"
+            value={
+              myStats?.preAssessmentLabelAr ||
+              (pre != null ? <LtrValue>{formatPercent(pre)}</LtrValue> : "لم يُجرَ")
+            }
+          />
+          <Stat
+            label="التقويم البعدي"
+            value={post != null ? <LtrValue>{formatPercent(post)}</LtrValue> : "لم يُجرَ"}
+          />
+          <Stat
+            label="نمو الأداء"
+            value={
+              growth != null ? (
+                <LtrValue>{growth >= 0 ? `+${growth}%` : `${growth}%`}</LtrValue>
+              ) : (
+                "—"
+              )
+            }
+          />
           <Stat label="المشروع النهائي" value={myProgress.project?.status ?? "لم يبدأ"} />
-          <Stat label="مشاريع micro:bit" value={`${myStats?.microbitDone ?? 0} / 9`} />
-          <Stat label="عدد الدخول" value={myAnalytics.loginCount ?? 0} />
+          <Stat
+            label="مشاريع micro:bit"
+            value={<LtrValue>{formatFraction(myStats?.microbitDone ?? 0, 9)}</LtrValue>}
+          />
+          <Stat label="عدد الدخول" value={<LtrValue>{myAnalytics.loginCount ?? 0}</LtrValue>} />
         </div>
       </EduCard>
 
@@ -178,7 +230,7 @@ export default function StudentDashboard() {
 
       <EduCard className="mt-8" title="آخر الدروس المتاحة" accent="cyan">
         <ul className="mt-3 space-y-2">
-          {curriculumDays.slice(0, 5).map((d) => {
+          {curriculumDays.slice(0, publishedDays).map((d) => {
             const done = (myProgress.completedDays || []).includes(d.id);
             return (
               <li key={d.id} className="flex items-center justify-between text-sm">

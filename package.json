@@ -18,6 +18,7 @@
     "deploy:render-pilot": "node scripts/render-deploy-pilot.mjs",
     "extract:pdf-inventory": "python scripts/extract-pdf-inventory.py",
     "test:makecode-compile": "node scripts/compileMakecodeGames.mjs",
+    "recalculate:progress": "node scripts/recalculate-progress.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

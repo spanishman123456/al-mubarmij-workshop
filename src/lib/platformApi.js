@@ -78,6 +78,29 @@ export async function fetchOnboardingAll() {
   return request("/api/onboarding/all");
 }
 
+export async function fetchComputedProgressMe() {
+  return request("/api/progress/me");
+}
+
+export async function fetchComputedProgressDetailsMe() {
+  return request("/api/progress/me/details");
+}
+
+export async function fetchTeacherRosterProgress() {
+  return request("/api/progress/teacher/roster");
+}
+
+export async function fetchTeacherStudentProgress(studentId) {
+  return request(`/api/teacher/students/${encodeURIComponent(studentId)}/progress`);
+}
+
+export async function recalculateProgressApi(reason = "teacher_recalculate") {
+  return request("/api/progress/recalculate", {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export async function syncProgressApi(_studentId, progress) {
   return request("/api/progress/sync", {
     method: "POST",

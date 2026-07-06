@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { findTeacherProfileByNationalId, findTeacherById } from "../data/demoUsers";
 import {
   findStudentByNationalId,
@@ -24,7 +24,7 @@ import {
   mergeRemoteAnalytics,
 } from "../lib/platformAnalytics";
 import { reportLoginEvent, reportActivityPatch, fetchAllAnalytics } from "../lib/analyticsApi";
-import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi } from "../lib/platformApi";
+import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi, syncProgressApi, fetchComputedProgressMe, fetchTeacherRosterProgress } from "../lib/platformApi";
 import {
   loadValidatedPlatformState,
   resolveSessionUser,
@@ -40,6 +40,33 @@ const PlatformContext = createContext(null);
 
 const LOGIN_SESSION_KEY = "mubarmij-login-session-id";
 let activitySyncTimer = null;
+
+function mapComputedToStats(computed) {
+  if (!computed) return null;
+  return {
+    overallPercent: computed.availableProgressPercent ?? computed.overallPercent ?? 0,
+    completedDays: computed.completedDays ?? 0,
+    totalDays: computed.totalDays ?? 15,
+    totalPublishedLessons: computed.totalPublishedLessons ?? 0,
+    completedLessons: computed.completedLessons ?? 0,
+    worksheetsDone: computed.worksheetsDone ?? computed.completedWorksheets ?? 0,
+    quizCount: computed.completedQuizzes ?? 0,
+    drillsDone: 0,
+    microbitDone: computed.microbitDone ?? 0,
+    preTest: computed.preTest ?? null,
+    postTest: computed.postTest ?? null,
+    projectStatus: computed.projectStatus ?? "not_started",
+    completedRequiredItems: computed.completedRequiredItems ?? 0,
+    requiredItems: computed.requiredItems ?? 0,
+    pathProgress: computed.pathProgress ?? null,
+    calculatedAt: computed.calculatedAt ?? null,
+    progressVersion: computed.progressVersion ?? "v2",
+    preAssessmentStatus: computed.preAssessmentStatus,
+    preAssessmentLabelAr: computed.preAssessmentLabelAr,
+    attendanceStatus: computed.attendanceStatus,
+    details: computed.details ?? null,
+  };
+}
 
 function getOrCreateLoginSessionId() {
   try {
@@ -81,6 +108,13 @@ export function PlatformProvider({ children }) {
   const [authReady, setAuthReady] = useState(false);
   const [remoteAnalyticsByStudent, setRemoteAnalyticsByStudent] = useState({});
   const [analyticsSyncStatus, setAnalyticsSyncStatus] = useState({ loading: false, error: null, fetchedAt: null });
+  const [serverStatsByStudent, setServerStatsByStudent] = useState({});
+  const [progressSyncStatus, setProgressSyncStatus] = useState({
+    loading: false,
+    saving: false,
+    error: null,
+    fetchedAt: null,
+  });
 
   useEffect(() => {
     setAuthReady(true);
@@ -125,6 +159,23 @@ export function PlatformProvider({ children }) {
         error: null,
         fetchedAt: res.fetchedAt || new Date().toISOString(),
       });
+      try {
+        const roster = await fetchTeacherRosterProgress();
+        if (roster.ok && roster.byStudent) {
+          const mapped = {};
+          for (const [sid, computed] of Object.entries(roster.byStudent)) {
+            mapped[sid] = mapComputedToStats(computed);
+          }
+          setServerStatsByStudent(mapped);
+          setProgressSyncStatus((s) => ({
+            ...s,
+            fetchedAt: roster.fetchedAt || new Date().toISOString(),
+            error: null,
+          }));
+        }
+      } catch (err) {
+        console.error("[platform] teacher roster progress", err?.message || err);
+      }
       return { ok: true };
     }
     setAnalyticsSyncStatus({
@@ -134,6 +185,65 @@ export function PlatformProvider({ children }) {
     });
     return { ok: false, error: res.error };
   }, []);
+
+  const progressSyncTimerRef = useRef(null);
+
+  const applyServerComputed = useCallback((studentId, computed) => {
+    const stats = mapComputedToStats(computed);
+    if (!stats) return;
+    setServerStatsByStudent((prev) => ({ ...prev, [studentId]: stats }));
+    setProgressSyncStatus((s) => ({
+      ...s,
+      fetchedAt: computed.calculatedAt || new Date().toISOString(),
+      error: null,
+      loading: false,
+      saving: false,
+    }));
+  }, []);
+
+  const refreshMyComputedProgress = useCallback(async (studentId, localProgress) => {
+    if (!studentId) return;
+    setProgressSyncStatus((s) => ({ ...s, loading: true, error: null }));
+    try {
+      const synced = await syncProgressApi(studentId, localProgress);
+      if (synced.computed) {
+        applyServerComputed(studentId, synced.computed);
+        return synced.computed;
+      }
+      const me = await fetchComputedProgressMe();
+      if (me.computed) applyServerComputed(studentId, me.computed);
+      return me.computed;
+    } catch (err) {
+      setProgressSyncStatus((s) => ({
+        ...s,
+        loading: false,
+        error: err?.message || "تعذّر مزامنة التقدم",
+      }));
+      return null;
+    }
+  }, [applyServerComputed]);
+
+  const scheduleProgressSync = useCallback(
+    (studentId, progress) => {
+      if (!studentId || !progress) return;
+      if (progressSyncTimerRef.current) clearTimeout(progressSyncTimerRef.current);
+      setProgressSyncStatus((s) => ({ ...s, saving: true, error: null }));
+      progressSyncTimerRef.current = setTimeout(async () => {
+        try {
+          const res = await syncProgressApi(studentId, progress);
+          if (res.computed) applyServerComputed(studentId, res.computed);
+        } catch (err) {
+          console.error("[platform] progress sync failed", err?.message || err);
+          setProgressSyncStatus((s) => ({
+            ...s,
+            saving: false,
+            error: err?.message || "تعذّر الحفظ",
+          }));
+        }
+      }, 2000);
+    },
+    [applyServerComputed],
+  );
 
   const loginTeacher = useCallback(
     async (username, password) => {
@@ -168,12 +278,14 @@ export function PlatformProvider({ children }) {
       }
       const sessionId = getOrCreateLoginSessionId();
       let updatedAnalytics = null;
+      let updatedProgress = null;
 
       persist((prev) => {
         let next = { ...prev, ...createSessionPatch(student.id) };
         next = ensureStudentRecords(next, student.id);
         const current = next.analyticsByStudent[student.id];
         updatedAnalytics = recordLogin(current, { sessionId });
+        updatedProgress = getStudentProgress(next, student.id);
         next.analyticsByStudent = {
           ...next.analyticsByStudent,
           [student.id]: updatedAnalytics,
@@ -193,9 +305,10 @@ export function PlatformProvider({ children }) {
       }
 
       resetActivityTracking();
+      refreshMyComputedProgress(student.id, updatedProgress).catch(() => {});
       return { ok: true, user: student };
     },
-    [persist],
+    [persist, refreshMyComputedProgress],
   );
 
   const logout = useCallback(
@@ -294,9 +407,30 @@ export function PlatformProvider({ children }) {
   }, [state.analyticsByStudent, sessionUserId, isStudentSession]);
 
   const myStats = useMemo(() => {
-    if (!myProgress) return null;
+    if (!myProgress || !sessionUserId) return null;
+    const server = serverStatsByStudent[sessionUserId];
+    if (server) return server;
     return computeProgressStats(myProgress);
-  }, [myProgress]);
+  }, [myProgress, sessionUserId, serverStatsByStudent]);
+
+  useEffect(() => {
+    if (!authReady || !sessionUserId || !isStudentSession || !myProgress) return;
+    scheduleProgressSync(sessionUserId, myProgress);
+  }, [authReady, sessionUserId, isStudentSession, myProgress, scheduleProgressSync]);
+
+  useEffect(() => {
+    if (!authReady || !sessionUserId || !isStudentSession) return;
+    refreshMyComputedProgress(sessionUserId, myProgress).catch(() => {});
+  }, [authReady, sessionUserId, isStudentSession]);
+
+  useEffect(() => {
+    if (!sessionUserId || !isStudentSession) return;
+    function onLessonProgressSaved() {
+      refreshMyComputedProgress(sessionUserId, myProgress).catch(() => {});
+    }
+    window.addEventListener("platform:lesson-progress-saved", onLessonProgressSaved);
+    return () => window.removeEventListener("platform:lesson-progress-saved", onLessonProgressSaved);
+  }, [sessionUserId, isStudentSession, myProgress, refreshMyComputedProgress]);
 
   const updateMyProgress = useCallback(
     (patch) => {
@@ -733,14 +867,16 @@ export function PlatformProvider({ children }) {
       const localAnalytics = getStudentAnalytics(state, student.id);
       const remoteAnalytics = remoteAnalyticsByStudent[student.id];
       const analytics = mergeRemoteAnalytics(localAnalytics, remoteAnalytics);
+      const serverStats = serverStatsByStudent[student.id];
+      const stats = serverStats || computeProgressStats(progress);
       return {
         student,
         progress,
         analytics,
-        stats: computeProgressStats(progress),
+        stats,
       };
     });
-  }, [state, remoteAnalyticsByStudent]);
+  }, [state, remoteAnalyticsByStudent, serverStatsByStudent]);
 
   useEffect(() => {
     if (!authReady) return;
@@ -830,6 +966,8 @@ export function PlatformProvider({ children }) {
       isStudentSession,
       refreshTeacherAnalytics,
       analyticsSyncStatus,
+      progressSyncStatus,
+      refreshMyComputedProgress,
       state,
     ],
   );

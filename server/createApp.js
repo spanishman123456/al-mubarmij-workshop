@@ -12,6 +12,7 @@ import {
   mergeAnalytics,
 } from "./analyticsStore.js";
 import { registerPlatformRoutes } from "./routes/platformRoutes.js";
+import { registerProgressRoutes } from "./routes/progressRoutes.js";
 import { registerQuizRoutes } from "./routes/quizRoutes.js";
 import { registerAuthRoutes, ensureRateLimitSchema } from "./auth/authRoutes.js";
 import { requireAuth, requireRole } from "./auth/middleware.js";
@@ -158,6 +159,7 @@ export async function prepareApp(app) {
   ensureSessionSchema();
   ensureRateLimitSchema();
   globalThis.__platformDbReady = true;
+  registerProgressRoutes(app, logError);
   registerPlatformRoutes(app, logError);
   registerQuizRoutes(app, logError);
 

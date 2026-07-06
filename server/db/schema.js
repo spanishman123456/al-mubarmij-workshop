@@ -75,4 +75,18 @@ CREATE TABLE IF NOT EXISTS quiz_attempts (
 
 CREATE INDEX IF NOT EXISTS idx_quiz_attempts_student ON quiz_attempts(student_id, quiz_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_attempts_status ON quiz_attempts(student_id, quiz_id, status);
+
+CREATE TABLE IF NOT EXISTS progress_calculation_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  available_count INTEGER,
+  completed_count INTEGER,
+  previous_percent INTEGER,
+  new_percent INTEGER,
+  calculated_at TEXT NOT NULL,
+  progress_version TEXT NOT NULL DEFAULT 'v2'
+);
+
+CREATE INDEX IF NOT EXISTS idx_progress_calc_log_student ON progress_calculation_log(student_id);
 `;

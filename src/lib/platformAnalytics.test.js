@@ -44,10 +44,10 @@ describe("recordLogin", () => {
 });
 
 describe("recordPageView", () => {
-  it("does not mark attendance entered without login", () => {
+  it("marks day entered on page view for persisted sessions", () => {
     const updated = recordPageView(defaultAnalytics(), "/student");
     const day = todayKey();
-    expect(updated.dailyLog[day].entered).toBe(false);
+    expect(updated.dailyLog[day].entered).toBe(true);
     expect(updated.dailyLog[day].pages).toBe(1);
   });
 

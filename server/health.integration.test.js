@@ -112,4 +112,43 @@ describe("API health + progress integration", () => {
     const res = await authFetch(baseUrl, `/api/onboarding/status/${STUDENT_A}`, { cookie: authA.cookie });
     expect(res.ok).toBe(true);
   });
+
+  it("GET /api/progress/me returns server-computed progress for student", async () => {
+    await authFetch(baseUrl, "/api/lesson/progress", {
+      cookie: authA.cookie,
+      csrf: authA.csrf,
+      method: "POST",
+      body: JSON.stringify({
+        lessonId: "number-systems",
+        sectionId: "main",
+        progress: { done: true },
+        completed: true,
+      }),
+    });
+
+    const res = await authFetch(baseUrl, "/api/progress/me", { cookie: authA.cookie });
+    const body = await res.json();
+    expect(res.ok).toBe(true);
+    expect(body.computed.progressVersion).toBe("v2");
+    expect(body.computed.availableProgressPercent).toBeGreaterThan(0);
+    expect(body.computed.completedLessons).toBeGreaterThanOrEqual(1);
+  });
+
+  it("teacher roster progress matches student /me percent", async () => {
+    const me = await (await authFetch(baseUrl, "/api/progress/me", { cookie: authA.cookie })).json();
+    const roster = await (
+      await authFetch(baseUrl, "/api/progress/teacher/roster", {
+        cookie: authTeacher.cookie,
+        csrf: authTeacher.csrf,
+      })
+    ).json();
+    expect(roster.byStudent[STUDENT_A].availableProgressPercent).toBe(me.computed.availableProgressPercent);
+  });
+
+  it("student cannot read another student computed progress via teacher route", async () => {
+    const res = await authFetch(baseUrl, `/api/teacher/students/${STUDENT_B}/progress`, {
+      cookie: authA.cookie,
+    });
+    expect(res.status).toBe(403);
+  });
 });

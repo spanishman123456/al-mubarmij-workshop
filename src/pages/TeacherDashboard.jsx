@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
-import { fetchOnboardingAll } from "../lib/platformApi";
+import { fetchOnboardingAll, fetchTeacherStudentProgress } from "../lib/platformApi";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { PrePostComparisonChart } from "../components/charts/PrePostComparisonChart";
 import { TeacherGraphicProjects } from "../components/teacher/TeacherGraphicProjects";
 import { MawhibaBrand } from "../components/branding/MawhibaBrand";
+import { LtrValue, formatFraction, formatPercent } from "../components/LtrValue";
 import {
   maskNationalId,
   getAccountStatus,
@@ -37,6 +38,8 @@ export default function TeacherDashboard() {
   const [expandedHistory, setExpandedHistory] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [onboardingSummary, setOnboardingSummary] = useState(null);
+  const [progressDetails, setProgressDetails] = useState(null);
+  const [progressDetailsLoading, setProgressDetailsLoading] = useState(false);
 
   useEffect(() => {
     fetchOnboardingAll()
@@ -66,7 +69,9 @@ export default function TeacherDashboard() {
   const today = todayKey();
   const presentToday = allStudentsProgress.filter((x) => x.analytics?.dailyLog?.[today]?.entered);
   const needsFollowup = allStudentsProgress.filter(
-    (x) => getAttendanceStatus(x.analytics, x.stats).key === "needs_followup",
+    (x) =>
+      (x.stats?.overallPercent ?? 0) < 15 &&
+      getAttendanceStatus(x.analytics, x.stats).key === "inactive",
   );
   const onlineNow = allStudentsProgress.filter((x) => getPresenceStatus(x.analytics).key === "online");
   const publishedDays = getPublishedDaysCount();
@@ -75,6 +80,18 @@ export default function TeacherDashboard() {
     setRefreshing(true);
     await refreshTeacherAnalytics();
     setRefreshing(false);
+  }
+
+  async function showProgressDetails(studentId) {
+    setProgressDetailsLoading(true);
+    try {
+      const res = await fetchTeacherStudentProgress(studentId);
+      setProgressDetails(res.computed);
+    } catch {
+      setProgressDetails(null);
+    } finally {
+      setProgressDetailsLoading(false);
+    }
   }
 
   return (
@@ -252,29 +269,46 @@ export default function TeacherDashboard() {
                     {attendance.label}
                   </span>
                   <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-bold text-violet-800">
-                    {stats.overallPercent}%
+                    <LtrValue>{formatPercent(stats.overallPercent)}</LtrValue>
                   </span>
                 </div>
               </div>
 
-              <ProgressBar className="mt-4" value={stats.overallPercent} label="نسبة التقدم العامة" />
+              <ProgressBar className="mt-4" value={stats.overallPercent} label="التقدم في المحتوى المتاح" />
+              {stats.requiredItems ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  <LtrValue>{formatFraction(stats.completedRequiredItems ?? 0, stats.requiredItems)}</LtrValue>{" "}
+                  عناصر إلزامية
+                </p>
+              ) : null}
 
               <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <Info label="آخر تسجيل دخول" value={formatLoginDateTime(analytics?.lastLoginAt)} />
-                <Info label="عدد مرات الدخول" value={analytics?.loginCount ?? 0} />
+                <Info label="عدد مرات الدخول" value={<LtrValue>{analytics?.loginCount ?? 0}</LtrValue>} />
                 <Info label="آخر نشاط" value={formatDate(analytics?.lastActivityAt)} />
-                <Info label="الصفحات المزارة" value={pagesCount} />
-                <Info label="الدروس" value={`${stats.completedDays}/${stats.totalDays}`} />
-                <Info label="أوراق العمل" value={wsCount} />
-                <Info label="الاختبارات" value={quizCount} />
-                <Info label="المحاكاة" value={simRuns} />
-                <Info label="تشغيل بايثون" value={analytics?.pythonRuns ?? 0} />
+                <Info label="الصفحات المزارة" value={<LtrValue>{pagesCount}</LtrValue>} />
+                <Info
+                  label="الدروس (منشورة)"
+                  value={
+                    <LtrValue>
+                      {formatFraction(stats.completedLessons ?? stats.completedDays ?? 0, stats.totalPublishedLessons ?? stats.totalDays ?? 15)}
+                    </LtrValue>
+                  }
+                />
+                <Info label="أوراق العمل" value={<LtrValue>{stats.worksheetsDone ?? wsCount}</LtrValue>} />
+                <Info label="الاختبارات" value={<LtrValue>{stats.quizCount ?? quizCount}</LtrValue>} />
+                <Info label="المحاكاة" value={<LtrValue>{simRuns}</LtrValue>} />
+                <Info label="تشغيل بايثون" value={<LtrValue>{analytics?.pythonRuns ?? 0}</LtrValue>} />
                 <Info label="المشروع" value={progress.project?.status ?? "لم يبدأ"} />
                 <Info
-                  label="قبلي → بعدي"
-                  value={`${progress.preTest?.percent ?? "—"}% → ${progress.postTest?.percent ?? "—"}%`}
+                  label="قبلي → بعدي (تشخيصي)"
+                  value={
+                    <LtrValue>
+                      {`${progress.preTest?.percent ?? "—"}% → ${progress.postTest?.percent ?? "—"}%`}
+                    </LtrValue>
+                  }
                 />
-                <Info label="الأنشطة المكتملة" value={analytics?.activitiesCompleted ?? 0} />
+                <Info label="الأنشطة المكتملة" value={<LtrValue>{analytics?.activitiesCompleted ?? 0}</LtrValue>} />
               </div>
 
               {analytics?.teacherNotes ? (
@@ -284,6 +318,13 @@ export default function TeacherDashboard() {
               ) : null}
 
               <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="edu-btn edu-btn-primary text-xs"
+                  onClick={() => showProgressDetails(student.id)}
+                >
+                  عرض تفاصيل التقدم
+                </button>
                 <button
                   type="button"
                   className="edu-btn edu-btn-outline text-xs"
@@ -331,6 +372,40 @@ export default function TeacherDashboard() {
           );
         })}
       </section>
+
+      {progressDetails || progressDetailsLoading ? (
+        <EduCard className="fixed inset-x-4 bottom-4 z-50 mx-auto max-h-[70vh] max-w-lg overflow-y-auto shadow-2xl md:inset-x-auto md:right-8 md:top-24" accent="violet" title="تفاصيل التقدم">
+          {progressDetailsLoading ? (
+            <p className="text-sm text-slate-600">جاري التحميل...</p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-700">
+                النسبة: <LtrValue>{formatPercent(progressDetails.availableProgressPercent)}</LtrValue> —{" "}
+                <LtrValue>
+                  {formatFraction(progressDetails.completedRequiredItems, progressDetails.requiredItems)}
+                </LtrValue>
+              </p>
+              <p className="mt-1 text-xs text-slate-500">{progressDetails.pathProgress?.pathLabelAr}</p>
+              <ul className="mt-4 space-y-1 text-sm">
+                {(progressDetails.details || []).map((item) => (
+                  <li key={item.id} className="flex gap-2">
+                    <span>{item.icon}</span>
+                    <span>{item.labelAr}</span>
+                    <span className="text-slate-500">— {item.status === "completed" ? "مكتمل" : "لم يبدأ"}</span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                className="edu-btn edu-btn-outline mt-4 text-sm"
+                onClick={() => setProgressDetails(null)}
+              >
+                إغلاق
+              </button>
+            </>
+          )}
+        </EduCard>
+      ) : null}
     </PageShell>
   );
 }

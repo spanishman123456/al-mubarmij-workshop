@@ -6,7 +6,6 @@ import {
   getAllOnboardingSummary,
 } from "../repositories/onboardingRepository.js";
 import {
-  saveStudentProgress,
   getStudentProgress,
   saveLessonProgress,
   recordLessonAttempt,
@@ -124,17 +123,6 @@ export function registerPlatformRoutes(app, logError) {
       res.json({ ok: true, data, lessons: getLessonProgressAll(studentId) });
     } catch (err) {
       logError("progress.get", err);
-      res.status(500).json({ ok: false, error: "failed" });
-    }
-  });
-
-  app.post("/api/progress/sync", requireAuth, requireRole("student"), (req, res) => {
-    try {
-      const { progress } = req.body || {};
-      const result = saveStudentProgress(req.auth.userId, progress);
-      res.json({ ok: true, ...result });
-    } catch (err) {
-      logError("progress.sync", err);
       res.status(500).json({ ok: false, error: "failed" });
     }
   });
