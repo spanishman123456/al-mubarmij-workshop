@@ -4,7 +4,8 @@ import { ProgressBar } from "../components/ProgressBar";
 import { curriculumDays } from "../data/curriculum15Days";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { MawhibaBrand } from "../components/branding/MawhibaBrand";
-import { getAttendanceStatus, maskNationalId } from "../lib/platformAnalytics";
+import { getAttendanceStatus, maskNationalId, defaultAnalytics } from "../lib/platformAnalytics";
+import { defaultProgressForStudent } from "../lib/platformStore";
 import { LtrValue, formatFraction, formatPercent } from "../components/LtrValue";
 import { getPublishedDaysCount } from "../config/publication";
 
@@ -61,8 +62,22 @@ function DashboardError({ onLogout }) {
 }
 
 export default function StudentDashboard() {
-  const { user, authReady, myStats, myProgress, myAnalytics, logout, progressSyncStatus } = usePlatform();
+  const {
+    user,
+    authReady,
+    myStats,
+    myProgress,
+    myAnalytics,
+    logout,
+    progressSyncStatus: syncStatusRaw,
+  } = usePlatform();
   const publishedDays = getPublishedDaysCount();
+  const progressSyncStatus = syncStatusRaw ?? {
+    loading: false,
+    saving: false,
+    error: null,
+    fetchedAt: null,
+  };
 
   if (!authReady) {
     return <DashboardLoading />;
@@ -72,16 +87,23 @@ export default function StudentDashboard() {
     return <Navigate to="/login" replace />;
   }
 
-  const pre = myProgress.preTest?.percent;
-  const post = myProgress.postTest?.percent;
+  const progress = myProgress ?? defaultProgressForStudent(user.id);
+  const analytics = myAnalytics ?? defaultAnalytics();
+
+  const pre = progress.preTest?.percent;
+  const post = progress.postTest?.percent;
   const growth = pre != null && post != null ? post - pre : null;
-  const attendance = myStats?.attendanceStatus || getAttendanceStatus(myAnalytics, myStats);
-  const wsPending = Object.entries(myProgress.worksheetStatus || {}).filter(
+  const attendanceRaw = myStats?.attendanceStatus || getAttendanceStatus(analytics, myStats);
+  const attendance =
+    attendanceRaw?.label && attendanceRaw?.color
+      ? attendanceRaw
+      : getAttendanceStatus(analytics, myStats);
+  const wsPending = Object.entries(progress.worksheetStatus || {}).filter(
     ([, s]) => s !== "completed",
   ).length;
-  const teacherNote = myAnalytics.teacherNotes;
+  const teacherNote = analytics.teacherNotes ?? "";
   const recentDays = curriculumDays
-    .filter((d) => !(myProgress.completedDays || []).includes(d.id))
+    .filter((d) => !(progress.completedDays || []).includes(d.id))
     .slice(0, 3);
 
   const completedLessons = myStats?.completedLessons ?? myStats?.completedDays ?? 0;
@@ -129,7 +151,7 @@ export default function StudentDashboard() {
       <div className="mb-4 flex flex-wrap gap-2">
         <span className={`rounded-full px-3 py-1 text-xs font-bold ${attendance.color}`}>{attendance.label}</span>
         <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-800">
-          آخر نشاط: {formatDate(myAnalytics.lastActivityAt)}
+          آخر نشاط: {formatDate(analytics.lastActivityAt)}
         </span>
         {progressSyncStatus.fetchedAt ? (
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
@@ -160,8 +182,8 @@ export default function StudentDashboard() {
           />
           <Stat label="أوراق العمل المنجزة" value={<LtrValue>{myStats?.worksheetsDone ?? 0}</LtrValue>} />
           <Stat label="أوراق معلّقة" value={<LtrValue>{wsPending}</LtrValue>} />
-          <Stat label="أكواد بايثون" value={<LtrValue>{myProgress.pythonSnippets?.length ?? 0}</LtrValue>} />
-          <Stat label="مشاريع رسومية" value={<LtrValue>{myProgress.graphicProjects?.length ?? 0}</LtrValue>} />
+          <Stat label="أكواد بايثون" value={<LtrValue>{progress.pythonSnippets?.length ?? 0}</LtrValue>} />
+          <Stat label="مشاريع رسومية" value={<LtrValue>{progress.graphicProjects?.length ?? 0}</LtrValue>} />
           <Stat
             label="التقويم القبلي (تشخيصي)"
             value={
@@ -183,12 +205,12 @@ export default function StudentDashboard() {
               )
             }
           />
-          <Stat label="المشروع النهائي" value={myProgress.project?.status ?? "لم يبدأ"} />
+          <Stat label="المشروع النهائي" value={progress.project?.status ?? "لم يبدأ"} />
           <Stat
             label="مشاريع micro:bit"
             value={<LtrValue>{formatFraction(myStats?.microbitDone ?? 0, 9)}</LtrValue>}
           />
-          <Stat label="عدد الدخول" value={<LtrValue>{myAnalytics.loginCount ?? 0}</LtrValue>} />
+          <Stat label="عدد الدخول" value={<LtrValue>{analytics.loginCount ?? 0}</LtrValue>} />
         </div>
       </EduCard>
 
@@ -231,7 +253,7 @@ export default function StudentDashboard() {
       <EduCard className="mt-8" title="آخر الدروس المتاحة" accent="cyan">
         <ul className="mt-3 space-y-2">
           {curriculumDays.slice(0, publishedDays).map((d) => {
-            const done = (myProgress.completedDays || []).includes(d.id);
+            const done = (progress.completedDays || []).includes(d.id);
             return (
               <li key={d.id} className="flex items-center justify-between text-sm">
                 <Link to={`/path/day/${d.id}`} className="font-medium text-violet-700 hover:underline">

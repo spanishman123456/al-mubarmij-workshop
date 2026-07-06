@@ -932,6 +932,8 @@ export function PlatformProvider({ children }) {
       isStudentSession,
       refreshTeacherAnalytics,
       analyticsSyncStatus,
+      progressSyncStatus,
+      refreshMyComputedProgress,
       state,
     }),
     [

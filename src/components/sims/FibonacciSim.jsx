@@ -151,7 +151,7 @@ for i in range(n):
         ) : null}
         {attempted ? (
           <p className={`mt-2 text-sm font-bold ${correct ? "text-emerald-700" : "text-red-700"}`}>
-            {correct ? "إجابة صحيحة!" : `حاول مجددًا — الإجابة: ${DRILLS[drillIdx].a}`}
+            {correct ? "إجابة صحيحة!" : "حاول مجددًا — راجع التلميح أو الشرح في الدرس."}
           </p>
         ) : null}
         <button

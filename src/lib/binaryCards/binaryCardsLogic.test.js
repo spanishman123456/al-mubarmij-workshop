@@ -47,8 +47,8 @@ describe("binaryCardsLogic", () => {
 
   it("provides graduated hints", () => {
     expect(getGraduatedHint(5, 0)).toContain("4");
-    expect(getGraduatedHint(5, 1)).toContain("2");
-    expect(getGraduatedHint(5, 2)).toContain("4");
+    expect(getGraduatedHint(5, 1)).toContain("بقي");
+    expect(getGraduatedHint(5, 2)).not.toContain("4 و 1");
   });
 
   it("wrong feedback when sum too high", () => {

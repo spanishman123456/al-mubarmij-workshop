@@ -10,6 +10,7 @@ import {
   binaryToOctalDirect,
   binaryToHexDirect,
 } from "../../lib/numberSystems/conversions";
+import { AFTER_MAX_HINTS_AR } from "../../lib/exerciseFeedbackPolicy.js";
 import { recordLessonAttemptApi, saveLessonProgressApi } from "../../lib/platformApi";
 import { PageShell, EduCard } from "../../components/layout/PageShell";
 import { useState } from "react";
@@ -47,8 +48,8 @@ function ConverterLab({ userId, lessonId }) {
       return;
     }
     if (hints === 0) setFeedback("تلميح 1: أنشئ جدول القيمة المكانية أو القسمة المتكررة.");
-    else if (hints === 1) setFeedback(`تلميح 2: أول خانات الناتج: ${String(correctResult).slice(0, 2)}…`);
-    else setFeedback(`الإجابة: ${correctResult} — راجع remainder_order إن كان التحويل من عشري.`);
+    else if (hints === 1) setFeedback("تلميح 2: راجع باقي القسمة أو مجموع المنازل — لا تنسَ ترتيب البواقي.");
+    else setFeedback(AFTER_MAX_HINTS_AR);
     setHints((h) => h + 1);
     recordLessonAttemptApi(userId, {
       lessonId,

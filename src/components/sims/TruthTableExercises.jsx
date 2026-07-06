@@ -169,7 +169,7 @@ export function TruthTableExercises() {
                       </select>
                       {showResult ? (
                         <span className={`mt-1 block text-xs ${ok ? "text-emerald-400" : "text-red-400"}`}>
-                          {ok ? "✓" : `→ ${expected}`}
+                          {ok ? "✓" : "✗"}
                         </span>
                       ) : null}
                     </td>

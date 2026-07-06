@@ -139,7 +139,7 @@ export function CardSortSimulation({ lessonId, userId }) {
         ? "ابحث عن أصغر بطاقة في الباقي وضعها في موضعها."
         : next === 2
           ? `الخطوة ${algoStep + 1}/${refSteps.length}: قارن الموضعين ${refSteps[algoStep]?.compare?.map((x) => x + 1).join(" و ") || "—"}`
-          : `الترتيب الهدف: ${TARGET.join("، ")}`;
+          : "راجع خوارزمية الفرز — قارن الجيران المتجاورين وبدّل عند الحاجة.";
     setFeedback(`تلميح: ${hint}`);
     saveState({ hintsUsed: next, feedback: hint, lastStep: "hint" });
   }

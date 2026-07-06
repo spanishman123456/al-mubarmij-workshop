@@ -300,18 +300,9 @@ export default function PythonLab() {
   }
 
   function handleRevealSolution() {
-    if (!stepPlan) return;
-    if (stepCheckAttempts < MIN_ATTEMPTS_BEFORE_SOLUTION && !solutionRevealed) {
-      const ok = window.confirm(
-        "الأفضل أن تحاول بنفسك أولاً! هل تريد عرض الحل الكامل على أي حال؟",
-      );
-      if (!ok) return;
-    }
-    setSolutionRevealed(true);
-    setCode(stepPlan.fullSolution);
     setStepCheckResult({
-      ok: true,
-      messageAr: "تم عرض الحل الكامل. حاول فهم كل سطر ثم اكتبه بنفسك في محاولة لاحقة.",
+      ok: false,
+      messageAr: "الحل الكامل غير متاح للطلاب — استخدم التلميحات أو اطلب مساعدة المعلم.",
     });
   }
 
@@ -726,6 +717,7 @@ export default function PythonLab() {
                 onCheck={handleStepCheck}
                 onRevealSolution={handleRevealSolution}
                 onClearCheck={clearStepCheck}
+                allowRevealSolution={false}
               />
             ) : null}
 

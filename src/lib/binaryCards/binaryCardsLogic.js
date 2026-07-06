@@ -49,16 +49,14 @@ export function cardsForTarget(target) {
 }
 
 export function getGraduatedHint(target, hintLevel) {
-  const solution = cardsForTarget(target);
-  const visible = visibleCards(solution);
+  const largest = BINARY_CARD_VALUES.find((v) => v <= target);
   if (hintLevel <= 0) {
-    const largest = BINARY_CARD_VALUES.find((v) => v <= target);
     return `ابدأ بأكبر بطاقة لا تتجاوز العدد المطلوب (${largest}).`;
   }
   if (hintLevel === 1) {
-    return `العدد ${target} يتكون من ${visible.length} بطاقة${visible.length === 1 ? "" : "ات"} ظاهرة.`;
+    return `بعد اختيار البطاقة الأولى، احسب كم بقي من العدد ${target} قبل إظهار بطاقات إضافية.`;
   }
-  return `استخدم البطاقات: ${visible.join(" و")}.`;
+  return "راجع المثال أعلاه وجرّب مجموعات مختلفة — لا تكشف الحل مباشرة، فكّر في جمع قيم البطاقات.";
 }
 
 export function getWrongFeedback(state, target) {

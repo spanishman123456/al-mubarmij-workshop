@@ -49,7 +49,7 @@ export function NumbersStepsLab({ lessonId, userId, defaultN = 8 }) {
   function check() {
     const val = Number(guess);
     const ok = val === expectedSteps;
-    const msg = ok ? `✓ ${expectedSteps} خطوات` : `✗ المتوقع ${expectedSteps} خطوات`;
+    const msg = ok ? `✓ ${expectedSteps} خطوات` : "✗ عدد الخطوات غير صحيح — راجع جدول التنازل أعلاه.";
     setFeedback(msg);
     if (userId) {
       recordLessonAttemptApi(userId, {
@@ -71,8 +71,8 @@ export function NumbersStepsLab({ lessonId, userId, defaultN = 8 }) {
       h === 1
         ? "تلميح: كل تكرار يطرح 1 من n."
         : h === 2
-          ? `تلميح: n=${n} يعني ${n} خطوات.`
-          : `الإجابة: ${expectedSteps}`;
+          ? `تلميح: عند n=${n}، كم مرة تطرح 1 حتى تصل إلى 0؟`
+          : "راجع جدول الخطوات — عد الصفوف بعد البداية.";
     setFeedback(msg);
     save({ hintsUsed: h, feedback: msg });
   }

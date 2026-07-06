@@ -156,8 +156,8 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           {L.quickCheck.questions.map((q) => (
             <li key={q.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
               <p className="font-semibold">{q.promptAr}</p>
-              <p className="mt-1 text-emerald-700">الإجابة: {q.answer}</p>
-              {q.hintAr ? <p className="text-xs text-slate-500">تلميح: {q.hintAr}</p> : null}
+              {q.hintAr ? <p className="mt-1 text-xs text-slate-500">تلميح: {q.hintAr}</p> : null}
+              <p className="mt-2 text-xs text-violet-700">فكّر في الإجابة ثم ناقشها مع المعلم — الحل لا يُعرض هنا.</p>
             </li>
           ))}
         </ul>

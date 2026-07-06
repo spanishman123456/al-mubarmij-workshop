@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { isValidInBase } from "../../lib/numberSystems/conversions";
 import { recordLessonAttemptApi } from "../../lib/platformApi";
+import { feedbackAfterFailedAttempt } from "../../lib/exerciseFeedbackPolicy.js";
 
 function normalizeAnswer(s) {
   return String(s || "").trim().toUpperCase().replace(/\s/g, "");
@@ -34,6 +35,7 @@ export function LessonPractice({ exercises, mode, lessonId, userId, onStepComple
   const [hintLevel, setHintLevel] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [done, setDone] = useState({});
+  const [failAttempts, setFailAttempts] = useState(0);
 
   const ex = exercises[idx];
   if (!ex) return null;
@@ -62,15 +64,9 @@ export function LessonPractice({ exercises, mode, lessonId, userId, onStepComple
     }
 
     const err = classifyError(answer, expected, ex);
-    if (hintLevel < hints.length) {
-      setHintLevel((h) => h + 1);
-      setFeedback(`تلميح ${hintLevel + 1}: ${hints[hintLevel]}`);
-    } else if (hintLevel < hints.length + 1) {
-      setHintLevel((h) => h + 1);
-      setFeedback(err.message);
-    } else {
-      setFeedback(`${err.message} — الإجابة الصحيحة: ${expected}`);
-    }
+    const nextFail = failAttempts + 1;
+    setFailAttempts(nextFail);
+    setFeedback(feedbackAfterFailedAttempt(nextFail, hints, err.message));
 
     if (userId) {
       recordLessonAttemptApi(userId, {
@@ -87,6 +83,7 @@ export function LessonPractice({ exercises, mode, lessonId, userId, onStepComple
   function next() {
     setAnswer("");
     setHintLevel(0);
+    setFailAttempts(0);
     setFeedback("");
     setIdx((i) => Math.min(i + 1, exercises.length - 1));
   }
