@@ -13,6 +13,10 @@ import {
   getTeacherLessonSummary,
 } from "../repositories/progressRepository.js";
 import { requireAuth, requireRole, requireProgressAccess } from "../auth/middleware.js";
+import {
+  getPlatformSettings,
+  setPythonCodeAssist,
+} from "../repositories/platformSettingsRepository.js";
 
 export function registerPlatformRoutes(app, logError) {
   app.get("/api/onboarding/status/:studentId", requireAuth, requireProgressAccess, (req, res) => {
@@ -132,6 +136,29 @@ export function registerPlatformRoutes(app, logError) {
       res.json({ ok: true, summary: getTeacherLessonSummary() });
     } catch (err) {
       logError("lesson.summary", err);
+      res.status(500).json({ ok: false, error: "failed" });
+    }
+  });
+
+  app.get("/api/platform/settings/public", requireAuth, (_req, res) => {
+    try {
+      res.json({ ok: true, ...getPlatformSettings() });
+    } catch (err) {
+      logError("platform.settings.public", err);
+      res.status(500).json({ ok: false, error: "failed" });
+    }
+  });
+
+  app.put("/api/platform/settings/python-assist", requireAuth, requireRole("teacher"), (req, res) => {
+    try {
+      const { mode } = req.body || {};
+      const settings = setPythonCodeAssist(mode);
+      res.json({ ok: true, ...settings });
+    } catch (err) {
+      if (err.message === "invalid_mode") {
+        return res.status(400).json({ ok: false, error: "invalid_mode" });
+      }
+      logError("platform.settings.python-assist", err);
       res.status(500).json({ ok: false, error: "failed" });
     }
   });
