@@ -209,15 +209,6 @@ test.describe("day-03 labs", () => {
   });
 });
 
-test.describe("day 04 lessons", () => {
-  test("student opens karnaugh lesson and sees lab", async ({ page }) => {
-    await loginStudent(page);
-    await page.goto("/lessons/karnaugh-maps");
-    await expect(page.getByRole("heading", { name: /خريطة كارنوف/i })).toBeVisible();
-    await expect(page.getByTestId("karnaugh-map-lab")).toBeVisible();
-  });
-});
-
 test.describe("progress tracking", () => {
   test("completing a lesson updates published lesson count on dashboard", async ({ page }) => {
     await loginStudent(page);

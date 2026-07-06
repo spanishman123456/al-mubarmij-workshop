@@ -2,16 +2,8 @@
  * Student pilot smoke — MUST run with PUBLISHED_DAYS=1 (see npm run test:e2e:pilot).
  */
 import { test, expect } from "@playwright/test";
-
-const STUDENT_NID = "1165814631";
+import { loginStudent } from "./helpers.js";
 const LOCKED_HEADING = /المحتوى غير متاح بعد/;
-
-async function loginStudent(page) {
-  await page.goto("/login");
-  await page.getByTestId("student-national-id").fill(STUDENT_NID);
-  await page.getByTestId("student-submit").click();
-  await expect(page).toHaveURL(/\/student/);
-}
 
 test.describe("pilot PUBLISHED_DAYS=1", () => {
   test("student dashboard loads", async ({ page }) => {

@@ -2,8 +2,7 @@
  * Day 5 QA — requires PUBLISHED_DAYS>=5.
  */
 import { test, expect } from "@playwright/test";
-
-const STUDENT_NID = "1165814631";
+import { loginStudent, assertLessonProgressSaved } from "./helpers.js";
 
 const DAY05_LESSONS = [
   {
@@ -24,7 +23,7 @@ const DAY05_LESSONS = [
   },
   {
     path: "/lessons/sorting-algorithms",
-    heading: /فرز الاختيار/i,
+    heading: /الفرز بخوارزمية الاختيار/i,
     labTestId: "selection-sort-lab",
     labAction: async (page) => {
       await page.getByTestId("selection-sort-lab").getByRole("button", { name: /تحقق/ }).click();
@@ -39,13 +38,6 @@ const DAY05_LESSONS = [
     },
   },
 ];
-
-async function loginStudent(page) {
-  await page.goto("/login");
-  await page.getByTestId("student-national-id").fill(STUDENT_NID);
-  await page.getByTestId("student-submit").click();
-  await expect(page).toHaveURL(/\/student/);
-}
 
 test.describe("day 05 — lesson pages and labs", () => {
   for (const lesson of DAY05_LESSONS) {
@@ -65,21 +57,10 @@ test.describe("day 05 — lesson pages and labs", () => {
 });
 
 test.describe("day 05 — progress footer", () => {
-  test("saves lesson completion on linear-search", async ({ page }) => {
+  test("saves lesson completion on binary-search", async ({ page }) => {
     await loginStudent(page);
-    await page.goto("/lessons/linear-search");
-    const completeBtn = page.getByRole("button", { name: /أكملت هذا الدرس/i });
-    const completedMsg = page.getByText(/سُجّل إكمال/i);
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    if ((await completeBtn.count()) > 0) {
-      await completeBtn.click();
-      await expect(completedMsg).toBeVisible({ timeout: 15000 });
-    } else {
-      await expect(completedMsg).toBeVisible();
-    }
-    await page.reload();
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await expect(completedMsg).toBeVisible({ timeout: 15000 });
+    await page.goto("/lessons/binary-search");
+    await assertLessonProgressSaved(page);
   });
 });
 

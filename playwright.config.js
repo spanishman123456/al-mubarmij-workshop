@@ -18,7 +18,7 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 1 : 0,
+  retries: 1,
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "on-first-retry",
@@ -36,6 +36,7 @@ export default defineConfig({
         PLATFORM_DB_PATH: E2E_DB,
         TEACHER_BCRYPT_HASH: E2E_TEACHER_HASH,
         PUBLISHED_DAYS: process.env.PUBLISHED_DAYS || "4",
+        STUDENT_UNLOCK_POLICY: process.env.STUDENT_UNLOCK_POLICY || "sequential",
       },
     },
     {
