@@ -179,6 +179,7 @@ export function mergeAnalytics(remote, local) {
     lastActivityAt: pickLatest(remote.lastActivityAt, local.lastActivityAt),
     dailyLog: mergeDailyLog(remote.dailyLog, local.dailyLog),
     pythonRuns: Math.max(remote.pythonRuns || 0, local.pythonRuns || 0),
+    lastPythonRunAt: pickLatest(remote.lastPythonRunAt, local.lastPythonRunAt),
     activitiesCompleted: Math.max(remote.activitiesCompleted || 0, local.activitiesCompleted || 0),
     teacherNotes: local.teacherNotes || remote.teacherNotes || "",
   };

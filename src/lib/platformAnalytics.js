@@ -183,10 +183,12 @@ export function recordSimRun(analytics, simId) {
 }
 
 export function recordPythonRun(analytics) {
+  const now = new Date().toISOString();
   return {
     ...analytics,
     pythonRuns: (analytics.pythonRuns || 0) + 1,
-    lastActivityAt: new Date().toISOString(),
+    lastPythonRunAt: now,
+    lastActivityAt: now,
   };
 }
 

@@ -108,6 +108,17 @@ function mergeProgressBlob(server = {}, client = {}) {
   const quizScores = { ...(server.quizScores || {}), ...(client.quizScores || {}) };
   const drillResults = { ...(server.drillResults || {}), ...(client.drillResults || {}) };
   const microbitProjects = { ...(server.microbitProjects || {}), ...(client.microbitProjects || {}) };
+  const lessonCompletions = { ...(server.lessonCompletions || {}), ...(client.lessonCompletions || {}) };
+  for (const [lessonId, entry] of Object.entries(client.lessonCompletions || {})) {
+    const serverEntry = server.lessonCompletions?.[lessonId];
+    if (!serverEntry) {
+      lessonCompletions[lessonId] = entry;
+      continue;
+    }
+    const serverDone = serverEntry.status === "completed" || serverEntry.completedAt;
+    const clientDone = entry.status === "completed" || entry.completedAt;
+    lessonCompletions[lessonId] = clientDone || serverDone ? { ...serverEntry, ...entry, status: "completed" } : { ...serverEntry, ...entry };
+  }
 
   const merged = {
     ...server,
@@ -118,6 +129,7 @@ function mergeProgressBlob(server = {}, client = {}) {
     quizScores,
     drillResults,
     microbitProjects,
+    lessonCompletions,
     preAssessment: pickLatestObject(server.preAssessment, client.preAssessment),
     project: pickLatestObject(server.project, client.project),
     pythonSnippets: [...(server.pythonSnippets || []), ...(client.pythonSnippets || [])].slice(0, 50),

@@ -1,4 +1,5 @@
 import { Link, Navigate } from "react-router-dom";
+import { useState } from "react";
 import { usePlatform } from "../context/PlatformContext";
 import { ProgressBar } from "../components/ProgressBar";
 import { curriculumDays } from "../data/curriculum15Days";
@@ -106,10 +107,16 @@ export default function StudentDashboard() {
     .filter((d) => !(progress.completedDays || []).includes(d.id))
     .slice(0, 3);
 
-  const completedLessons = myStats?.completedLessons ?? myStats?.completedDays ?? 0;
-  const totalLessons = myStats?.totalPublishedLessons ?? publishedDays;
+  const completedLessons = myStats?.completedLessons ?? 0;
+  const totalLessons = myStats?.totalPublishedLessons ?? 9;
   const requiredDone = myStats?.completedRequiredItems ?? 0;
   const requiredTotal = myStats?.requiredItems ?? 0;
+  const pythonRuns = myStats?.pythonRuns ?? analytics.pythonRuns ?? 0;
+  const pythonSaved = myStats?.pythonSnippetsCount ?? progress.pythonSnippets?.length ?? 0;
+  const progressDetails = myStats?.details ?? [];
+  const [showProgressDetails, setShowProgressDetails] = useState(false);
+  const completedItems = progressDetails.filter((d) => d.status === "completed");
+  const pendingItems = progressDetails.filter((d) => d.status !== "completed");
 
   return (
     <PageShell
@@ -178,11 +185,18 @@ export default function StudentDashboard() {
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Stat
             label="الدروس المكتملة (منشورة)"
-            value={<LtrValue>{formatFraction(completedLessons, totalLessons)}</LtrValue>}
+            value={
+              totalLessons > 0 && completedLessons === 0 && progressDetails.length > 0 ? (
+                <span className="text-sm">لم تُسجَّل دروس مكتملة بعد</span>
+              ) : (
+                <LtrValue>{formatFraction(completedLessons, totalLessons)}</LtrValue>
+              )
+            }
           />
           <Stat label="أوراق العمل المنجزة" value={<LtrValue>{myStats?.worksheetsDone ?? 0}</LtrValue>} />
           <Stat label="أوراق معلّقة" value={<LtrValue>{wsPending}</LtrValue>} />
-          <Stat label="أكواد بايثون" value={<LtrValue>{progress.pythonSnippets?.length ?? 0}</LtrValue>} />
+          <Stat label="تشغيلات بايثون" value={<LtrValue>{pythonRuns}</LtrValue>} />
+          <Stat label="أكواد بايثون محفوظة" value={<LtrValue>{pythonSaved}</LtrValue>} />
           <Stat label="مشاريع رسومية" value={<LtrValue>{progress.graphicProjects?.length ?? 0}</LtrValue>} />
           <Stat
             label="التقويم القبلي (تشخيصي)"
@@ -212,6 +226,53 @@ export default function StudentDashboard() {
           />
           <Stat label="عدد الدخول" value={<LtrValue>{analytics.loginCount ?? 0}</LtrValue>} />
         </div>
+        {myStats?.pythonActivityNoteAr ? (
+          <p className="mt-3 text-xs text-slate-500">{myStats.pythonActivityNoteAr}</p>
+        ) : null}
+        {progressDetails.length > 0 ? (
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              className="text-sm font-semibold text-violet-700 hover:underline"
+              onClick={() => setShowProgressDetails((v) => !v)}
+            >
+              {showProgressDetails ? "إخفاء تفاصيل التقدم" : "عرض تفاصيل التقدم"}
+            </button>
+            {showProgressDetails ? (
+              <div className="mt-3 grid gap-4 md:grid-cols-2">
+                <div>
+                  <p className="text-sm font-bold text-emerald-800">العناصر المكتملة:</p>
+                  <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                    {completedItems.length ? (
+                      completedItems.map((item) => (
+                        <li key={item.id}>
+                          {item.icon} {item.labelAr}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-slate-500">لا يوجد بعد</li>
+                    )}
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">العناصر غير المكتملة:</p>
+                  <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                    {pendingItems.length ? (
+                      pendingItems.map((item) => (
+                        <li key={item.id}>
+                          {item.icon} {item.labelAr}
+                          {item.status === "in_progress" ? " (قيد التنفيذ)" : ""}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-slate-500">أكملت كل العناصر المنشورة</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </EduCard>
 
       {teacherNote ? (

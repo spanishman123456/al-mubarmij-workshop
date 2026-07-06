@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { binaryCardsLesson as L } from "../../content/lessons/day01/binaryCardsLesson";
 import { PageShell, EduCard } from "../../components/layout/PageShell";
 import { BinaryCardsLab } from "../../components/lesson/BinaryCardsLab";
+import { LessonProgressFooter } from "../../components/lesson/LessonProgressFooter";
 import { usePlatform } from "../../context/PlatformContext";
 
 const CARD_EXERCISES = [
@@ -61,6 +62,8 @@ export default function BinaryCardsLessonPage() {
       <Link to="/lessons/number-systems" className="edu-btn edu-btn-primary mt-6 inline-flex">
         التالي: أنظمة العد →
       </Link>
+
+      <LessonProgressFooter lessonId={L.id} userId={user?.id} titleAr={L.titleAr} />
     </PageShell>
   );
 }

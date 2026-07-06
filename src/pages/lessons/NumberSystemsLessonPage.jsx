@@ -3,6 +3,7 @@ import { numberSystemsLesson as L } from "../../content/lessons/numberSystemsLes
 import { usePlatform } from "../../context/PlatformContext";
 import { PlaceValueTable } from "../../components/lesson/PlaceValueTable";
 import { LessonPractice } from "../../components/lesson/LessonPractice";
+import { LessonProgressFooter } from "../../components/lesson/LessonProgressFooter";
 import {
   fromBaseToDecimalSteps,
   decimalToBaseSteps,
@@ -171,6 +172,8 @@ export default function NumberSystemsLessonPage() {
           <Link to="/lessons/hex-colors" className="edu-btn edu-btn-primary inline-flex">التالي: ألوان Hex →</Link>
         </div>
       </EduCard>
+
+      <LessonProgressFooter lessonId={L.id} userId={user?.id} titleAr={L.titleAr} />
     </PageShell>
   );
 }

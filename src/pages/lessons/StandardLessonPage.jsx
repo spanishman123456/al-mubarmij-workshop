@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { PageShell, EduCard } from "../../components/layout/PageShell";
 import { LessonPractice } from "../../components/lesson/LessonPractice";
+import { LessonProgressFooter } from "../../components/lesson/LessonProgressFooter";
 import { usePlatform } from "../../context/PlatformContext";
 
 /**
@@ -178,6 +179,8 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           {nextLink.label}
         </Link>
       ) : null}
+
+      <LessonProgressFooter lessonId={L.id} userId={user?.id} titleAr={L.titleAr} />
     </PageShell>
   );
 }

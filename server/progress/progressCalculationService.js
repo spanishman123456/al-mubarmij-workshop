@@ -80,6 +80,17 @@ export function calculateStudentProgress(studentId, options = {}) {
   const pathProgress = computeFullPathProgress(progress, publishedDays);
   const microbitDone = countMicrobitDone(progress);
   const worksheetsDone = countWorksheetsDone(progress);
+  const pythonRuns = analytics.pythonRuns || 0;
+  const pythonSnippetsCount = (progress.pythonSnippets || []).length;
+  const lastPythonRunAt = analytics.lastPythonRunAt || null;
+  let pythonActivityNoteAr = null;
+  if (pythonRuns === 0 && pythonSnippetsCount === 0) {
+    pythonActivityNoteAr = "لا توجد تشغيلات كود محفوظة في الخادم — شغّل كودًا في مختبر بايثون ليُحتسب.";
+  } else if (lastPythonRunAt) {
+    pythonActivityNoteAr = `آخر تشغيل كود: ${new Date(lastPythonRunAt).toLocaleString("ar-SA", { dateStyle: "short", timeStyle: "short" })}`;
+  } else if (pythonSnippetsCount > 0) {
+    pythonActivityNoteAr = `لديك ${pythonSnippetsCount} كود محفوظ — شغّل الكود في المختبر ليُحتسب كتشغيل.`;
+  }
 
   const lastLessonEvent = [...lessonRows].sort(
     (a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0),
@@ -118,6 +129,10 @@ export function calculateStudentProgress(studentId, options = {}) {
     lastLessonId: lastLessonEvent?.lessonId || null,
     lastLessonUpdatedAt: lastLessonEvent?.updatedAt || null,
     loginCount: analytics.loginCount || 0,
+    pythonRuns,
+    pythonSnippetsCount,
+    lastPythonRunAt,
+    pythonActivityNoteAr,
     attendanceStatus: computeAttendanceStatus(analytics),
     pathProgress,
     progressVersion: PROGRESS_VERSION,

@@ -169,7 +169,18 @@ export function BinaryCardsLab({ lessonId, userId, exercises = [] }) {
       setFeedback(msg);
       const nextCompleted = { ...completed, [exercise.id]: true };
       setCompleted(nextCompleted);
-      save({ attempts: nextAttempts, completed: nextCompleted, lastResult: "correct", feedback: msg });
+      const allDone = exercises.length > 0 && exercises.every((ex) => nextCompleted[ex.id]);
+      if (allDone) {
+        markComplete({
+          attempts: nextAttempts,
+          completed: nextCompleted,
+          lastResult: "correct",
+          feedback: msg,
+          allExercisesDone: true,
+        });
+      } else {
+        save({ attempts: nextAttempts, completed: nextCompleted, lastResult: "correct", feedback: msg });
+      }
       return;
     }
 

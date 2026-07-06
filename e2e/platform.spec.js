@@ -209,6 +209,29 @@ test.describe("day-03 labs", () => {
   });
 });
 
+test.describe("progress tracking", () => {
+  test("completing a lesson updates published lesson count on dashboard", async ({ page }) => {
+    await loginStudent(page);
+    await page.goto("/lessons/python-intro");
+    await page.getByRole("button", { name: /أكملت هذا الدرس/i }).click();
+    await expect(page.getByText(/سُجّل إكمال/i)).toBeVisible({ timeout: 15000 });
+
+    await page.goto("/student");
+    await expect(page.getByText(/الدروس المكتملة/i)).toBeVisible();
+    await expect(page.getByText(/1\s*\/\s*9|١\s*\/\s*٩/).first()).toBeVisible({ timeout: 15000 });
+  });
+
+  test("running python code updates تشغيلات بايثون", async ({ page }) => {
+    await loginStudent(page);
+    await page.goto("/python");
+    await page.getByRole("button", { name: "تشغيل الكود" }).click();
+    await page.waitForTimeout(3000);
+    await page.goto("/student");
+    const runsStat = page.locator("text=تشغيلات بايثون").locator("..");
+    await expect(runsStat).not.toContainText(/^0$/);
+  });
+});
+
 test.describe("analytics sync", () => {
   test("no login sync console error", async ({ page }) => {
     const errors = [];

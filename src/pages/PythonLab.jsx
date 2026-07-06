@@ -41,7 +41,7 @@ const MODES = [
 ];
 
 export default function PythonLab() {
-  const { user, myProgress, savePythonSnippet, saveGraphicProject, submitGraphicProject } = usePlatform();
+  const { user, myProgress, savePythonSnippet, saveGraphicProject, submitGraphicProject, trackPythonRun } = usePlatform();
   const [searchParams, setSearchParams] = useSearchParams();
   const exFromUrl = searchParams.get("ex");
   const modeFromUrl = searchParams.get("mode");
@@ -325,6 +325,7 @@ export default function PythonLab() {
     try {
       const text = await runPythonWithSkulpt(code);
       setOut(text);
+      if (user?.role === "student") trackPythonRun();
     } catch (e) {
       setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
     } finally {
@@ -353,6 +354,7 @@ export default function PythonLab() {
       setAppUi(result.ui);
       setAppValues(result.ui.values || {});
       if (result.console) setAppConsole(result.console);
+      if (user?.role === "student") trackPythonRun();
     } catch (e) {
       setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
     } finally {

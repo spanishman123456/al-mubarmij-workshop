@@ -3,6 +3,7 @@ import {
   buildPublishedRequiredCatalog,
   evaluateCatalog,
   isLessonComplete,
+  lessonStarted,
   PROGRESS_VERSION,
 } from "../../src/lib/progressCatalog.js";
 import { PRE_ASSESSMENT_STATUS } from "../../src/content/onboarding/onboardingPolicy.js";
@@ -55,6 +56,39 @@ describe("progressCatalog", () => {
     expect(
       isLessonComplete("number-systems", [{ lessonId: "number-systems", completed: true }], {}),
     ).toBe(true);
+  });
+
+  it("counts lesson from lessonCompletions blob", () => {
+    expect(
+      isLessonComplete("python-intro", [], {
+        lessonCompletions: { "python-intro": { status: "completed", completedAt: "2026-01-01" } },
+      }),
+    ).toBe(true);
+  });
+
+  it("marks lesson in_progress when started but not completed", () => {
+    const catalog = buildPublishedRequiredCatalog(1);
+    const result = evaluateCatalog(catalog, {
+      onboarding: { bingo: { status: "not_started" }, agreements: {} },
+      progress: {},
+      lessonRows: [
+        {
+          lessonId: "binary-cards",
+          completed: false,
+          progress: { startedAt: "2026-01-01", status: "in_progress" },
+        },
+      ],
+    });
+    const lesson = result.breakdown.find((i) => i.lessonId === "binary-cards");
+    expect(lesson?.status).toBe("in_progress");
+    expect(lesson?.complete).toBe(false);
+    expect(lessonStarted("binary-cards", [
+      {
+        lessonId: "binary-cards",
+        completed: false,
+        progress: { startedAt: "2026-01-01", status: "in_progress" },
+      },
+    ], {})).toBe(true);
   });
 
   it("caps percent at 100", () => {

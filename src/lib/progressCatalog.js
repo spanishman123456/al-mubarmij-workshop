@@ -5,6 +5,7 @@
 import { LESSON_ID_TO_DAY } from "../config/publicationPolicy.js";
 import { curriculumDays } from "../data/curriculum15Days.js";
 import { DOC_TYPES } from "../content/onboarding/onboardingPolicy.js";
+import { lessonLabelAr } from "../data/lessonLabelsAr.js";
 
 export const PROGRESS_VERSION = "v2";
 
@@ -47,7 +48,7 @@ export function buildPublishedRequiredCatalog(publishedDays) {
         id: `lesson-${lessonId}`,
         type: "lesson",
         category: "lesson",
-        labelAr: lessonId,
+        labelAr: lessonLabelAr(lessonId),
         lessonId,
         required: true,
         day,
@@ -97,12 +98,22 @@ export function isLessonComplete(lessonId, lessonRows, progress = {}) {
   const rows = (lessonRows || []).filter((r) => (r.lessonId || r.lesson_id) === lessonId);
   if (rows.some((r) => Boolean(r.completed))) return true;
 
+  const blobDone = progress.lessonCompletions?.[lessonId];
+  if (blobDone?.status === "completed" || blobDone?.completedAt) return true;
+
   const dayNum = LESSON_ID_TO_DAY[lessonId];
   if (dayNum != null && Array.isArray(progress.completedDays)) {
     const dayId = dayNum <= 9 ? `day-0${dayNum}` : `day-${dayNum}`;
     if (progress.completedDays.includes(dayId)) return true;
   }
 
+  return false;
+}
+
+export function lessonStarted(lessonId, lessonRows, progress = {}) {
+  const rows = (lessonRows || []).filter((r) => (r.lessonId || r.lesson_id) === lessonId);
+  if (rows.some((r) => r.progress?.startedAt || r.progress?.status === "in_progress")) return true;
+  if (progress.lessonCompletions?.[lessonId]?.startedAt) return true;
   return false;
 }
 
@@ -134,11 +145,18 @@ export function isCatalogItemComplete(item, ctx) {
 }
 
 export function evaluateCatalog(items, ctx) {
-  const breakdown = items.map((item) => ({
-    ...item,
-    status: isCatalogItemComplete(item, ctx) ? "completed" : "not_started",
-    complete: isCatalogItemComplete(item, ctx),
-  }));
+  const breakdown = items.map((item) => {
+    const complete = isCatalogItemComplete(item, ctx);
+    let status = complete ? "completed" : "not_started";
+    if (!complete && item.type === "lesson" && lessonStarted(item.lessonId, ctx.lessonRows, ctx.progress)) {
+      status = "in_progress";
+    }
+    return {
+      ...item,
+      status,
+      complete,
+    };
+  });
 
   const required = breakdown.filter((i) => i.required);
   const completedRequired = required.filter((i) => i.complete);

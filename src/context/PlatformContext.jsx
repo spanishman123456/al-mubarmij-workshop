@@ -65,6 +65,10 @@ function mapComputedToStats(computed) {
     preAssessmentLabelAr: computed.preAssessmentLabelAr,
     attendanceStatus: computed.attendanceStatus,
     details: computed.details ?? null,
+    pythonRuns: computed.pythonRuns ?? 0,
+    pythonSnippetsCount: computed.pythonSnippetsCount ?? 0,
+    lastPythonRunAt: computed.lastPythonRunAt ?? null,
+    pythonActivityNoteAr: computed.pythonActivityNoteAr ?? null,
   };
 }
 
@@ -384,11 +388,13 @@ export function PlatformProvider({ children }) {
       const resolved = resolveSessionUser(uid);
       if (!resolved || resolved.role !== "student") return prev;
       const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
+      const updated = recordPythonRun(current);
+      scheduleActivitySync(uid, updated);
       return {
         ...prev,
         analyticsByStudent: {
           ...prev.analyticsByStudent,
-          [uid]: recordPythonRun(current),
+          [uid]: updated,
         },
       };
     });
@@ -655,6 +661,7 @@ export function PlatformProvider({ children }) {
       persist((prev) => {
         const current = getStudentProgress(prev, user.id);
         const analytics = recordPythonRun(getStudentAnalytics(prev, user.id));
+        scheduleActivitySync(user.id, analytics);
         const snippet = {
           id: `py-${Date.now()}`,
           title: title || "كود محفوظ",
@@ -689,6 +696,7 @@ export function PlatformProvider({ children }) {
       persist((prev) => {
         const current = getStudentProgress(prev, user.id);
         const analytics = recordPythonRun(getStudentAnalytics(prev, user.id));
+        scheduleActivitySync(user.id, analytics);
         const list = [...(current.graphicProjects || [])];
         const now = new Date().toISOString();
         if (existingId) {
