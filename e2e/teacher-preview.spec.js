@@ -62,6 +62,28 @@ test.describe("teacher preview access", () => {
     await expect(page.getByRole("button", { name: "التالي" })).toBeVisible();
   });
 
+  test("teacher can flip ternary and matching cards in preview", async ({ page }) => {
+    await loginTeacher(page);
+    await page.goto("/quizzes/run/quiz-pre");
+    await expect(page.getByTestId("teacher-quiz-preview")).toBeVisible({ timeout: 15_000 });
+
+    await page.getByTestId("quiz-section-ternary").click();
+    const ternaryCard = page.getByTestId("quiz-card-1").first();
+    await expect(ternaryCard).toBeEnabled();
+    await expect(ternaryCard).toHaveAttribute("aria-pressed", "false");
+    await ternaryCard.click();
+    await expect(ternaryCard).toHaveAttribute("aria-pressed", "true");
+
+    await page.getByTestId("quiz-section-matching").click();
+    const matchSelect = page.locator("select").first();
+    await expect(matchSelect).toBeEnabled();
+    await matchSelect.selectOption({ index: 1 });
+    await expect(matchSelect).not.toHaveValue("");
+
+    await expect(page.getByTestId("teacher-question-meta")).toBeVisible();
+    await expect(page.getByText(/الإجابة النموذجية/i).first()).toBeVisible();
+  });
+
   test("student and teacher quiz-pre share same section tabs", async ({ page, browser }) => {
     await loginStudent(page);
     await page.goto("/quizzes/run/quiz-pre");

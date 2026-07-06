@@ -18,6 +18,7 @@ import {
 } from "../lib/quizApi";
 import { TEACHER_PREVIEW_BADGE_AR } from "../config/publication";
 import { usePlatform } from "../context/PlatformContext";
+import { isQuizInputDisabled, shouldPersistQuizAttempt } from "../lib/quizPreviewPolicy.js";
 
 function isAnswered(value) {
   if (value === undefined || value === null) return false;
@@ -98,7 +99,7 @@ export function ServerQuizTakePage({ quizId }) {
 
   const persist = useCallback(
     async (nextAnswers, nextMeta, options = {}) => {
-      if (teacherPreviewMode || !attempt || submitted) return;
+      if (!shouldPersistQuizAttempt({ teacherPreviewMode, attempt, submitted })) return;
       try {
         const data = await saveQuizAttemptApi(quizId, attempt.id, {
           answers: nextAnswers,
@@ -122,7 +123,7 @@ export function ServerQuizTakePage({ quizId }) {
   );
 
   useEffect(() => {
-    if (teacherPreviewMode || submitted || !attempt) return undefined;
+    if (!shouldPersistQuizAttempt({ teacherPreviewMode, attempt, submitted })) return undefined;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => persist(answers, meta), 900);
     return () => {
@@ -134,7 +135,7 @@ export function ServerQuizTakePage({ quizId }) {
   const progressPercent = flatQuestions.length ? Math.round((answeredCount / flatQuestions.length) * 100) : 0;
 
   function setAnswer(questionId, value) {
-    if (submitted || teacherPreviewMode) return;
+    if (isQuizInputDisabled({ submitted })) return;
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }
 
@@ -307,7 +308,7 @@ export function ServerQuizTakePage({ quizId }) {
             question={currentQuestion}
             value={answers[currentQuestion.id]}
             onChange={(v) => setAnswer(currentQuestion.id, v)}
-            disabled={submitted || teacherPreviewMode}
+            disabled={isQuizInputDisabled({ submitted })}
           />
 
           {teacherPreviewMode ? (
@@ -349,7 +350,7 @@ export function ServerQuizTakePage({ quizId }) {
           <p className="mb-2 text-xs font-bold text-slate-400">قائمة الأسئلة</p>
           <div className="flex flex-wrap gap-1">
             {flatQuestions.map((q, i) => {
-              const done = !teacherPreviewMode && isAnswered(answers[q.id]);
+              const done = isAnswered(answers[q.id]);
               const flagged = !teacherPreviewMode && meta.flagged?.[q.id];
               return (
                 <button
