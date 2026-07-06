@@ -54,6 +54,13 @@ const DAY4_LESSON_ROUTES = new Set([
   "/lessons/nested-loops-lab",
 ]);
 
+export const DAY5_LESSON_ROUTES = new Set([
+  "/lessons/linear-search",
+  "/lessons/binary-search",
+  "/lessons/sorting-algorithms",
+  "/lessons/sieve-primes",
+]);
+
 /** @deprecated use DAY4_LESSON_ROUTES */
 const DAY4_PLUS_DRAFT_ROUTES = DAY4_LESSON_ROUTES;
 
@@ -93,6 +100,10 @@ export const LESSON_ID_TO_DAY = {
   "logic-equivalence": 4,
   "python-tuples": 4,
   "nested-loops-lab": 4,
+  "linear-search": 5,
+  "binary-search": 5,
+  "sorting-algorithms": 5,
+  "sieve-primes": 5,
 };
 
 const ONBOARDING_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre"];
@@ -136,6 +147,7 @@ export function routeContentDay(pathname) {
   if (DAY2_LESSON_ROUTES.has(path)) return 2;
   if (DAY3_LESSON_ROUTES.has(path)) return 3;
   if (DAY4_LESSON_ROUTES.has(path)) return 4;
+  if (DAY5_LESSON_ROUTES.has(path)) return 5;
 
   let m = /^\/path\/day\/day-(\d+)$/.exec(path);
   if (m) return Number(m[1]);

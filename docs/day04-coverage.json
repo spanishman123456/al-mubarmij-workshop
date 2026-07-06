@@ -10,7 +10,7 @@
     "implementationStatus": "done",
     "integrationMode": "standalone",
     "mergedInto": null,
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   },
   {
@@ -24,7 +24,7 @@
     "implementationStatus": "done",
     "integrationMode": "merged",
     "mergedInto": "karnaugh-maps",
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   },
   {
@@ -38,7 +38,7 @@
     "implementationStatus": "done",
     "integrationMode": "standalone",
     "mergedInto": null,
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   },
   {
@@ -52,7 +52,7 @@
     "implementationStatus": "done",
     "integrationMode": "standalone",
     "mergedInto": null,
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   },
   {
@@ -66,7 +66,7 @@
     "implementationStatus": "done",
     "integrationMode": "merged",
     "mergedInto": "python-tuples",
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   },
   {
@@ -80,7 +80,7 @@
     "implementationStatus": "done",
     "integrationMode": "standalone",
     "mergedInto": null,
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   },
   {
@@ -94,7 +94,7 @@
     "implementationStatus": "done",
     "integrationMode": "merged",
     "mergedInto": "nested-loops-lab",
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   },
   {
@@ -108,7 +108,7 @@
     "implementationStatus": "done",
     "integrationMode": "teacher-only",
     "mergedInto": null,
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   },
   {
@@ -122,7 +122,7 @@
     "implementationStatus": "done",
     "integrationMode": "teacher-only",
     "mergedInto": null,
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   },
   {
@@ -136,7 +136,7 @@
     "implementationStatus": "done",
     "integrationMode": "teacher-only",
     "mergedInto": null,
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   },
   {
@@ -150,7 +150,7 @@
     "implementationStatus": "done",
     "integrationMode": "teacher-only",
     "mergedInto": null,
-    "qaStatus": "passed",
+    "qaStatus": "passed (Playwright verified locally: 8/8 pass)",
     "remainingWork": []
   }
 ]

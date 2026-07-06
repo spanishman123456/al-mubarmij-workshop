@@ -20,6 +20,7 @@ import { ensureSessionSchema } from "./auth/sessionRepository.js";
 import { corsMiddleware } from "./auth/cors.js";
 import { day03TeacherAnswers } from "../src/content/teacher/day03TeacherAnswers.js";
 import { day04TeacherAnswers } from "../src/content/teacher/day04TeacherAnswers.js";
+import { day05TeacherAnswers } from "../src/content/teacher/day05TeacherAnswers.js";
 import { getDayPublicationMap, getPublishedDaysCount } from "./config/publication.js";
 import { requirePublishedTeacherDay } from "./auth/publishedContent.js";
 
@@ -95,6 +96,16 @@ export function createApp() {
     requirePublishedTeacherDay(4),
     (_req, res) => {
       res.json({ ok: true, ...day04TeacherAnswers });
+    },
+  );
+
+  app.get(
+    "/api/teacher/day-05-answers",
+    requireAuth,
+    requireRole("teacher"),
+    requirePublishedTeacherDay(5),
+    (_req, res) => {
+      res.json({ ok: true, ...day05TeacherAnswers });
     },
   );
 

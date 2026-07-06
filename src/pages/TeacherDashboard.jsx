@@ -130,6 +130,11 @@ export default function TeacherDashboard() {
             إجابات المعلم — اليوم 4
           </Link>
           ) : null}
+          {publishedDays >= 5 ? (
+          <Link to="/teacher/day-05-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 5
+          </Link>
+          ) : null}
           <Link to="/teacher/quiz-review" className="edu-btn edu-btn-outline text-sm">
             مراجعة الاختبارات
           </Link>

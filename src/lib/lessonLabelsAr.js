@@ -13,6 +13,10 @@ export const LESSON_LABELS_AR = {
   "logic-equivalence": "الاقترانات المنطقية",
   "python-tuples": "الحقول المترابطة",
   "nested-loops-lab": "الحلقات المتداخلة",
+  "linear-search": "البحث الخطي",
+  "binary-search": "البحث الثنائي",
+  "sorting-algorithms": "فرز الاختيار",
+  "sieve-primes": "غربال إراتوستينس",
 };
 
 export function lessonLabelAr(lessonId) {

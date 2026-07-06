@@ -20,13 +20,14 @@ describe("publicationPolicy", () => {
     expect(parsePublishedDays("0")).toBe(15);
   });
 
-  it("maps day01 published and day02-day04 draft when PUBLISHED_DAYS=1", () => {
+  it("maps day01 published and day02-day05 draft when PUBLISHED_DAYS=1", () => {
     const map = getDayPublicationMap(1);
     expect(map).toMatchObject({
       day01: PublicationStatus.PUBLISHED,
       day02: PublicationStatus.DRAFT,
       day03: PublicationStatus.DRAFT,
       day04: PublicationStatus.DRAFT,
+      day05: PublicationStatus.DRAFT,
     });
   });
 
@@ -50,5 +51,6 @@ describe("publicationPolicy", () => {
     expect(isLessonIdPublished("number-systems", 1)).toBe(true);
     expect(isLessonIdPublished("conversions-intro", 1)).toBe(false);
     expect(isLessonIdPublished("python-constants", 1)).toBe(false);
+    expect(isLessonIdPublished("linear-search", 1)).toBe(false);
   });
 });

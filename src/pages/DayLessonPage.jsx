@@ -179,6 +179,17 @@ export default function DayLessonPage() {
             </EduCard>
           ) : null}
 
+          {day.id === "day-05" ? (
+            <EduCard title="دروس اليوم الخامس" accent="violet">
+              <div className="mt-2 flex flex-col gap-2 text-sm">
+                <Link to="/lessons/linear-search">1. البحث الخطي</Link>
+                <Link to="/lessons/binary-search">2. البحث الثنائي</Link>
+                <Link to="/lessons/sorting-algorithms">3. فرز الاختيار (Selection Sort)</Link>
+                <Link to="/lessons/sieve-primes">4. غربال إراتوستينس</Link>
+              </div>
+            </EduCard>
+          ) : null}
+
           <EduCard title="تطبيق عملي" accent="emerald">
             <p className="mt-2 text-slate-700">{day.practicalAr}</p>
             {day.exerciseIds?.length ? (

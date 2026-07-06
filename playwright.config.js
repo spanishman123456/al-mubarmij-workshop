@@ -35,6 +35,7 @@ export default defineConfig({
         PORT: String(API_PORT),
         PLATFORM_DB_PATH: E2E_DB,
         TEACHER_BCRYPT_HASH: E2E_TEACHER_HASH,
+        PUBLISHED_DAYS: process.env.PUBLISHED_DAYS || "4",
       },
     },
     {
@@ -42,7 +43,10 @@ export default defineConfig({
       url: `http://127.0.0.1:${PORT}`,
       reuseExistingServer: false,
       timeout: 120_000,
-      env: { VITE_DEV_API_PORT: String(API_PORT) },
+      env: {
+        VITE_DEV_API_PORT: String(API_PORT),
+        VITE_PUBLISHED_DAYS: process.env.VITE_PUBLISHED_DAYS || process.env.PUBLISHED_DAYS || "4",
+      },
     },
   ],
 });
