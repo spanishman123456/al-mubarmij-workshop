@@ -58,9 +58,16 @@ import {
   TruthTablesLessonPage,
   LogicGatesLessonPage,
 } from "./pages/lessons/Day03LessonPages.jsx";
+import {
+  KarnaughMapsLessonPage,
+  LogicEquivalenceLessonPage,
+  PythonTuplesLessonPage,
+  NestedLoopsLabLessonPage,
+} from "./pages/lessons/Day04LessonPages.jsx";
 import TeacherDay01AnswersPage from "./pages/teacher/TeacherDay01AnswersPage.jsx";
 import TeacherDay02AnswersPage from "./pages/teacher/TeacherDay02AnswersPage.jsx";
 import TeacherDay03AnswersPage from "./pages/teacher/TeacherDay03AnswersPage.jsx";
+import TeacherDay04AnswersPage from "./pages/teacher/TeacherDay04AnswersPage.jsx";
 import TeacherQuizReviewPage from "./pages/teacher/TeacherQuizReviewPage.jsx";
 import { PublishedContentGate } from "./components/auth/PublishedContentGate.jsx";
 
@@ -259,9 +266,15 @@ function AppRoutes() {
         <Route path="/lessons/truth-tables" element={<ProtectedRoute><TruthTablesLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/logic-gates" element={<ProtectedRoute><LogicGatesLessonPage /></ProtectedRoute>} />
 
+        <Route path="/lessons/karnaugh-maps" element={<ProtectedRoute><KarnaughMapsLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/logic-equivalence" element={<ProtectedRoute><LogicEquivalenceLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/python-tuples" element={<ProtectedRoute><PythonTuplesLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/nested-loops-lab" element={<ProtectedRoute><NestedLoopsLabLessonPage /></ProtectedRoute>} />
+
         <Route path="/teacher/day-01-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay01AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-02-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay02AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-03-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay03AnswersPage /></ProtectedRoute>} />
+        <Route path="/teacher/day-04-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay04AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/quiz-review" element={<ProtectedRoute roles={["teacher"]}><TeacherQuizReviewPage /></ProtectedRoute>} />
 
         <Route

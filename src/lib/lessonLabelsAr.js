@@ -9,6 +9,10 @@ export const LESSON_LABELS_AR = {
   "ascii-unicode": "ASCII و Unicode",
   "hex-puzzle": "لغز الست عشري",
   "hex-colors": "الألوان والست عشري",
+  "karnaugh-maps": "خريطة كارنوف",
+  "logic-equivalence": "الاقترانات المنطقية",
+  "python-tuples": "الحقول المترابطة",
+  "nested-loops-lab": "الحلقات المتداخلة",
 };
 
 export function lessonLabelAr(lessonId) {

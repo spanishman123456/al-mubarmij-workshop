@@ -77,13 +77,13 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
         </ol>
       </EduCard>
 
-      {L.terms?.length ? (
+      {L.vocabularyAr?.length || L.terms?.length ? (
         <EduCard title="المصطلحات" className="mt-4" accent="amber">
           <dl className="space-y-2 text-sm">
-            {L.terms.map((t) => (
-              <div key={t.termAr}>
-                <dt className="font-bold text-violet-800">{t.termAr}</dt>
-                <dd className="text-slate-600">{t.definitionAr}</dd>
+            {(L.vocabularyAr || L.terms || []).map((t) => (
+              <div key={t.term || t.termAr}>
+                <dt className="font-bold text-violet-800">{t.term || t.termAr}</dt>
+                <dd className="text-slate-600">{t.def || t.definitionAr}</dd>
               </div>
             ))}
           </dl>
@@ -113,6 +113,18 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           </EduCard>
         ))}
       </section>
+      ) : null}
+
+      {L.wrongExamples?.length ? (
+        <EduCard title="أمثلة خاطئة — تعلّم من الخطأ" className="mt-6" accent="rose">
+          <ul className="space-y-2 text-sm text-slate-700">
+            {L.wrongExamples.map((m) => (
+              <li key={m.titleAr}>
+                <span className="font-semibold">{m.titleAr}:</span> {m.bodyAr}
+              </li>
+            ))}
+          </ul>
+        </EduCard>
       ) : null}
 
       {children}
@@ -163,6 +175,12 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           ))}
         </ul>
       </EduCard>
+      ) : null}
+
+      {L.challengeAr ? (
+        <EduCard title="تحدٍ للمتقدمين" className="mt-4" accent="violet">
+          <p className="text-sm text-slate-700">{L.challengeAr}</p>
+        </EduCard>
       ) : null}
 
       <EduCard title="ملخص" className="mt-4">

@@ -47,12 +47,15 @@ const DAY3_LESSON_ROUTES = new Set([
   "/lessons/logic-gates",
 ]);
 
-const DAY4_PLUS_DRAFT_ROUTES = new Set([
+const DAY4_LESSON_ROUTES = new Set([
   "/lessons/karnaugh-maps",
   "/lessons/logic-equivalence",
   "/lessons/python-tuples",
   "/lessons/nested-loops-lab",
 ]);
+
+/** @deprecated use DAY4_LESSON_ROUTES */
+const DAY4_PLUS_DRAFT_ROUTES = DAY4_LESSON_ROUTES;
 
 export const LESSON_ID_TO_DAY = {
   "binary-cards": 1,
@@ -86,6 +89,10 @@ export const LESSON_ID_TO_DAY = {
   collatz: 3,
   "truth-tables": 3,
   "logic-gates": 3,
+  "karnaugh-maps": 4,
+  "logic-equivalence": 4,
+  "python-tuples": 4,
+  "nested-loops-lab": 4,
 };
 
 const ONBOARDING_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre"];
@@ -128,7 +135,7 @@ export function routeContentDay(pathname) {
   if (DAY1_LESSON_ROUTES.has(path)) return 1;
   if (DAY2_LESSON_ROUTES.has(path)) return 2;
   if (DAY3_LESSON_ROUTES.has(path)) return 3;
-  if (DAY4_PLUS_DRAFT_ROUTES.has(path)) return 4;
+  if (DAY4_LESSON_ROUTES.has(path)) return 4;
 
   let m = /^\/path\/day\/day-(\d+)$/.exec(path);
   if (m) return Number(m[1]);
