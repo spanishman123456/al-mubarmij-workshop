@@ -269,18 +269,21 @@ export function getTeacherPreviewQuizPayload(quizId) {
       questionAr: q.questionAr,
       explainAr: q.explainAr,
       lessonLink: q.lessonLink || null,
+      conceptTag: q.conceptTag || q.topicAr || null,
+      points: q.points ?? null,
       modelAnswer: modelAnswerForQuestion(q),
       correctPairs: q.type === "match" ? q.correctPairs : undefined,
       correctOrder: q.type === "order" ? q.correctOrder : undefined,
     };
   });
+  const sections = buildSectionGroups(quizId, questions);
   return {
     quizId,
     titleAr: quizId === "quiz-pre" ? "الاختبار القبلي" : "الاختبار البعدي",
     mode: "teacher_preview",
     diagnostic: quizId === "quiz-pre",
     totalQuestions: questions.length,
-    questions,
+    sections,
     sectionMeta: getSectionsForQuiz(quizId).map(({ id, titleAr }) => ({ id, titleAr })),
   };
 }

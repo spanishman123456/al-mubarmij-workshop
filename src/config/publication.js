@@ -73,7 +73,8 @@ export function isStudentDayRouteAllowed(pathname, dayUnlockMap, role = "student
   return canStudentAccessDayContent(dayId, dayUnlockMap, myStats);
 }
 
-export const TEACHER_PREVIEW_BADGE_AR = "معاينة المعلم — غير منشور للطلاب بعد";
+export const TEACHER_PREVIEW_BADGE_AR =
+  "معاينة المعلم — هذا العرض مطابق لواجهة الطالب، مع إظهار الإجابات النموذجية للمعلم فقط.";
 
 export function isTeacherRole(role) {
   return role === "teacher";

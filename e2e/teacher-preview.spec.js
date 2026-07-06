@@ -56,6 +56,29 @@ test.describe("teacher preview access", () => {
     await expect(page.getByText(/معاينة المعلم/i).first()).toBeVisible();
     await expect(page.getByText(/تعذر تحميل الاختبار/i)).toHaveCount(0);
     await expect(page.getByText(/الإجابة النموذجية/i).first()).toBeVisible();
+    await expect(page.getByTestId("quiz-section-tabs")).toBeVisible();
+    await expect(page.getByTestId("quiz-section-core")).toBeVisible();
+    await expect(page.getByTestId("quiz-question-card")).toBeVisible();
+    await expect(page.getByRole("button", { name: "التالي" })).toBeVisible();
+  });
+
+  test("student and teacher quiz-pre share same section tabs", async ({ page, browser }) => {
+    await loginStudent(page);
+    await page.goto("/quizzes/run/quiz-pre");
+    await expect(page.getByTestId("student-quiz-runner")).toBeVisible({ timeout: 15_000 });
+    const studentSections = await page.getByTestId("quiz-section-tabs").locator("button").allTextContents();
+    expect(studentSections.length).toBeGreaterThan(3);
+    await expect(page.getByText(/الإجابة النموذجية/i)).toHaveCount(0);
+
+    const teacherCtx = await browser.newContext();
+    const teacherPage = await teacherCtx.newPage();
+    await loginTeacher(teacherPage);
+    await teacherPage.goto("/quizzes/run/quiz-pre");
+    await expect(teacherPage.getByTestId("teacher-quiz-preview")).toBeVisible({ timeout: 15_000 });
+    const teacherSections = await teacherPage.getByTestId("quiz-section-tabs").locator("button").allTextContents();
+    expect(teacherSections).toEqual(studentSections);
+    await expect(teacherPage.getByText(/الإجابة النموذجية/i).first()).toBeVisible();
+    await teacherCtx.close();
   });
 
   test("post assessment visible on quizzes page", async ({ page }) => {

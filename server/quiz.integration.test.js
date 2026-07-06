@@ -128,8 +128,21 @@ describe("quiz API integration", () => {
     const body = await res.json();
     expect(body.mode).toBe("teacher_preview");
     expect(body.totalQuestions).toBe(108);
-    expect(body.questions[0].modelAnswer).toBeTruthy();
-    expect(body.questions[0].explainAr).toBeTruthy();
+    expect(body.sections.length).toBeGreaterThan(0);
+    const first = body.sections[0].questions[0];
+    expect(first.modelAnswer).toBeTruthy();
+    expect(first.explainAr).toBeTruthy();
+
+    const pub = await authFetch(baseUrl, "/api/quiz/quiz-pre/public", {
+      cookie: authStudent.cookie,
+      csrf: authStudent.csrf,
+    });
+    const pubBody = await pub.json();
+    expect(pubBody.sections.map((s) => s.id)).toEqual(body.sections.map((s) => s.id));
+    const pubIds = pubBody.sections.flatMap((s) => s.questions.map((q) => q.id));
+    const previewIds = body.sections.flatMap((s) => s.questions.map((q) => q.id));
+    expect(previewIds).toEqual(pubIds);
+    expect(pubBody.sections[0].questions[0].explainAr).toBeUndefined();
   });
 
   it("student cannot access teacher quiz preview", async () => {
@@ -160,7 +173,8 @@ describe("quiz API integration", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.quizId).toBe("quiz-post");
-    expect(body.questions.length).toBeGreaterThan(0);
+    expect(body.sections.length).toBeGreaterThan(0);
+    expect(body.sections.flatMap((s) => s.questions).length).toBeGreaterThan(0);
   });
 
   it("teacher roster includes pre-assessment percent matching submitted attempt", async () => {

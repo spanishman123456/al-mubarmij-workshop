@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getPublicQuizPayload,
+  getTeacherPreviewQuizPayload,
   gradeAttempt,
   gradeQuestion,
   sanitizeQuestion,
@@ -83,5 +84,27 @@ describe("quizService", () => {
   it("sanitize adds instruction for essay", () => {
     const s = sanitizeQuestion({ type: "essay", questionAr: "test" });
     expect(s.instructionAr).toContain("داخل المنصة");
+  });
+
+  it("teacher preview uses same section order and question ids as public", () => {
+    const pub = getPublicQuizPayload("quiz-pre");
+    const preview = getTeacherPreviewQuizPayload("quiz-pre");
+    expect(preview.sections.length).toBe(pub.sections.length);
+    expect(preview.sections.map((s) => s.id)).toEqual(pub.sections.map((s) => s.id));
+    expect(preview.sections.map((s) => s.titleAr)).toEqual(pub.sections.map((s) => s.titleAr));
+    const pubIds = pub.sections.flatMap((s) => s.questions.map((q) => q.id));
+    const previewIds = preview.sections.flatMap((s) => s.questions.map((q) => q.id));
+    expect(previewIds).toEqual(pubIds);
+  });
+
+  it("teacher preview includes model answers but public does not", () => {
+    const preview = getTeacherPreviewQuizPayload("quiz-pre");
+    const first = preview.sections[0]?.questions[0];
+    expect(first?.modelAnswer).toBeTruthy();
+    expect(first?.explainAr).toBeTruthy();
+    const pub = getPublicQuizPayload("quiz-pre");
+    const pubFirst = pub.sections[0]?.questions[0];
+    expect(pubFirst?.modelAnswer).toBeUndefined();
+    expect(pubFirst?.explainAr).toBeUndefined();
   });
 });

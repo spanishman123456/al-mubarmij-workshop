@@ -35,13 +35,12 @@ export function ServerQuizTakePage({ quizId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [quiz, setQuiz] = useState(null);
-  const [teacherPreview, setTeacherPreview] = useState(null);
+  const [teacherPreviewMode, setTeacherPreviewMode] = useState(false);
   const [attempt, setAttempt] = useState(null);
   const [answers, setAnswers] = useState({});
   const [meta, setMeta] = useState({ sectionIndex: 0, questionIndex: 0, flagged: {} });
   const [saveMessage, setSaveMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [previewIndex, setPreviewIndex] = useState(0);
 
   const submitted = attempt?.status === "submitted";
 
@@ -52,8 +51,12 @@ export function ServerQuizTakePage({ quizId }) {
         if (isTeacher) {
           const preview = await fetchTeacherQuizPreviewApi(quizId);
           if (cancelled) return;
-          setTeacherPreview(preview);
-          setQuiz({ titleAr: preview.titleAr, sections: [] });
+          if (!preview?.sections?.length) {
+            setError("تعذر تحميل الاختبار — لا توجد أقسام.");
+            return;
+          }
+          setQuiz({ titleAr: preview.titleAr, sections: preview.sections });
+          setTeacherPreviewMode(true);
         } else {
           const [pub, att] = await Promise.all([fetchQuizPublicApi(quizId), fetchQuizAttemptApi(quizId)]);
           if (cancelled) return;
@@ -95,7 +98,7 @@ export function ServerQuizTakePage({ quizId }) {
 
   const persist = useCallback(
     async (nextAnswers, nextMeta, options = {}) => {
-      if (!attempt || submitted) return;
+      if (teacherPreviewMode || !attempt || submitted) return;
       try {
         const data = await saveQuizAttemptApi(quizId, attempt.id, {
           answers: nextAnswers,
@@ -115,23 +118,23 @@ export function ServerQuizTakePage({ quizId }) {
         setSaveMessage("تعذر حفظ آخر تعديل — تحقق من الاتصال.");
       }
     },
-    [attempt, submitted, quizId, isPreAssessment, user?.role, savePreAssessmentProgress, flatQuestions.length],
+    [attempt, submitted, quizId, isPreAssessment, user?.role, savePreAssessmentProgress, flatQuestions.length, teacherPreviewMode],
   );
 
   useEffect(() => {
-    if (submitted || !attempt) return undefined;
+    if (teacherPreviewMode || submitted || !attempt) return undefined;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => persist(answers, meta), 900);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [answers, meta, submitted, attempt, persist]);
+  }, [answers, meta, submitted, attempt, persist, teacherPreviewMode]);
 
   const answeredCount = flatQuestions.filter((q) => isAnswered(answers[q.id])).length;
   const progressPercent = flatQuestions.length ? Math.round((answeredCount / flatQuestions.length) * 100) : 0;
 
   function setAnswer(questionId, value) {
-    if (submitted) return;
+    if (submitted || teacherPreviewMode) return;
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }
 
@@ -190,18 +193,6 @@ export function ServerQuizTakePage({ quizId }) {
     );
   }
 
-  if (isTeacher && teacherPreview) {
-    return (
-      <TeacherQuizPreviewView
-        preview={teacherPreview}
-        quizId={quizId}
-        previewIndex={previewIndex}
-        setPreviewIndex={setPreviewIndex}
-        onBack={() => navigate("/quizzes")}
-      />
-    );
-  }
-
   if (error || !quiz || !currentQuestion) {
     return (
       <div className="min-h-screen bg-[#0a0e1a] pb-24 pt-24 text-center font-ar text-white">
@@ -216,7 +207,10 @@ export function ServerQuizTakePage({ quizId }) {
   const qType = currentQuestion.type || "mcq";
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] pb-24 pt-24 font-ar text-white">
+    <div
+      className="min-h-screen bg-[#0a0e1a] pb-24 pt-24 font-ar text-white"
+      data-testid={teacherPreviewMode ? "teacher-quiz-preview" : "student-quiz-runner"}
+    >
       <div className="mx-auto max-w-3xl animate-slide-up px-4">
         <button
           type="button"
@@ -226,33 +220,59 @@ export function ServerQuizTakePage({ quizId }) {
           ← العودة للاختبارات
         </button>
 
+        {teacherPreviewMode ? (
+          <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-950/30 p-4 text-sm text-amber-100">
+            <p className="font-bold">معاينة المعلم</p>
+            <p className="mt-1">{TEACHER_PREVIEW_BADGE_AR}</p>
+            <p className="mt-2 text-xs text-amber-200/90">
+              لا تُنشأ محاولة طالب ولا تُحسب نتيجة — للمراجعة والإشراف فقط.
+              {isPreAssessment
+                ? " الاختبار القبلي تشخيصي ولا يمنع تقدم الطالب."
+                : " الاختبار البعدي مستقل عن القبلي لقياس التحسن."}
+            </p>
+          </div>
+        ) : null}
+
         <header className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6">
           <h1 className="text-2xl font-bold">{quiz.titleAr}</h1>
           <p className="mt-2 text-sm text-slate-300">
-            {isPreAssessment ? PRE_ASSESSMENT_INTRO_AR : "أجب عن الأسئلة داخل المنصة — لا حاجة لدفتر خارجي."}
+            {teacherPreviewMode
+              ? `${flatQuestions.length} سؤالاً — نفس واجهة الطالب مع الإجابات النموذجية أدناه`
+              : isPreAssessment
+                ? PRE_ASSESSMENT_INTRO_AR
+                : "أجب عن الأسئلة داخل المنصة — لا حاجة لدفتر خارجي."}
           </p>
-          {isPreAssessment ? <p className="mt-2 text-xs text-violet-200">{PRE_ASSESSMENT_DEFERRED_AR}</p> : null}
+          {isPreAssessment && !teacherPreviewMode ? (
+            <p className="mt-2 text-xs text-violet-200">{PRE_ASSESSMENT_DEFERRED_AR}</p>
+          ) : null}
           <div className="mt-4">
             <div className="mb-1 flex justify-between text-xs text-slate-400">
-              <span>التقدم</span>
+              <span>{teacherPreviewMode ? "مؤشر السؤال" : "التقدم"}</span>
               <span>
-                {answeredCount} / {flatQuestions.length}
+                {teacherPreviewMode
+                  ? `${currentFlatIndex + 1} / ${flatQuestions.length}`
+                  : `${answeredCount} / ${flatQuestions.length}`}
               </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-500"
-                style={{ width: `${progressPercent}%` }}
+                style={{
+                  width: teacherPreviewMode
+                    ? `${Math.round(((currentFlatIndex + 1) / flatQuestions.length) * 100)}%`
+                    : `${progressPercent}%`,
+                }}
               />
             </div>
           </div>
         </header>
 
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap gap-2" data-testid="quiz-section-tabs">
           {quiz.sections.map((s, si) => (
             <button
               key={s.id}
               type="button"
+              data-testid={`quiz-section-${s.id}`}
               onClick={() => {
                 const first = flatQuestions.findIndex((q) => q.sectionIndex === si);
                 if (first >= 0) goToFlatIndex(first);
@@ -287,14 +307,18 @@ export function ServerQuizTakePage({ quizId }) {
             question={currentQuestion}
             value={answers[currentQuestion.id]}
             onChange={(v) => setAnswer(currentQuestion.id, v)}
-            disabled={submitted}
+            disabled={submitted || teacherPreviewMode}
           />
 
-          <p className="mt-3 text-xs text-slate-500">
-            {["essay", "code", "code-editor"].includes(qType)
-              ? "يُراجع المعلم هذا السؤال بعد الإرسال."
-              : "تُصحَّح هذه الإجابة آلياً بعد الإرسال النهائي."}
-          </p>
+          {teacherPreviewMode ? (
+            <TeacherQuestionMetaPanel question={currentQuestion} qType={qType} />
+          ) : (
+            <p className="mt-3 text-xs text-slate-500">
+              {["essay", "code", "code-editor"].includes(qType)
+                ? "يُراجع المعلم هذا السؤال بعد الإرسال."
+                : "تُصحَّح هذه الإجابة آلياً بعد الإرسال النهائي."}
+            </p>
+          )}
         </fieldset>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -314,17 +338,19 @@ export function ServerQuizTakePage({ quizId }) {
           >
             التالي
           </button>
-          <button type="button" className="edu-btn edu-btn-outline text-sm" onClick={toggleFlag}>
-            {meta.flagged?.[currentQuestion.id] ? "★ مراجعة لاحقًا" : "☆ وضع علامة مراجعة"}
-          </button>
+          {!teacherPreviewMode ? (
+            <button type="button" className="edu-btn edu-btn-outline text-sm" onClick={toggleFlag}>
+              {meta.flagged?.[currentQuestion.id] ? "★ مراجعة لاحقًا" : "☆ وضع علامة مراجعة"}
+            </button>
+          ) : null}
         </div>
 
         <div className="mt-4 max-h-32 overflow-y-auto rounded-xl border border-white/10 bg-black/20 p-3">
           <p className="mb-2 text-xs font-bold text-slate-400">قائمة الأسئلة</p>
           <div className="flex flex-wrap gap-1">
             {flatQuestions.map((q, i) => {
-              const done = isAnswered(answers[q.id]);
-              const flagged = meta.flagged?.[q.id];
+              const done = !teacherPreviewMode && isAnswered(answers[q.id]);
+              const flagged = !teacherPreviewMode && meta.flagged?.[q.id];
               return (
                 <button
                   key={q.id}
@@ -349,30 +375,81 @@ export function ServerQuizTakePage({ quizId }) {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="edu-btn press-scale mt-6 w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-4 text-lg font-bold text-white"
-          data-testid="quiz-submit"
-        >
-          {isPreAssessment ? "إرسال التقويم القبلي" : "إرسال الاختبار النهائي"}
-        </button>
-
-        {isPreAssessment ? (
+        {teacherPreviewMode ? (
+          <p className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 text-center text-sm text-slate-300">
+            وضع المعاينة — لا يمكن إرسال إجابات من حساب المعلم.
+          </p>
+        ) : (
           <>
-            {saveMessage ? <p className="mt-2 text-center text-sm text-slate-300">{saveMessage}</p> : null}
             <button
               type="button"
-              onClick={handleDefer}
-              className="edu-btn press-scale mt-3 w-full rounded-xl border border-violet-400/50 bg-violet-950/30 py-3 font-bold text-violet-100"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="edu-btn press-scale mt-6 w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-4 text-lg font-bold text-white"
+              data-testid="quiz-submit"
             >
-              إكمال التقويم لاحقًا والانتقال إلى الدرس الأول
+              {isPreAssessment ? "إرسال التقويم القبلي" : "إرسال الاختبار النهائي"}
             </button>
+
+            {isPreAssessment ? (
+              <>
+                {saveMessage ? <p className="mt-2 text-center text-sm text-slate-300">{saveMessage}</p> : null}
+                <button
+                  type="button"
+                  onClick={handleDefer}
+                  className="edu-btn press-scale mt-3 w-full rounded-xl border border-violet-400/50 bg-violet-950/30 py-3 font-bold text-violet-100"
+                >
+                  إكمال التقويم لاحقًا والانتقال إلى الدرس الأول
+                </button>
+              </>
+            ) : (
+              saveMessage && <p className="mt-2 text-center text-sm text-slate-300">{saveMessage}</p>
+            )}
           </>
-        ) : (
-          saveMessage && <p className="mt-2 text-center text-sm text-slate-300">{saveMessage}</p>
         )}
+      </div>
+    </div>
+  );
+}
+
+function TeacherQuestionMetaPanel({ question, qType }) {
+  return (
+    <div className="mt-4 space-y-3 border-t border-white/10 pt-4" data-testid="teacher-question-meta">
+      <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-sm">
+        <p className="font-bold text-emerald-200">الإجابة النموذجية</p>
+        <p className="mt-2 whitespace-pre-wrap text-emerald-100" dir="auto">
+          {formatModelAnswer(question)}
+        </p>
+      </div>
+      {question.explainAr ? (
+        <p className="text-sm text-slate-300">
+          <span className="font-semibold text-violet-300">الشرح: </span>
+          {question.explainAr}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+        <span>
+          <span className="text-slate-500">نوع السؤال: </span>
+          {questionTypeLabel(qType)}
+        </span>
+        {question.conceptTag ? (
+          <span>
+            <span className="text-slate-500">المفهوم: </span>
+            {question.conceptTag}
+          </span>
+        ) : null}
+        {question.lessonLink ? (
+          <span>
+            <span className="text-slate-500">الدرس: </span>
+            {question.lessonLink}
+          </span>
+        ) : null}
+        {question.points != null ? (
+          <span>
+            <span className="text-slate-500">الدرجة: </span>
+            {question.points}
+          </span>
+        ) : null}
       </div>
     </div>
   );
@@ -384,119 +461,6 @@ function formatModelAnswer(q) {
   if (Array.isArray(v)) return v.join(" → ");
   if (typeof v === "object") return JSON.stringify(v);
   return String(v);
-}
-
-function TeacherQuizPreviewView({ preview, quizId, previewIndex, setPreviewIndex, onBack }) {
-  const questions = preview.questions || [];
-  const current = questions[previewIndex];
-  const isPre = quizId === "quiz-pre";
-
-  if (!current) {
-    return (
-      <div className="min-h-screen bg-[#0a0e1a] pb-24 pt-24 text-center font-ar text-white">
-        <p>لا توجد أسئلة في هذا الاختبار.</p>
-        <button type="button" onClick={onBack} className="edu-btn edu-btn-outline press-scale mt-4">
-          العودة
-        </button>
-      </div>
-    );
-  }
-
-  const qType = current.type || "mcq";
-
-  return (
-    <div className="min-h-screen bg-[#0a0e1a] pb-24 pt-24 font-ar text-white" data-testid="teacher-quiz-preview">
-      <div className="mx-auto max-w-3xl animate-slide-up px-4">
-        <button type="button" onClick={onBack} className="press-scale mb-6 text-sm text-slate-400 transition hover:text-white">
-          ← العودة للاختبارات
-        </button>
-
-        <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-950/30 p-4 text-sm text-amber-100">
-          <p className="font-bold">معاينة المعلم</p>
-          <p className="mt-1">{TEACHER_PREVIEW_BADGE_AR}</p>
-          <p className="mt-2 text-xs text-amber-200/90">
-            لا تُنشأ محاولة طالب ولا تُحسب نتيجة — للمراجعة والإشراف فقط.
-            {isPre ? " الاختبار القبلي تشخيصي ولا يمنع تقدم الطالب." : " الاختبار البعدي مستقل عن القبلي لقياس التحسن."}
-          </p>
-        </div>
-
-        <header className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-6">
-          <h1 className="text-2xl font-bold">{preview.titleAr}</h1>
-          <p className="mt-2 text-sm text-slate-300">
-            {questions.length} سؤالاً · وضع المعاينة مع الإجابات النموذجية والشرح
-          </p>
-        </header>
-
-        <fieldset className="quiz-question-card rounded-2xl border border-white/10 bg-black/30 p-5" dir="rtl">
-          <legend className="px-2 text-lg font-bold">
-            السؤال {previewIndex + 1} من {questions.length}
-            <span className="mr-2 text-xs font-normal text-violet-300">({questionTypeLabel(qType)})</span>
-          </legend>
-          <p className="mb-4 whitespace-pre-wrap text-right leading-relaxed text-slate-200">{current.questionAr}</p>
-
-          {current.codeSnippetAr ? (
-            <pre
-              className="mb-4 overflow-x-auto rounded-xl border border-white/10 bg-black/50 p-4 text-left text-sm text-emerald-200"
-              dir="ltr"
-            >
-              {current.codeSnippetAr}
-            </pre>
-          ) : null}
-
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-sm">
-            <p className="font-bold text-emerald-200">الإجابة النموذجية</p>
-            <p className="mt-2 whitespace-pre-wrap text-emerald-100" dir="auto">
-              {formatModelAnswer(current)}
-            </p>
-          </div>
-
-          {current.explainAr ? (
-            <p className="mt-4 border-t border-white/10 pt-4 text-sm text-slate-300">
-              <span className="font-semibold text-violet-300">الشرح: </span>
-              {current.explainAr}
-            </p>
-          ) : null}
-        </fieldset>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="edu-btn edu-btn-outline text-sm"
-            disabled={previewIndex === 0}
-            onClick={() => setPreviewIndex((i) => Math.max(0, i - 1))}
-          >
-            السابق
-          </button>
-          <button
-            type="button"
-            className="edu-btn edu-btn-outline text-sm"
-            disabled={previewIndex >= questions.length - 1}
-            onClick={() => setPreviewIndex((i) => Math.min(questions.length - 1, i + 1))}
-          >
-            التالي
-          </button>
-        </div>
-
-        <div className="mt-4 max-h-32 overflow-y-auto rounded-xl border border-white/10 bg-black/20 p-3">
-          <p className="mb-2 text-xs font-bold text-slate-400">قائمة الأسئلة</p>
-          <div className="flex flex-wrap gap-1">
-            {questions.map((q, i) => (
-              <button
-                key={q.id}
-                type="button"
-                onClick={() => setPreviewIndex(i)}
-                className={`h-8 w-8 rounded text-xs font-bold ${
-                  i === previewIndex ? "bg-violet-600 text-white" : "bg-white/10 text-slate-400"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export function QuizReviewPageContent({ attemptId }) {
