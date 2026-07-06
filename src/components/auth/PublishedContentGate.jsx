@@ -1,33 +1,50 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { usePlatform } from "../../context/PlatformContext";
-import { isLessonRoutePublished, LOCKED_MESSAGE_AR } from "../../config/publication";
+import {
+  isStudentDayRouteAllowed,
+  LOCKED_MESSAGE_AR,
+  DAY_LOCKED_MESSAGE_AR,
+  DayStudentState,
+  routeContentDay,
+} from "../../config/publication";
 import { PageShell, EduCard } from "../layout/PageShell";
 
 /**
- * Blocks students from draft routes; teachers respect teacher-answer day limits.
+ * Blocks students from draft routes and sequentially locked days.
  */
 export function PublishedContentGate({ children }) {
-  const { user, authReady } = usePlatform();
+  const { user, authReady, myStats } = usePlatform();
   const { pathname } = useLocation();
 
   if (!authReady || !user) return children;
 
   const role = user.role;
+  const dayUnlockMap = myStats?.dayUnlock?.dayUnlockMap;
 
-  if (isLessonRoutePublished(pathname, role)) return children;
+  if (isStudentDayRouteAllowed(pathname, dayUnlockMap, role)) return children;
 
   if (role === "student") {
+    const day = routeContentDay(pathname);
+    const dayId = day != null && day > 0 ? (day <= 9 ? `day-0${day}` : `day-${day}`) : null;
+    const state = dayId ? dayUnlockMap?.[dayId] : null;
+    const locked = state === DayStudentState.LOCKED;
+    const message = locked ? DAY_LOCKED_MESSAGE_AR : LOCKED_MESSAGE_AR;
+
     return (
-      <PageShell title="المحتوى غير متاح بعد" badge="الجدول التدريبي">
+      <PageShell title={locked ? "اليوم مقفل" : "المحتوى غير متاح بعد"} badge="المسار التعليمي">
         <EduCard accent="amber">
-          <p className="text-lg font-semibold text-slate-800">{LOCKED_MESSAGE_AR}</p>
-          <p className="mt-3 text-sm text-slate-600">
-            يمكنك متابعة محتوى اليوم الأول من{" "}
-            <a href="/path/day/day-01" className="font-bold text-violet-700 underline">
-              صفحة اليوم الأول
-            </a>
-            .
-          </p>
+          <p className="text-lg font-semibold text-slate-800">{message}</p>
+          {locked ? (
+            <p className="mt-3 text-sm text-slate-600">أكمل اليوم السابق ثم ارجع إلى المسار من صفحة /path.</p>
+          ) : (
+            <p className="mt-3 text-sm text-slate-600">
+              يمكنك متابعة محتوى اليوم الأول من{" "}
+              <a href="/path/day/day-01" className="font-bold text-violet-700 underline">
+                صفحة اليوم الأول
+              </a>
+              .
+            </p>
+          )}
         </EduCard>
       </PageShell>
     );

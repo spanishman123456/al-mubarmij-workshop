@@ -24,7 +24,7 @@ import {
   mergeRemoteAnalytics,
 } from "../lib/platformAnalytics";
 import { reportLoginEvent, reportActivityPatch, fetchAllAnalytics } from "../lib/analyticsApi";
-import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi, syncProgressApi, fetchComputedProgressMe, fetchTeacherRosterProgress } from "../lib/platformApi";
+import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi, syncProgressApi, fetchComputedProgressMe, fetchTeacherRosterProgress, completeStudentDayApi } from "../lib/platformApi";
 import {
   loadValidatedPlatformState,
   resolveSessionUser,
@@ -69,6 +69,7 @@ function mapComputedToStats(computed) {
     pythonSnippetsCount: computed.pythonSnippetsCount ?? 0,
     lastPythonRunAt: computed.lastPythonRunAt ?? null,
     pythonActivityNoteAr: computed.pythonActivityNoteAr ?? null,
+    dayUnlock: computed.dayUnlock ?? null,
   };
 }
 
@@ -456,31 +457,41 @@ export function PlatformProvider({ children }) {
   );
 
   const markDayComplete = useCallback(
-    (dayId) => {
-      if (!user || user.role !== "student") return;
-      persist((prev) => {
-        const current = getStudentProgress(prev, user.id);
-        const analytics = getStudentAnalytics(prev, user.id);
-        const set = new Set(current.completedDays || []);
-        set.add(dayId);
-        return {
-          ...prev,
-          progressByStudent: {
-            ...prev.progressByStudent,
-            [user.id]: {
-              ...current,
-              completedDays: [...set],
-              updatedAt: new Date().toISOString(),
+    async (dayId) => {
+      if (!user || user.role !== "student") return { ok: false };
+      try {
+        const res = await completeStudentDayApi(dayId);
+        if (res.computed) applyServerComputed(user.id, res.computed);
+        persist((prev) => {
+          const current = getStudentProgress(prev, user.id);
+          const set = new Set(current.completedDays || []);
+          set.add(dayId);
+          return {
+            ...prev,
+            progressByStudent: {
+              ...prev.progressByStudent,
+              [user.id]: {
+                ...current,
+                completedDays: [...set],
+                dayCompletionTimes: {
+                  ...(current.dayCompletionTimes || {}),
+                  [dayId]: res.completedAt || new Date().toISOString(),
+                },
+                updatedAt: new Date().toISOString(),
+              },
             },
-          },
-          analyticsByStudent: {
-            ...prev.analyticsByStudent,
-            [user.id]: recordActivityComplete(analytics, `day-${dayId}`),
-          },
+          };
+        });
+        return { ok: true, ...res };
+      } catch (err) {
+        return {
+          ok: false,
+          error: err?.message,
+          incompleteItems: err?.incompleteItems || [],
         };
-      });
+      }
     },
-    [persist, user],
+    [persist, user, applyServerComputed],
   );
 
   const saveWorksheetAnswers = useCallback(

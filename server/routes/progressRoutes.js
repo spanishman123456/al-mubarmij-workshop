@@ -6,6 +6,12 @@ import {
   recalculateAllStudentsProgress,
 } from "../progress/progressCalculationService.js";
 import { saveStudentProgress, getStudentProgress } from "../repositories/progressRepository.js";
+import {
+  completeStudentDay,
+  getStudentDayUnlockStatus,
+  teacherUnlockDayForStudent,
+} from "../progress/dayUnlockService.js";
+import { dayNumberFromId } from "../../src/lib/dayUnlockPolicy.js";
 
 export function registerProgressRoutes(app, logError) {
   app.get("/api/progress/me", requireAuth, requireRole("student"), (req, res) => {
@@ -91,6 +97,66 @@ export function registerProgressRoutes(app, logError) {
       res.status(500).json({ ok: false, error: "failed" });
     }
   });
+
+  app.get("/api/student/day-unlock", requireAuth, requireRole("student"), (req, res) => {
+    try {
+      const status = getStudentDayUnlockStatus(req.auth.userId);
+      res.json({ ok: true, ...status });
+    } catch (err) {
+      logError("dayUnlock.status", err);
+      res.status(500).json({ ok: false, error: "failed" });
+    }
+  });
+
+  app.post("/api/student/day/:dayId/complete", requireAuth, requireRole("student"), (req, res) => {
+    try {
+      const result = completeStudentDay(req.auth.userId, req.params.dayId);
+      const computed = calculateStudentProgress(req.auth.userId, {
+        reason: "day_complete",
+        persistSnapshot: true,
+      });
+      res.json({ ok: true, ...result, computed });
+    } catch (err) {
+      if (err.status === 403 || err.status === 400) {
+        return res.status(err.status).json({
+          ok: false,
+          error: err.code || err.message,
+          messageAr: err.message,
+          incompleteItems: err.incompleteItems || [],
+        });
+      }
+      logError("dayUnlock.complete", err);
+      res.status(500).json({ ok: false, error: "failed" });
+    }
+  });
+
+  app.post(
+    "/api/teacher/students/:studentId/unlock-day",
+    requireAuth,
+    requireRole("teacher"),
+    requireProgressAccess,
+    (req, res) => {
+      try {
+        const dayNumber = Number(req.body?.dayNumber ?? dayNumberFromId(req.body?.dayId));
+        if (!Number.isFinite(dayNumber) || dayNumber < 1) {
+          return res.status(400).json({ ok: false, error: "invalid_day" });
+        }
+        const result = teacherUnlockDayForStudent({
+          studentId: req.params.studentId,
+          dayNumber,
+          teacherId: req.auth.userId,
+          reason: req.body?.reason || "",
+        });
+        res.json({ ok: true, ...result });
+      } catch (err) {
+        if (err.status === 400) {
+          return res.status(400).json({ ok: false, error: err.message });
+        }
+        logError("dayUnlock.teacherOverride", err);
+        res.status(500).json({ ok: false, error: "failed" });
+      }
+    },
+  );
 }
 
 function mergeProgressBlob(server = {}, client = {}) {
@@ -120,10 +186,17 @@ function mergeProgressBlob(server = {}, client = {}) {
     lessonCompletions[lessonId] = clientDone || serverDone ? { ...serverEntry, ...entry, status: "completed" } : { ...serverEntry, ...entry };
   }
 
+  const dayUnlockOverrides = [
+    ...new Set([...(server.dayUnlockOverrides || []), ...(client.dayUnlockOverrides || [])]),
+  ];
+  const dayCompletionTimes = { ...(server.dayCompletionTimes || {}), ...(client.dayCompletionTimes || {}) };
+
   const merged = {
     ...server,
     ...client,
     completedDays,
+    dayUnlockOverrides,
+    dayCompletionTimes,
     worksheetStatus,
     worksheetAnswers,
     quizScores,

@@ -3,7 +3,14 @@ import { WEEKS_15, curriculumDays, getDayById } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
-import { getPublishedDaysCount, isCurriculumDayPublished, LOCKED_MESSAGE_AR } from "../config/publication";
+import {
+  getPublishedDaysCount,
+  isCurriculumDayPublished,
+  LOCKED_MESSAGE_AR,
+  DayStudentState,
+  DAY_SCHEDULE_MESSAGE_AR,
+  DAY_LOCKED_MESSAGE_AR,
+} from "../config/publication";
 
 const SIM_LABELS = {
   "number-converter": "محوّل الأنظمة",
@@ -16,12 +23,21 @@ const SIM_LABELS = {
   "search-sort": "بحث وفرز",
 };
 
+const STATE_BADGE = {
+  [DayStudentState.COMPLETED]: { label: "مكتمل ✓", className: "bg-emerald-100 text-emerald-700" },
+  [DayStudentState.AVAILABLE]: { label: "متاح الآن", className: "bg-sky-100 text-sky-800" },
+  [DayStudentState.IN_PROGRESS]: { label: "قيد التقدم", className: "bg-violet-100 text-violet-800" },
+  [DayStudentState.LOCKED]: { label: "مقفل", className: "bg-slate-200 text-slate-700" },
+  [DayStudentState.DRAFT]: { label: "غير منشور", className: "bg-amber-100 text-amber-800" },
+};
+
 export default function LearningPathPage() {
-  const { user, myProgress } = usePlatform();
+  const { user, myProgress, myStats } = usePlatform();
   const completed = new Set(myProgress?.completedDays ?? []);
   const wsStatus = myProgress?.worksheetStatus ?? {};
   const publishedDays = getPublishedDaysCount();
   const visibleDays = curriculumDays.filter((d) => isCurriculumDayPublished(d.id));
+  const dayUnlockMap = myStats?.dayUnlock?.dayUnlockMap || {};
 
   const hero =
     user?.role === "student" && myProgress ? (
@@ -60,8 +76,16 @@ export default function LearningPathPage() {
                 const day = getDayById(dayId);
                 if (!day) return null;
                 const published = isCurriculumDayPublished(dayId);
-                const done = completed.has(dayId);
+                const studentState =
+                  user?.role === "student" ? dayUnlockMap[dayId] || DayStudentState.DRAFT : null;
+                const badge = studentState ? STATE_BADGE[studentState] : null;
+                const done = studentState === DayStudentState.COMPLETED || completed.has(dayId);
                 const wsDone = day.worksheetId && wsStatus[day.worksheetId] === "completed";
+                const canStart =
+                  user?.role !== "student" ||
+                  studentState === DayStudentState.AVAILABLE ||
+                  studentState === DayStudentState.IN_PROGRESS ||
+                  studentState === DayStudentState.COMPLETED;
 
                 return (
                   <article
@@ -70,7 +94,11 @@ export default function LearningPathPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <span className="path-day-num">{day.dayNumber}</span>
-                      {done ? (
+                      {badge ? (
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      ) : done ? (
                         <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
                           مكتمل ✓
                         </span>
@@ -97,23 +125,11 @@ export default function LearningPathPage() {
                             {c}
                           </span>
                         ))}
-                        {day.conceptsAr.length > 4 ? (
-                          <span className="text-xs text-slate-500">+{day.conceptsAr.length - 4}</span>
-                        ) : null}
                       </div>
                     </div>
 
-                    <ul className="mt-3 space-y-1 text-xs text-slate-600">
-                      {day.activitiesAr.slice(0, 2).map((a) => (
-                        <li key={a} className="flex gap-1.5">
-                          <span className="text-violet-500">•</span>
-                          <span className="line-clamp-1">{a}</span>
-                        </li>
-                      ))}
-                    </ul>
-
                     <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-                      {published && day.worksheetId ? (
+                      {published && canStart && day.worksheetId ? (
                         <Link
                           to={`/worksheets/${day.worksheetId}`}
                           className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
@@ -125,7 +141,7 @@ export default function LearningPathPage() {
                           ورقة عمل {wsDone ? "✓" : ""}
                         </Link>
                       ) : null}
-                      {published && day.quizId ? (
+                      {published && canStart && day.quizId ? (
                         <Link
                           to={`/quizzes/run/${day.quizId}`}
                           className="rounded-lg bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
@@ -133,30 +149,23 @@ export default function LearningPathPage() {
                           اختبار
                         </Link>
                       ) : null}
-                      {published
-                        ? day.simulationIds?.slice(0, 2).map((sid) => (
-                        <Link
-                          key={sid}
-                          to={`/simulations#${sid}`}
-                          className="rounded-lg bg-pink-50 px-2.5 py-1 text-xs font-semibold text-pink-700 hover:bg-pink-100"
-                        >
-                          {SIM_LABELS[sid] ?? sid}
-                        </Link>
-                      ))
-                        : null}
                     </div>
 
-                    {published ? (
-                    <Link
-                      to={`/path/day/${dayId}`}
-                      className="edu-btn edu-btn-primary mt-4 w-full text-center"
-                    >
-                      ابدأ الدرس
-                    </Link>
+                    {canStart && published ? (
+                      <Link
+                        to={`/path/day/${dayId}`}
+                        className="edu-btn edu-btn-primary mt-4 w-full text-center"
+                      >
+                        {studentState === DayStudentState.COMPLETED ? "مراجعة اليوم" : "ابدأ الدرس"}
+                      </Link>
+                    ) : studentState === DayStudentState.LOCKED ? (
+                      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-center text-sm font-semibold text-slate-700">
+                        {DAY_LOCKED_MESSAGE_AR}
+                      </div>
                     ) : (
-                    <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-center text-sm font-semibold text-amber-900">
-                      {LOCKED_MESSAGE_AR}
-                    </div>
+                      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-center text-sm font-semibold text-amber-900">
+                        {published ? LOCKED_MESSAGE_AR : DAY_SCHEDULE_MESSAGE_AR}
+                      </div>
                     )}
                   </article>
                 );

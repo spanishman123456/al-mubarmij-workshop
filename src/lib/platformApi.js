@@ -20,8 +20,10 @@ async function request(path, options = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(data.error || res.statusText);
+    const err = new Error(data.messageAr || data.error || res.statusText);
     err.status = res.status;
+    err.incompleteItems = data.incompleteItems;
+    err.code = data.error;
     throw err;
   }
   return data;
@@ -119,6 +121,20 @@ export async function recordLessonAttemptApi(_studentId, payload) {
   return request("/api/lesson/attempt", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function completeStudentDayApi(dayId) {
+  return request(`/api/student/day/${encodeURIComponent(dayId)}/complete`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export async function teacherUnlockDayApi(studentId, dayNumber, reason = "") {
+  return request(`/api/teacher/students/${encodeURIComponent(studentId)}/unlock-day`, {
+    method: "POST",
+    body: JSON.stringify({ dayNumber, reason }),
   });
 }
 

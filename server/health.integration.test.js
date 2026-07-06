@@ -1,4 +1,5 @@
 process.env.PLATFORM_DB_PATH = new URL("./data/platform.integration.test.db", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+process.env.STUDENT_UNLOCK_POLICY = "open";
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import fs from "node:fs";

@@ -285,10 +285,10 @@ export default function TeacherDashboard() {
               </div>
 
               <ProgressBar className="mt-4" value={stats.overallPercent} label="التقدم في المحتوى المتاح" />
-              {stats.requiredItems ? (
-                <p className="mt-1 text-xs text-slate-500">
-                  <LtrValue>{formatFraction(stats.completedRequiredItems ?? 0, stats.requiredItems)}</LtrValue>{" "}
-                  عناصر إلزامية
+              {stats.dayUnlock ? (
+                <p className="mt-2 text-xs text-slate-600">
+                  اليوم 1: {stats.dayUnlock.dayCompletions?.["day-01"]?.completed ? "مكتمل ✓" : "غير مكتمل"} — اليوم
+                  2: {stats.dayUnlock.dayUnlockMap?.["day-02"] === "locked" ? "مقفل" : "مفتوح"}
                 </p>
               ) : null}
 

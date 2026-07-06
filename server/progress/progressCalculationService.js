@@ -15,6 +15,7 @@ import {
   computeFullPathProgress,
 } from "../../src/lib/progressCatalog.js";
 import { logProgressCalculation } from "../repositories/progressCalculationLogRepository.js";
+import { getStudentDayUnlockStatus, syncDayCompletionsFromProgress } from "./dayUnlockService.js";
 
 const ACTIVE_NOW_MS = 5 * 60 * 1000;
 const ACTIVE_TODAY_MS = 24 * 60 * 60 * 1000;
@@ -78,6 +79,7 @@ export function calculateStudentProgress(studentId, options = {}) {
   });
 
   const pathProgress = computeFullPathProgress(progress, publishedDays);
+  const dayUnlock = getStudentDayUnlockStatus(studentId);
   const microbitDone = countMicrobitDone(progress);
   const worksheetsDone = countWorksheetsDone(progress);
   const pythonRuns = analytics.pythonRuns || 0;
@@ -135,6 +137,7 @@ export function calculateStudentProgress(studentId, options = {}) {
     pythonActivityNoteAr,
     attendanceStatus: computeAttendanceStatus(analytics),
     pathProgress,
+    dayUnlock,
     progressVersion: PROGRESS_VERSION,
     calculatedAt: new Date().toISOString(),
     updatedAt: progressRow?.updatedAt || null,
@@ -199,6 +202,7 @@ export function recalculateAllStudentsProgress({ reason = "batch_recalculate", p
 
   for (const row of STUDENTS_ROSTER) {
     const studentId = `stu-${row.nationalId}`;
+    syncDayCompletionsFromProgress(studentId);
     const beforeRow = getStudentProgress(studentId);
     const beforePercent = beforeRow?.progress?._computedProgress?.availableProgressPercent ?? null;
 
@@ -228,8 +232,13 @@ export function recalculateAllStudentsProgress({ reason = "batch_recalculate", p
       completedRequiredItems: after.completedRequiredItems,
       requiredItems: after.requiredItems,
       changed,
+      day2Unlocked: after.dayUnlock?.dayUnlockMap?.["day-02"] !== "locked",
+      day1Completed: after.dayUnlock?.dayCompletions?.["day-01"]?.completed ?? false,
     });
   }
+
+  report.day2UnlockedCount = report.students.filter((s) => s.day2Unlocked).length;
+  report.day2LockedCount = report.students.filter((s) => !s.day2Unlocked).length;
 
   report.finishedAt = new Date().toISOString();
   return report;

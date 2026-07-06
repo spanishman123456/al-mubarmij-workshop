@@ -1,8 +1,14 @@
 import { Link, useParams } from "react-router-dom";
+import { useState } from "react";
 import { getDayById } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
-import { isCurriculumDayPublished, LOCKED_MESSAGE_AR } from "../config/publication";
+import {
+  isCurriculumDayPublished,
+  LOCKED_MESSAGE_AR,
+  DAY_LOCKED_MESSAGE_AR,
+  DayStudentState,
+} from "../config/publication";
 
 const SIM_LINKS = {
   "number-converter": "/simulations#number-converter",
@@ -29,8 +35,13 @@ const SIM_LABELS = {
 export default function DayLessonPage() {
   const { dayId } = useParams();
   const day = getDayById(dayId);
-  const { user, markDayComplete, myProgress } = usePlatform();
-  const done = myProgress?.completedDays?.includes(dayId);
+  const { user, markDayComplete, myProgress, myStats } = usePlatform();
+  const [completeError, setCompleteError] = useState(null);
+  const [completing, setCompleting] = useState(false);
+  const dayUnlock = myStats?.dayUnlock?.dayCompletions?.[dayId];
+  const studentState = myStats?.dayUnlock?.dayUnlockMap?.[dayId];
+  const done = dayUnlock?.completed || myProgress?.completedDays?.includes(dayId);
+  const incomplete = dayUnlock?.incompleteItems || [];
 
   if (!day) {
     return (
@@ -55,6 +66,29 @@ export default function DayLessonPage() {
         </EduCard>
       </PageShell>
     );
+  }
+
+  if (user?.role === "student" && studentState === DayStudentState.LOCKED) {
+    return (
+      <PageShell title="اليوم مقفل" badge="المسار التعليمي">
+        <EduCard accent="amber">
+          <p className="text-lg font-semibold text-slate-800">{DAY_LOCKED_MESSAGE_AR}</p>
+          <Link to="/path" className="edu-btn edu-btn-outline mt-4 inline-flex">
+            العودة للمسار
+          </Link>
+        </EduCard>
+      </PageShell>
+    );
+  }
+
+  async function handleCompleteDay() {
+    setCompleteError(null);
+    setCompleting(true);
+    const res = await markDayComplete(dayId);
+    setCompleting(false);
+    if (!res?.ok) {
+      setCompleteError(res?.incompleteItems?.length ? res.incompleteItems : [{ labelAr: res?.error || "تعذّر الإكمال" }]);
+    }
   }
 
   return (
@@ -238,14 +272,36 @@ export default function DayLessonPage() {
                 </Link>
               ) : null}
               {user?.role === "student" ? (
-                <button
-                  type="button"
-                  disabled={done}
-                  onClick={() => markDayComplete(dayId)}
-                  className="edu-btn edu-btn-primary text-sm disabled:opacity-50"
-                >
-                  {done ? "تم إكمال اليوم ✓" : "أتممت هذا اليوم"}
-                </button>
+                <div className="space-y-3">
+                  {!done && incomplete.length > 0 ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+                      <p className="font-bold text-amber-900">بقي عليك لإكمال هذا اليوم:</p>
+                      <ul className="mt-2 space-y-1 pr-4">
+                        {incomplete.map((item) => (
+                          <li key={item.id} className="text-amber-900">
+                            ○ {item.labelAr}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {completeError?.length ? (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+                      {completeError.map((item) => (
+                        <p key={item.id || item.labelAr}>○ {item.labelAr}</p>
+                      ))}
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={done || completing}
+                    onClick={handleCompleteDay}
+                    className="edu-btn edu-btn-primary w-full text-sm disabled:opacity-50"
+                    data-testid="complete-day-btn"
+                  >
+                    {done ? "تم إكمال اليوم ✓" : completing ? "جاري الحفظ…" : "إكمال اليوم وفتح اليوم التالي"}
+                  </button>
+                </div>
               ) : null}
             </div>
           </EduCard>

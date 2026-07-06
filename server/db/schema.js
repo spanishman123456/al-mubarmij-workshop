@@ -89,4 +89,15 @@ CREATE TABLE IF NOT EXISTS progress_calculation_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_progress_calc_log_student ON progress_calculation_log(student_id);
+
+CREATE TABLE IF NOT EXISTS day_unlock_override_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id TEXT NOT NULL,
+  day_number INTEGER NOT NULL,
+  teacher_id TEXT NOT NULL,
+  reason TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_day_unlock_override_student ON day_unlock_override_log(student_id);
 `;
