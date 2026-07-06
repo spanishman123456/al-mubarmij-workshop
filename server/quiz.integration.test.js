@@ -1,4 +1,5 @@
 process.env.PLATFORM_DB_PATH = new URL("./data/quiz.integration.test.db", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+process.env.PUBLISHED_DAYS = "2";
 
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import fs from "node:fs";
@@ -38,6 +39,7 @@ describe("quiz API integration", () => {
     closeDatabase();
     resetDatabaseForTests();
     delete process.env.PLATFORM_DB_PATH;
+    delete process.env.PUBLISHED_DAYS;
   });
 
   it("returns public quiz without answer keys", async () => {
@@ -159,5 +161,21 @@ describe("quiz API integration", () => {
     const body = await res.json();
     expect(body.quizId).toBe("quiz-post");
     expect(body.questions.length).toBeGreaterThan(0);
+  });
+
+  it("teacher roster includes pre-assessment percent matching submitted attempt", async () => {
+    const studentId = `stu-${STUDENT_NID}`;
+    const roster = await authFetch(baseUrl, "/api/progress/teacher/roster", {
+      cookie: authTeacher.cookie,
+      csrf: authTeacher.csrf,
+    });
+    expect(roster.status).toBe(200);
+    const body = await roster.json();
+    const computed = body.byStudent[studentId];
+    expect(computed).toBeTruthy();
+    expect(computed.assessmentSummary.preAssessment.status).toBe("submitted");
+    expect(computed.assessmentSummary.preAssessment.scorePercent).toBeGreaterThanOrEqual(0);
+    expect(computed.preAssessmentDiagnosticPercent).toBe(computed.assessmentSummary.preAssessment.scorePercent);
+    expect(computed.assessmentSummary.postAssessment.statusLabelAr).toMatch(/يفتح|غير متاح/);
   });
 });

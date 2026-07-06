@@ -72,4 +72,17 @@ describe("onboardingPolicy", () => {
     });
     expect(pa.status).toBe(PRE_ASSESSMENT_STATUS.IN_PROGRESS);
   });
+
+  it("detects submitted from quiz attempt without preTest", () => {
+    const pa = resolvePreAssessmentStatus(
+      {},
+      {
+        status: "submitted",
+        submittedAt: "2026-07-01T10:00:00Z",
+        result: { percent: 24 },
+      },
+    );
+    expect(pa.status).toBe(PRE_ASSESSMENT_STATUS.SUBMITTED);
+    expect(pa.diagnosticPercent).toBe(24);
+  });
 });

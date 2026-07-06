@@ -63,6 +63,8 @@ function mapComputedToStats(computed) {
     progressVersion: computed.progressVersion ?? "v2",
     preAssessmentStatus: computed.preAssessmentStatus,
     preAssessmentLabelAr: computed.preAssessmentLabelAr,
+    preAssessmentDiagnosticPercent: computed.preAssessmentDiagnosticPercent ?? computed.assessmentSummary?.preAssessment?.scorePercent ?? null,
+    assessmentSummary: computed.assessmentSummary ?? null,
     attendanceStatus: computed.attendanceStatus,
     details: computed.details ?? null,
     pythonRuns: computed.pythonRuns ?? 0,

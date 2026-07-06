@@ -46,37 +46,48 @@ function legacyPreSubmitted(progress = {}) {
   return Boolean(quizPre?.submitted || quizPre?.percent != null || quizPre?.score != null);
 }
 
-export function resolvePreAssessmentStatus(progress = {}) {
+export function resolvePreAssessmentStatus(progress = {}, preAttempt = null) {
   const pa = progress.preAssessment || {};
   const answers = pa.answers || {};
   const answeredCount = countAnswered(answers);
   const quizPre = progress.quizScores?.["quiz-pre"];
+  const attemptSubmitted = preAttempt?.status === "submitted";
+  const attemptPercent = preAttempt?.result?.percent;
 
   let status = pa.status || PRE_ASSESSMENT_STATUS.NOT_STARTED;
 
-  if (status === PRE_ASSESSMENT_STATUS.SUBMITTED || legacyPreSubmitted(progress)) {
+  if (
+    status === PRE_ASSESSMENT_STATUS.SUBMITTED ||
+    legacyPreSubmitted(progress) ||
+    (attemptSubmitted && attemptPercent != null)
+  ) {
     status = PRE_ASSESSMENT_STATUS.SUBMITTED;
   } else if (status === PRE_ASSESSMENT_STATUS.DEFERRED) {
     /* keep */
-  } else if (status === PRE_ASSESSMENT_STATUS.IN_PROGRESS || answeredCount > 0) {
+  } else if (status === PRE_ASSESSMENT_STATUS.IN_PROGRESS || answeredCount > 0 || preAttempt?.status === "in_progress") {
     status = PRE_ASSESSMENT_STATUS.IN_PROGRESS;
   } else {
     status = PRE_ASSESSMENT_STATUS.NOT_STARTED;
   }
 
+  const diagnosticPercent =
+    status === PRE_ASSESSMENT_STATUS.SUBMITTED
+      ? (progress.preTest?.percent ?? quizPre?.percent ?? attemptPercent ?? null)
+      : null;
+
   return {
     status,
     statusLabelAr: PRE_ASSESSMENT_STATUS_LABELS[status] || status,
-    answeredCount: status === PRE_ASSESSMENT_STATUS.SUBMITTED ? (quizPre?.total ?? answeredCount) : answeredCount,
-    totalQuestions: pa.totalQuestions ?? null,
-    startedAt: pa.startedAt ?? null,
-    updatedAt: pa.updatedAt ?? null,
-    submittedAt: pa.submittedAt ?? quizPre?.at ?? null,
-    deferredAt: pa.deferredAt ?? null,
-    diagnosticPercent:
+    answeredCount:
       status === PRE_ASSESSMENT_STATUS.SUBMITTED
-        ? (progress.preTest?.percent ?? quizPre?.percent ?? null)
-        : null,
+        ? (pa.totalQuestions ?? quizPre?.autoTotal ?? preAttempt?.result?.autoTotal ?? answeredCount)
+        : answeredCount,
+    totalQuestions: pa.totalQuestions ?? preAttempt?.meta?.totalQuestions ?? null,
+    startedAt: pa.startedAt ?? preAttempt?.startedAt ?? null,
+    updatedAt: pa.updatedAt ?? preAttempt?.updatedAt ?? null,
+    submittedAt: pa.submittedAt ?? quizPre?.at ?? preAttempt?.submittedAt ?? null,
+    deferredAt: pa.deferredAt ?? null,
+    diagnosticPercent,
     isDiagnosticOnly: true,
     isBlocking: false,
   };

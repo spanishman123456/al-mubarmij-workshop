@@ -16,6 +16,8 @@ import {
 } from "../../src/lib/progressCatalog.js";
 import { logProgressCalculation } from "../repositories/progressCalculationLogRepository.js";
 import { getStudentDayUnlockStatus, syncDayCompletionsFromProgress } from "./dayUnlockService.js";
+import { getLatestSubmittedAttempt } from "../repositories/quizAttemptRepository.js";
+import { buildAssessmentSummary, backfillAssessmentProgress } from "../../src/lib/assessmentSummary.js";
 
 const ACTIVE_NOW_MS = 5 * 60 * 1000;
 const ACTIVE_TODAY_MS = 24 * 60 * 60 * 1000;
@@ -66,11 +68,23 @@ export function calculateStudentProgress(studentId, options = {}) {
   const catalog = buildPublishedRequiredCatalog(publishedDays);
 
   const progressRow = getStudentProgress(studentId);
-  const progress = progressRow?.progress || {};
+  let progress = progressRow?.progress || {};
+  const preAttempt = getLatestSubmittedAttempt(studentId, "quiz-pre");
+  const postAttempt = getLatestSubmittedAttempt(studentId, "quiz-post");
+
+  if (options.persistSnapshot) {
+    const backfilled = backfillAssessmentProgress(progress, { preAttempt, postAttempt });
+    if (backfilled !== progress) {
+      progress = backfilled;
+      saveStudentProgress(studentId, progress);
+    }
+  }
+
   const lessonRows = getLessonProgressAll(studentId);
   const onboarding = getOnboardingStatus(studentId);
   const analytics = loadStore().analyticsByStudent?.[studentId] || {};
-  const preAssessment = resolvePreAssessmentStatus(progress);
+  const preAssessment = resolvePreAssessmentStatus(progress, preAttempt);
+  const assessmentSummary = buildAssessmentSummary(progress, { preAttempt, postAttempt, publishedDays });
 
   const evaluated = evaluateCatalog(catalog, {
     onboarding,
@@ -124,8 +138,9 @@ export function calculateStudentProgress(studentId, options = {}) {
     preAssessmentStatus: preAssessment.status,
     preAssessmentLabelAr: preAssessment.statusLabelAr,
     preAssessmentDiagnosticPercent: preAssessment.diagnosticPercent,
-    preTest: progress.preTest ?? null,
-    postTest: progress.postTest ?? null,
+    assessmentSummary,
+    preTest: progress.preTest ?? (preAttempt?.result ? preAttempt.result : null),
+    postTest: progress.postTest ?? (postAttempt?.result ? postAttempt.result : null),
     projectStatus: progress.project?.status ?? "not_started",
     lastActivityAt: analytics.lastActivityAt || progress.updatedAt || null,
     lastLessonId: lastLessonEvent?.lessonId || null,

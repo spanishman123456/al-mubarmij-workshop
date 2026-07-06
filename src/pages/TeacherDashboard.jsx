@@ -17,6 +17,7 @@ import {
   filterByLastLogin,
   todayKey,
 } from "../lib/platformAnalytics";
+import { buildAssessmentSummary, formatAssessmentCardLine } from "../lib/assessmentSummary.js";
 import { getPublishedDaysCount } from "../config/publication";
 
 function formatDate(iso) {
@@ -314,7 +315,11 @@ export default function TeacherDashboard() {
                   label="قبلي → بعدي (تشخيصي)"
                   value={
                     <LtrValue>
-                      {`${progress.preTest?.percent ?? "—"}% → ${progress.postTest?.percent ?? "—"}%`}
+                      {stats.assessmentSummary
+                        ? formatAssessmentCardLine(stats.assessmentSummary)
+                        : formatAssessmentCardLine(
+                            buildAssessmentSummary(progress, { publishedDays: stats.publishedDays ?? publishedDays }),
+                          )}
                     </LtrValue>
                   }
                 />
@@ -396,6 +401,38 @@ export default function TeacherDashboard() {
                 </LtrValue>
               </p>
               <p className="mt-1 text-xs text-slate-500">{progressDetails.pathProgress?.pathLabelAr}</p>
+              {progressDetails.assessmentSummary ? (
+                <div className="mt-4 rounded-lg border border-violet-100 bg-violet-50 p-3 text-sm">
+                  <p className="font-bold text-violet-900">التقويم القبلي</p>
+                  <p className="mt-1">
+                    الحالة: {progressDetails.assessmentSummary.preAssessment.statusLabelAr}
+                    {progressDetails.assessmentSummary.preAssessment.scorePercent != null
+                      ? ` — ${progressDetails.assessmentSummary.preAssessment.scorePercent}%`
+                      : ""}
+                  </p>
+                  {progressDetails.assessmentSummary.preAssessment.answeredCount != null ? (
+                    <p className="text-xs text-slate-600">
+                      الأسئلة المجابة: {progressDetails.assessmentSummary.preAssessment.answeredCount}
+                      {progressDetails.assessmentSummary.preAssessment.totalQuestions
+                        ? ` / ${progressDetails.assessmentSummary.preAssessment.totalQuestions}`
+                        : ""}
+                    </p>
+                  ) : null}
+                  {progressDetails.assessmentSummary.preAssessment.submittedAt ? (
+                    <p className="text-xs text-slate-600">
+                      وقت الإرسال: {formatLoginDateTime(progressDetails.assessmentSummary.preAssessment.submittedAt)}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-xs text-violet-800">
+                    ملاحظة: النتيجة تشخيصية ولا تؤثر على فتح الدروس.
+                  </p>
+                  <p className="mt-3 font-bold text-violet-900">التقويم البعدي</p>
+                  <p className="mt-1">{progressDetails.assessmentSummary.postAssessment.statusLabelAr}</p>
+                  {progressDetails.assessmentSummary.postAssessment.scorePercent != null ? (
+                    <p>{progressDetails.assessmentSummary.postAssessment.scorePercent}%</p>
+                  ) : null}
+                </div>
+              ) : null}
               <ul className="mt-4 space-y-1 text-sm">
                 {(progressDetails.details || []).map((item) => (
                   <li key={item.id} className="flex gap-2">
