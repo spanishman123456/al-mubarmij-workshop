@@ -124,8 +124,10 @@ describe("progressCatalog", () => {
     expect(allDone.availableProgressPercent).toBeGreaterThan(0);
   });
 
-  it("exports progress version v2", () => {
-    expect(PROGRESS_VERSION).toBe("v2");
+  it("uses Arabic labels for published lessons", () => {
+    const catalog = buildPublishedRequiredCatalog(1);
+    const lesson = catalog.find((i) => i.lessonId === "python-intro");
+    expect(lesson?.labelAr).toBe("مقدمة بايثون");
   });
 
   it("pre-assessment deferred does not block lesson items", () => {

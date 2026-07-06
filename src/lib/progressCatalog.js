@@ -5,7 +5,7 @@
 import { LESSON_ID_TO_DAY } from "../config/publicationPolicy.js";
 import { curriculumDays } from "../data/curriculum15Days.js";
 import { DOC_TYPES } from "../content/onboarding/onboardingPolicy.js";
-import { lessonLabelAr } from "../data/lessonLabelsAr.js";
+import { lessonLabelAr } from "./lessonLabelsAr.js";
 
 export const PROGRESS_VERSION = "v2";
 
