@@ -14,6 +14,7 @@ import {
 import { registerPlatformRoutes } from "./routes/platformRoutes.js";
 import { registerProgressRoutes } from "./routes/progressRoutes.js";
 import { registerQuizRoutes } from "./routes/quizRoutes.js";
+import { registerWorksheetRoutes } from "./routes/worksheetRoutes.js";
 import { registerAuthRoutes, ensureRateLimitSchema } from "./auth/authRoutes.js";
 import { requireAuth, requireRole } from "./auth/middleware.js";
 import { ensureSessionSchema } from "./auth/sessionRepository.js";
@@ -184,6 +185,7 @@ export async function prepareApp(app) {
   registerProgressRoutes(app, logError);
   registerPlatformRoutes(app, logError);
   registerQuizRoutes(app, logError);
+  registerWorksheetRoutes(app, logError);
 
   if (process.env.NODE_ENV === "production") {
     app.use(express.static(DIST));

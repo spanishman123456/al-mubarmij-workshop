@@ -1,5 +1,5 @@
-import { curriculumDays } from "./curriculum15Days";
-import { PDF_WORKSHEETS } from "./worksheetsPdfContent";
+import { curriculumDays } from "./curriculum15Days.js";
+import { PDF_WORKSHEETS } from "./worksheetsPdfContent.js";
 
 /**
  * أوراق عمل مرتبطة بمسار 15 يومًا — محتوى مُحاذٍ لصفحات PDF الرسمي

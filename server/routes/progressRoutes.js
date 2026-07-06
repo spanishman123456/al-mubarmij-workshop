@@ -11,6 +11,7 @@ import {
   getStudentDayUnlockStatus,
   teacherUnlockDayForStudent,
 } from "../progress/dayUnlockService.js";
+import { filterWorksheetProgressForStudent } from "../worksheet/worksheetAccessService.js";
 import { dayNumberFromId } from "../../src/lib/dayUnlockPolicy.js";
 
 export function registerProgressRoutes(app, logError) {
@@ -85,7 +86,8 @@ export function registerProgressRoutes(app, logError) {
       const studentId = req.auth.userId;
       const existing = getStudentProgress(studentId);
       const merged = mergeProgressBlob(existing?.progress || {}, progress || {});
-      saveStudentProgress(studentId, merged);
+      const sanitized = filterWorksheetProgressForStudent(studentId, merged);
+      saveStudentProgress(studentId, sanitized);
       const computed = calculateStudentProgress(studentId, {
         reason: "sync",
         previousPercent: existing?.progress?._computedProgress?.availableProgressPercent ?? null,
