@@ -56,11 +56,19 @@ export async function seedStudentDay1Incomplete(page, nid) {
 export async function assertLessonProgressSaved(page) {
   const completeBtn = page.getByRole("button", { name: /أكملت هذا الدرس/i });
   const completedMsg = page.getByText(/سُجّل إكمال/i);
+  const loadingFooter = page.getByText(/جاري تحميل تقدم الدرس/i);
+
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  if ((await completeBtn.count()) > 0) {
+
+  // Wait until progress footer leaves loading state and shows actionable UI.
+  await expect(loadingFooter).toHaveCount(0, { timeout: 20_000 });
+  await expect(completeBtn.or(completedMsg)).toBeVisible({ timeout: 20_000 });
+
+  if (await completeBtn.isVisible()) {
+    await expect(completeBtn).toBeEnabled({ timeout: 10_000 });
     const saveDone = page.waitForResponse(
       (r) => r.url().includes("/api/lesson/progress") && r.request().method() === "POST" && r.ok(),
-      { timeout: 20_000 },
+      { timeout: 25_000 },
     );
     await completeBtn.click();
     await saveDone;
@@ -68,7 +76,9 @@ export async function assertLessonProgressSaved(page) {
   } else {
     await expect(completedMsg).toBeVisible({ timeout: 15_000 });
   }
-  await page.reload();
+
+  await page.reload({ waitUntil: "domcontentloaded" });
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(loadingFooter).toHaveCount(0, { timeout: 20_000 });
   await expect(completedMsg).toBeVisible({ timeout: 15_000 });
 }

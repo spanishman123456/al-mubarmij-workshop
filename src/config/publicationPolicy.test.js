@@ -41,10 +41,18 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/path/day/day-01", 1, "student")).toBe(true);
   });
 
-  it("blocks teacher day-02 answers when only day 1 published", () => {
+  it("teacher can preview all teacher answer routes", () => {
     expect(isPathPublished("/teacher/day-01-answers", 1, "teacher")).toBe(true);
-    expect(isPathPublished("/teacher/day-02-answers", 1, "teacher")).toBe(false);
-    expect(isPathPublished("/teacher/day-03-answers", 1, "teacher")).toBe(false);
+    expect(isPathPublished("/teacher/day-02-answers", 1, "teacher")).toBe(true);
+    expect(isPathPublished("/teacher/day-06-answers", 1, "teacher")).toBe(true);
+  });
+
+  it("blocks day 6 lesson routes for students when PUBLISHED_DAYS=5", () => {
+    expect(isPathPublished("/lessons/caesar-cipher", 5, "student")).toBe(false);
+    expect(isPathPublished("/lessons/memory-hierarchy", 5, "student")).toBe(false);
+    expect(isPathPublished("/lessons/cpu-scheduling", 5, "student")).toBe(false);
+    expect(isPathPublished("/path/day/day-06", 5, "student")).toBe(false);
+    expect(isPathPublished("/worksheets/ws-day-06", 5, "student")).toBe(false);
   });
 
   it("rejects unpublished lesson ids on server save", () => {

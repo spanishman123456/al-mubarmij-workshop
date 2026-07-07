@@ -234,6 +234,16 @@ export default function DayLessonPage() {
             </EduCard>
           ) : null}
 
+          {day.id === "day-06" ? (
+            <EduCard title="دروس اليوم السادس" accent="violet">
+              <div className="mt-2 flex flex-col gap-2 text-sm">
+                <Link to="/lessons/caesar-cipher">1. شفرة قيصر وعلم التشفير</Link>
+                <Link to="/lessons/memory-hierarchy">2. الذاكرة والتخزين المؤقت</Link>
+                <Link to="/lessons/cpu-scheduling">3. جدولة عمليات المعالج</Link>
+              </div>
+            </EduCard>
+          ) : null}
+
           <EduCard title="تطبيق عملي" accent="emerald">
             <p className="mt-2 text-slate-700">{day.practicalAr}</p>
             {day.exerciseIds?.length ? (

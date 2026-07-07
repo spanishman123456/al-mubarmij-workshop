@@ -38,4 +38,19 @@ export const WORKSHEET_MODEL_ANSWERS = {
       { n: 10, modelAr: "مختبر 60 د: برنامج if لرمي حجرين + خوارزمية Collatz مبسطة" },
     ],
   },
+  "ws-day-06": {
+    teacherDayRoute: "/teacher/day-06-answers",
+    tasks: [
+      { n: 1, modelAr: "ECV" },
+      { n: 2, modelAr: "Cache (أ)" },
+      { n: 3, modelAr: "CPU→تنفيذ؛ RAM→أثناء التشغيل؛ HDD→دائم" },
+      { n: 4, modelAr: "انتظار P2 = 2" },
+      { n: 5, modelAr: "صح — SRT" },
+      { n: 6, modelAr: "أول وصول أول خدمة" },
+      { n: 7, modelAr: "A" },
+      { n: 8, modelAr: "خطأ — ضعيفة أمنيًا" },
+      { n: 9, modelAr: "≈1.67" },
+      { n: 10, modelAr: "تخزين أثناء التشغيل" },
+    ],
+  },
 };

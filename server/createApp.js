@@ -22,6 +22,7 @@ import { corsMiddleware } from "./auth/cors.js";
 import { day03TeacherAnswers } from "../src/content/teacher/day03TeacherAnswers.js";
 import { day04TeacherAnswers } from "../src/content/teacher/day04TeacherAnswers.js";
 import { day05TeacherAnswers } from "../src/content/teacher/day05TeacherAnswers.js";
+import { day06TeacherAnswers } from "../src/content/teacher/day06TeacherAnswers.js";
 import { requirePublishedTeacherDay } from "./auth/publishedContent.js";
 import { registerPublicationRoutes } from "./routes/publicationRoutes.js";
 
@@ -107,6 +108,16 @@ export function createApp() {
     requirePublishedTeacherDay(5),
     (_req, res) => {
       res.json({ ok: true, ...day05TeacherAnswers });
+    },
+  );
+
+  app.get(
+    "/api/teacher/day-06-answers",
+    requireAuth,
+    requireRole("teacher"),
+    requirePublishedTeacherDay(6),
+    (_req, res) => {
+      res.json({ ok: true, ...day06TeacherAnswers });
     },
   );
 

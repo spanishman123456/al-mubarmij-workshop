@@ -61,6 +61,12 @@ export const DAY5_LESSON_ROUTES = new Set([
   "/lessons/sieve-primes",
 ]);
 
+export const DAY6_LESSON_ROUTES = new Set([
+  "/lessons/caesar-cipher",
+  "/lessons/memory-hierarchy",
+  "/lessons/cpu-scheduling",
+]);
+
 /** @deprecated use DAY4_LESSON_ROUTES */
 const DAY4_PLUS_DRAFT_ROUTES = DAY4_LESSON_ROUTES;
 
@@ -104,6 +110,9 @@ export const LESSON_ID_TO_DAY = {
   "binary-search": 5,
   "sorting-algorithms": 5,
   "sieve-primes": 5,
+  "caesar-cipher": 6,
+  "memory-hierarchy": 6,
+  "cpu-scheduling": 6,
 };
 
 const ONBOARDING_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre"];
@@ -148,6 +157,7 @@ export function routeContentDay(pathname) {
   if (DAY3_LESSON_ROUTES.has(path)) return 3;
   if (DAY4_LESSON_ROUTES.has(path)) return 4;
   if (DAY5_LESSON_ROUTES.has(path)) return 5;
+  if (DAY6_LESSON_ROUTES.has(path)) return 6;
 
   let m = /^\/path\/day\/day-(\d+)$/.exec(path);
   if (m) return Number(m[1]);
@@ -173,10 +183,6 @@ export function isLessonIdPublished(lessonId, publishedDaysCount) {
 export function isPathPublished(pathname, publishedDaysCount, role = "student") {
   const path = normalizePath(pathname);
   if (role === "teacher") {
-    const teacherDay = routeContentDay(path);
-    if (teacherDay != null && teacherDay >= 1 && path.startsWith("/teacher/")) {
-      return teacherDay <= publishedDaysCount;
-    }
     return true;
   }
 

@@ -70,11 +70,17 @@ import {
   SortingAlgorithmsLessonPage,
   SievePrimesLessonPage,
 } from "./pages/lessons/Day05LessonPages.jsx";
+import {
+  CaesarCipherLessonPage,
+  MemoryHierarchyLessonPage,
+  CpuSchedulingLessonPage,
+} from "./pages/lessons/Day06LessonPages.jsx";
 import TeacherDay01AnswersPage from "./pages/teacher/TeacherDay01AnswersPage.jsx";
 import TeacherDay02AnswersPage from "./pages/teacher/TeacherDay02AnswersPage.jsx";
 import TeacherDay03AnswersPage from "./pages/teacher/TeacherDay03AnswersPage.jsx";
 import TeacherDay04AnswersPage from "./pages/teacher/TeacherDay04AnswersPage.jsx";
 import TeacherDay05AnswersPage from "./pages/teacher/TeacherDay05AnswersPage.jsx";
+import TeacherDay06AnswersPage from "./pages/teacher/TeacherDay06AnswersPage.jsx";
 import TeacherQuizReviewPage from "./pages/teacher/TeacherQuizReviewPage.jsx";
 import { PublishedContentGate } from "./components/auth/PublishedContentGate.jsx";
 
@@ -282,11 +288,16 @@ function AppRoutes() {
         <Route path="/lessons/sorting-algorithms" element={<ProtectedRoute><SortingAlgorithmsLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/sieve-primes" element={<ProtectedRoute><SievePrimesLessonPage /></ProtectedRoute>} />
 
+        <Route path="/lessons/caesar-cipher" element={<ProtectedRoute><CaesarCipherLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/memory-hierarchy" element={<ProtectedRoute><MemoryHierarchyLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/cpu-scheduling" element={<ProtectedRoute><CpuSchedulingLessonPage /></ProtectedRoute>} />
+
         <Route path="/teacher/day-01-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay01AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-02-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay02AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-03-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay03AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-04-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay04AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-05-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay05AnswersPage /></ProtectedRoute>} />
+        <Route path="/teacher/day-06-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay06AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/quiz-review" element={<ProtectedRoute roles={["teacher"]}><TeacherQuizReviewPage /></ProtectedRoute>} />
 
         <Route

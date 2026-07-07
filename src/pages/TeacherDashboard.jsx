@@ -130,6 +130,9 @@ export default function TeacherDashboard() {
           <Link to="/teacher/day-05-answers" className="edu-btn edu-btn-outline text-sm">
             إجابات المعلم — اليوم 5
           </Link>
+          <Link to="/teacher/day-06-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 6
+          </Link>
           <Link to="/teacher/quiz-review" className="edu-btn edu-btn-outline text-sm">
             مراجعة الاختبارات
           </Link>

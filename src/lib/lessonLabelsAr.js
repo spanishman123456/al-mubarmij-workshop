@@ -17,6 +17,9 @@ export const LESSON_LABELS_AR = {
   "binary-search": "البحث الثنائي",
   "sorting-algorithms": "فرز الاختيار",
   "sieve-primes": "غربال إراتوستينس",
+  "caesar-cipher": "شفرة قيصر والتشفير",
+  "memory-hierarchy": "الذاكرة والتخزين المؤقت",
+  "cpu-scheduling": "جدولة المعالج",
 };
 
 export function lessonLabelAr(lessonId) {
