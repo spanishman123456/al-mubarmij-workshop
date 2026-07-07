@@ -31,11 +31,16 @@ const DAY07_LESSONS = [
     heading: "لعبة تك-تاك-تو — منطق اللوحة 3×3",
     labTestId: "tic-tac-toe-lab",
     labAction: async (page) => {
+      const lab = page.getByTestId("tic-tac-toe-lab");
+      const resetBtn = lab.getByRole("button", { name: /لعبة جديدة/ });
+      if (await resetBtn.isVisible()) {
+        await resetBtn.click();
+      }
       await page.getByTestId("ttt-cell-0").click();
       await page.getByTestId("ttt-cell-3").click();
       await page.getByTestId("ttt-cell-6").click();
       await page.getByTestId("winner-guess-X").click();
-      await page.getByTestId("tic-tac-toe-lab").getByRole("button", { name: /تحقق/ }).click();
+      await lab.getByRole("button", { name: /تحقق/ }).click();
     },
   },
   {
