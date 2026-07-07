@@ -53,4 +53,19 @@ export const WORKSHEET_MODEL_ANSWERS = {
       { n: 10, modelAr: "تخزين أثناء التشغيل" },
     ],
   },
+  "ws-day-07": {
+    teacherDayRoute: "/teacher/day-07-answers",
+    tasks: [
+      { n: 1, modelAr: "3" },
+      { n: 2, modelAr: "Local (أ)" },
+      { n: 3, modelAr: "1–6 شاملاً (أ)" },
+      { n: 4, modelAr: "7" },
+      { n: 5, modelAr: "متوسط (ب)" },
+      { n: 6, modelAr: "9" },
+      { n: 7, modelAr: "8" },
+      { n: 8, modelAr: "صح" },
+      { n: 9, modelAr: "تخطيط القواعد (أ)" },
+      { n: 10, modelAr: "صح" },
+    ],
+  },
 };

@@ -244,6 +244,17 @@ export default function DayLessonPage() {
             </EduCard>
           ) : null}
 
+          {day.id === "day-07" ? (
+            <EduCard title="دروس اليوم السابع" accent="violet">
+              <div className="mt-2 flex flex-col gap-2 text-sm">
+                <Link to="/lessons/python-scope">1. نطاق المتغيرات (Scope)</Link>
+                <Link to="/lessons/dice-random">2. رمي النرد والعشوائية</Link>
+                <Link to="/lessons/tic-tac-toe">3. تيك-تاك-تو</Link>
+                <Link to="/lessons/game-planning">4. التخطيط التعاوني للألعاب</Link>
+              </div>
+            </EduCard>
+          ) : null}
+
           <EduCard title="تطبيق عملي" accent="emerald">
             <p className="mt-2 text-slate-700">{day.practicalAr}</p>
             {day.exerciseIds?.length ? (

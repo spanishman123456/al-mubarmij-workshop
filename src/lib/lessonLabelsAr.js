@@ -20,6 +20,10 @@ export const LESSON_LABELS_AR = {
   "caesar-cipher": "شفرة قيصر والتشفير",
   "memory-hierarchy": "الذاكرة والتخزين المؤقت",
   "cpu-scheduling": "جدولة المعالج",
+  "python-scope": "نطاق المتغيرات (Scope)",
+  "dice-random": "رمي النرد والعشوائية",
+  "tic-tac-toe": "تيك-تاك-تو",
+  "game-planning": "تخطيط اللعبة",
 };
 
 export function lessonLabelAr(lessonId) {

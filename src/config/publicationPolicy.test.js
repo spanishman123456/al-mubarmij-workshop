@@ -45,6 +45,7 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/teacher/day-01-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-02-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-06-answers", 1, "teacher")).toBe(true);
+    expect(isPathPublished("/teacher/day-07-answers", 1, "teacher")).toBe(true);
   });
 
   it("blocks day 6 lesson routes for students when PUBLISHED_DAYS=5", () => {
@@ -55,10 +56,20 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/worksheets/ws-day-06", 5, "student")).toBe(false);
   });
 
+  it("blocks day 7 lesson routes for students when PUBLISHED_DAYS=6", () => {
+    expect(isPathPublished("/lessons/python-scope", 6, "student")).toBe(false);
+    expect(isPathPublished("/lessons/dice-random", 6, "student")).toBe(false);
+    expect(isPathPublished("/lessons/tic-tac-toe", 6, "student")).toBe(false);
+    expect(isPathPublished("/lessons/game-planning", 6, "student")).toBe(false);
+    expect(isPathPublished("/path/day/day-07", 6, "student")).toBe(false);
+    expect(isPathPublished("/worksheets/ws-day-07", 6, "student")).toBe(false);
+  });
+
   it("rejects unpublished lesson ids on server save", () => {
     expect(isLessonIdPublished("number-systems", 1)).toBe(true);
     expect(isLessonIdPublished("conversions-intro", 1)).toBe(false);
     expect(isLessonIdPublished("python-constants", 1)).toBe(false);
     expect(isLessonIdPublished("linear-search", 1)).toBe(false);
+    expect(isLessonIdPublished("python-scope", 2)).toBe(false);
   });
 });
