@@ -1,21 +1,22 @@
-import { getDatabase } from "../db/index.js";
+import { queryAll, runSql } from "../db/query.js";
 
 export function logDayUnlockOverride({ studentId, dayNumber, teacherId, reason }) {
-  const db = getDatabase();
+  if (!studentId || !teacherId) {
+    throw new Error(`invalid_unlock_log studentId=${studentId} teacherId=${teacherId}`);
+  }
   const createdAt = new Date().toISOString();
-  db.prepare(
+  runSql(
     `INSERT INTO day_unlock_override_log (student_id, day_number, teacher_id, reason, created_at)
      VALUES (?, ?, ?, ?, ?)`,
-  ).run(studentId, dayNumber, teacherId, reason || null, createdAt);
+    [studentId, dayNumber, teacherId, reason || null, createdAt],
+  );
   return { studentId, dayNumber, teacherId, reason, createdAt };
 }
 
 export function listDayUnlockOverrides(studentId) {
-  const db = getDatabase();
-  return db
-    .prepare(
-      `SELECT student_id AS studentId, day_number AS dayNumber, teacher_id AS teacherId, reason, created_at AS createdAt
-       FROM day_unlock_override_log WHERE student_id = ? ORDER BY created_at DESC`,
-    )
-    .all(studentId);
+  return queryAll(
+    `SELECT student_id AS studentId, day_number AS dayNumber, teacher_id AS teacherId, reason, created_at AS createdAt
+     FROM day_unlock_override_log WHERE student_id = ? ORDER BY created_at DESC`,
+    [studentId],
+  );
 }

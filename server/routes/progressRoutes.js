@@ -13,6 +13,7 @@ import {
 } from "../progress/dayUnlockService.js";
 import { filterWorksheetProgressForStudent } from "../worksheet/worksheetAccessService.js";
 import { dayNumberFromId } from "../../src/lib/dayUnlockPolicy.js";
+import { listDayUnlockOverrides } from "../repositories/dayUnlockRepository.js";
 
 export function registerProgressRoutes(app, logError) {
   app.get("/api/progress/me", requireAuth, requireRole("student"), (req, res) => {
@@ -143,8 +144,12 @@ export function registerProgressRoutes(app, logError) {
         if (!Number.isFinite(dayNumber) || dayNumber < 1) {
           return res.status(400).json({ ok: false, error: "invalid_day" });
         }
+        const studentId = req.effectiveStudentId || req.params.studentId;
+        if (!studentId) {
+          return res.status(400).json({ ok: false, error: "missing_student" });
+        }
         const result = teacherUnlockDayForStudent({
-          studentId: req.params.studentId,
+          studentId,
           dayNumber,
           teacherId: req.auth.userId,
           reason: req.body?.reason || "",
@@ -155,6 +160,22 @@ export function registerProgressRoutes(app, logError) {
           return res.status(400).json({ ok: false, error: err.message });
         }
         logError("dayUnlock.teacherOverride", err);
+        res.status(500).json({ ok: false, error: "failed" });
+      }
+    },
+  );
+
+  app.get(
+    "/api/teacher/students/:studentId/unlock-log",
+    requireAuth,
+    requireRole("teacher"),
+    requireProgressAccess,
+    (req, res) => {
+      try {
+        const logs = listDayUnlockOverrides(req.params.studentId);
+        res.json({ ok: true, logs });
+      } catch (err) {
+        logError("dayUnlock.log", err);
         res.status(500).json({ ok: false, error: "failed" });
       }
     },

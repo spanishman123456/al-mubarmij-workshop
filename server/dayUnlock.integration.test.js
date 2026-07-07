@@ -83,4 +83,19 @@ describe("day unlock integration", () => {
     expect(unlock.data.dayUnlockMap["day-02"]).not.toBe("locked");
     expect(unlock.data.dayUnlockMap["day-03"]).toBe("draft");
   });
+
+  it("does not open unpublished day 3 when day 2 completed", async () => {
+    saveStudentProgress(STUDENT_ID, {
+      completedDays: ["day-01", "day-02"],
+      dayCompletionTimes: {
+        "day-01": new Date().toISOString(),
+        "day-02": new Date().toISOString(),
+      },
+    });
+
+    const login = await post("/api/auth/student", { nationalId: STUDENT_NID });
+    const cookie = login.res.headers.get("set-cookie") || "";
+    const unlock = await get("/api/student/day-unlock", cookie);
+    expect(unlock.data.dayUnlockMap["day-03"]).toBe("draft");
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getPlatformSettings, setPythonCodeAssist } from "../repositories/platformSettingsRepository.js";
+import { getPlatformSettings, setPythonCodeAssist, setPublicationSettings } from "../repositories/platformSettingsRepository.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,5 +16,16 @@ describe("platformSettingsRepository", () => {
     setPythonCodeAssist("reduced");
     expect(getPlatformSettings().pythonCodeAssist).toBe("reduced");
     setPythonCodeAssist("full");
+  });
+
+  it("persists publication settings", () => {
+    setPublicationSettings({
+      publishedDays: 4,
+      unlockPolicy: "sequential",
+      daySchedules: {},
+      updatedBy: "teacher-test",
+      updatedAt: new Date().toISOString(),
+    });
+    expect(getPlatformSettings().publication.publishedDays).toBe(4);
   });
 });

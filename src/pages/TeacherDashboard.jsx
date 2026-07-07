@@ -18,7 +18,7 @@ import {
   todayKey,
 } from "../lib/platformAnalytics";
 import { buildAssessmentSummary, formatAssessmentCardLine } from "../lib/assessmentSummary.js";
-import { getPublishedDaysCount } from "../config/publication";
+import { DayPublicationPanel, StudentDayUnlockActions } from "../components/teacher/DayPublicationPanel";
 
 function formatDate(iso) {
   return formatLoginDateTime(iso) === "لم يسجل الدخول" ? "—" : formatLoginDateTime(iso);
@@ -33,6 +33,8 @@ export default function TeacherDashboard() {
     teacherUpdateGraphicProject,
     refreshTeacherAnalytics,
     analyticsSyncStatus,
+    publicationConfig,
+    refreshPublicationConfig,
   } = usePlatform();
 
   const [loginFilter, setLoginFilter] = useState("all");
@@ -75,7 +77,7 @@ export default function TeacherDashboard() {
       getAttendanceStatus(x.analytics, x.stats).key === "inactive",
   );
   const onlineNow = allStudentsProgress.filter((x) => getPresenceStatus(x.analytics).key === "online");
-  const publishedDays = getPublishedDaysCount();
+  const publishedDays = publicationConfig?.publishedDays ?? 1;
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -116,26 +118,18 @@ export default function TeacherDashboard() {
           <Link to="/teacher/day-01-answers" className="edu-btn edu-btn-outline text-sm">
             إجابات المعلم — اليوم 1
           </Link>
-          {publishedDays >= 2 ? (
           <Link to="/teacher/day-02-answers" className="edu-btn edu-btn-outline text-sm">
             إجابات المعلم — اليوم 2
           </Link>
-          ) : null}
-          {publishedDays >= 3 ? (
           <Link to="/teacher/day-03-answers" className="edu-btn edu-btn-outline text-sm">
             إجابات المعلم — اليوم 3
           </Link>
-          ) : null}
-          {publishedDays >= 4 ? (
           <Link to="/teacher/day-04-answers" className="edu-btn edu-btn-outline text-sm">
             إجابات المعلم — اليوم 4
           </Link>
-          ) : null}
-          {publishedDays >= 5 ? (
           <Link to="/teacher/day-05-answers" className="edu-btn edu-btn-outline text-sm">
             إجابات المعلم — اليوم 5
           </Link>
-          ) : null}
           <Link to="/teacher/quiz-review" className="edu-btn edu-btn-outline text-sm">
             مراجعة الاختبارات
           </Link>
@@ -198,6 +192,8 @@ export default function TeacherDashboard() {
           ) : null}
         </EduCard>
       ) : null}
+
+      <DayPublicationPanel publicationConfig={publicationConfig} onUpdated={refreshPublicationConfig} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <SummaryCard value={allStudentsProgress.length} label="إجمالي الطلاب" color="violet" />
@@ -330,6 +326,14 @@ export default function TeacherDashboard() {
                 <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
                   ملاحظة المعلم: {analytics.teacherNotes}
                 </p>
+              ) : null}
+
+              {stats.dayUnlock ? (
+                <StudentDayUnlockActions
+                  studentId={student.id}
+                  dayUnlock={stats.dayUnlock}
+                  onUnlocked={refreshTeacherAnalytics}
+                />
               ) : null}
 
               <div className="mt-4 flex flex-wrap gap-2">

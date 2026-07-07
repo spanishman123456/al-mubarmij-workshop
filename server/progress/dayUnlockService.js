@@ -1,4 +1,4 @@
-import { getPublishedDaysCount } from "../config/publication.js";
+import { getPublishedDaysCount, getUnlockPolicy } from "../config/publication.js";
 import {
   canAccessDayPath,
   dayIdFromNumber,
@@ -8,7 +8,6 @@ import {
   isDayCompleted,
   isDayUnlockedForStudent,
   buildStudentDayUnlockMap,
-  parseUnlockPolicy,
   DAY_LOCKED_MESSAGE_AR,
 } from "../../src/lib/dayUnlockPolicy.js";
 import { getOnboardingStatus } from "../repositories/onboardingRepository.js";
@@ -21,7 +20,7 @@ export function buildUnlockContext(studentId) {
   const progress = progressRow?.progress || {};
   const lessonRows = getLessonProgressAll(studentId);
   const onboarding = getOnboardingStatus(studentId);
-  const policy = parseUnlockPolicy(process.env.STUDENT_UNLOCK_POLICY);
+  const policy = getUnlockPolicy();
 
   return { studentId, publishedDays, progress, lessonRows, onboarding, policy };
 }

@@ -131,6 +131,39 @@ export async function completeStudentDayApi(dayId) {
   });
 }
 
+export async function fetchPublicationConfigApi() {
+  return request("/api/config/publication");
+}
+
+export async function updatePublicationConfigApi(payload) {
+  return request("/api/config/publication", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function publishDayApi(dayNumber, releaseAt = null) {
+  return request("/api/config/publication/publish-day", {
+    method: "POST",
+    body: JSON.stringify({ dayNumber, releaseAt }),
+  });
+}
+
+export async function unpublishDayApi(dayNumber) {
+  return request("/api/config/publication/unpublish-day", {
+    method: "POST",
+    body: JSON.stringify({ dayNumber }),
+  });
+}
+
+export async function fetchTeacherPublicationSummaryApi() {
+  return request("/api/teacher/publication/summary");
+}
+
+export async function fetchStudentUnlockLogApi(studentId) {
+  return request(`/api/teacher/students/${encodeURIComponent(studentId)}/unlock-log`);
+}
+
 export async function teacherUnlockDayApi(studentId, dayNumber, reason = "") {
   return request(`/api/teacher/students/${encodeURIComponent(studentId)}/unlock-day`, {
     method: "POST",

@@ -22,8 +22,8 @@ import { corsMiddleware } from "./auth/cors.js";
 import { day03TeacherAnswers } from "../src/content/teacher/day03TeacherAnswers.js";
 import { day04TeacherAnswers } from "../src/content/teacher/day04TeacherAnswers.js";
 import { day05TeacherAnswers } from "../src/content/teacher/day05TeacherAnswers.js";
-import { getDayPublicationMap, getPublishedDaysCount } from "./config/publication.js";
 import { requirePublishedTeacherDay } from "./auth/publishedContent.js";
+import { registerPublicationRoutes } from "./routes/publicationRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");
@@ -110,14 +110,7 @@ export function createApp() {
     },
   );
 
-  app.get("/api/config/publication", (_req, res) => {
-    const publishedDays = getPublishedDaysCount();
-    res.json({
-      ok: true,
-      publishedDays,
-      publicationStatus: getDayPublicationMap(publishedDays),
-    });
-  });
+  registerPublicationRoutes(app, logError);
 
   app.post("/api/analytics/login", requireAuth, requireRole("student"), (req, res) => {
     try {

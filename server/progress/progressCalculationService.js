@@ -1,4 +1,4 @@
-import { getPublishedDaysFromServerEnv } from "../../src/config/publicationPolicy.js";
+import { getPublishedDaysCount } from "../config/publication.js";
 import { resolvePreAssessmentStatus } from "../config/onboardingPolicy.js";
 import { getOnboardingStatus } from "../repositories/onboardingRepository.js";
 import {
@@ -64,7 +64,7 @@ function countWorksheetsDone(progress = {}) {
  * @param {{ reason?: string, publishedDays?: number, previousPercent?: number|null, persistSnapshot?: boolean }} [options]
  */
 export function calculateStudentProgress(studentId, options = {}) {
-  const publishedDays = options.publishedDays ?? getPublishedDaysFromServerEnv();
+  const publishedDays = options.publishedDays ?? getPublishedDaysCount();
   const catalog = buildPublishedRequiredCatalog(publishedDays);
 
   const progressRow = getStudentProgress(studentId);
@@ -205,7 +205,7 @@ export function calculateStudentProgressDetails(studentId, options = {}) {
 }
 
 export function recalculateAllStudentsProgress({ reason = "batch_recalculate", persistSnapshot = true } = {}) {
-  const publishedDays = getPublishedDaysFromServerEnv();
+  const publishedDays = getPublishedDaysCount();
   const report = {
     publishedDays,
     progressVersion: PROGRESS_VERSION,

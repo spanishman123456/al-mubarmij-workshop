@@ -10,6 +10,7 @@ import {
   PublicationStatus,
 } from "./publicationPolicy.js";
 import { DayStudentState, DAY_LOCKED_MESSAGE_AR, DAY_SCHEDULE_MESSAGE_AR } from "../lib/dayUnlockPolicy.js";
+import { getCachedPublicationConfig, resolvePublishedDaysFromCache } from "../lib/publicationConfigStore.js";
 
 export {
   LOCKED_MESSAGE_AR,
@@ -23,19 +24,25 @@ export {
 };
 
 export function getPublishedDaysCount() {
-  return getPublishedDaysFromClientEnv();
+  return resolvePublishedDaysFromCache(getPublishedDaysFromClientEnv());
 }
 
-/** Prefer server-published count (myStats) so UI matches unlock API after deploy. */
+/** Prefer server-published count (myStats or publication API cache). */
 export function resolvePublishedDaysCount(myStats) {
   const fromServer = myStats?.publishedDays ?? myStats?.dayUnlock?.publishedDays;
   if (Number.isFinite(fromServer) && fromServer >= 1) {
     return parsePublishedDays(fromServer);
   }
-  return getPublishedDaysCount();
+  const fromCache = getCachedPublicationConfig()?.publishedDays;
+  if (Number.isFinite(fromCache) && fromCache >= 1) {
+    return parsePublishedDays(fromCache);
+  }
+  return getPublishedDaysFromClientEnv();
 }
 
 export function getPublicationStatusMap() {
+  const cached = getCachedPublicationConfig()?.publicationStatus;
+  if (cached && typeof cached === "object") return cached;
   return getDayPublicationMap(getPublishedDaysCount());
 }
 

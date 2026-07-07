@@ -24,7 +24,8 @@ import {
   mergeRemoteAnalytics,
 } from "../lib/platformAnalytics";
 import { reportLoginEvent, reportActivityPatch, fetchAllAnalytics } from "../lib/analyticsApi";
-import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi, syncProgressApi, fetchComputedProgressMe, fetchTeacherRosterProgress, completeStudentDayApi } from "../lib/platformApi";
+import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi, syncProgressApi, fetchComputedProgressMe, fetchTeacherRosterProgress, completeStudentDayApi, fetchPublicationConfigApi } from "../lib/platformApi";
+import { setCachedPublicationConfig } from "../lib/publicationConfigStore.js";
 import {
   loadValidatedPlatformState,
   resolveSessionUser,
@@ -123,6 +124,25 @@ export function PlatformProvider({ children }) {
     error: null,
     fetchedAt: null,
   });
+  const [publicationConfig, setPublicationConfig] = useState(null);
+
+  const refreshPublicationConfig = useCallback(async () => {
+    try {
+      const res = await fetchPublicationConfigApi();
+      if (res.ok) {
+        setCachedPublicationConfig(res);
+        setPublicationConfig(res);
+        return res;
+      }
+    } catch (err) {
+      console.error("[platform] publication config", err?.message || err);
+    }
+    return null;
+  }, []);
+
+  useEffect(() => {
+    refreshPublicationConfig();
+  }, [refreshPublicationConfig]);
 
   useEffect(() => {
     setAuthReady(true);
@@ -956,6 +976,8 @@ export function PlatformProvider({ children }) {
       analyticsSyncStatus,
       progressSyncStatus,
       refreshMyComputedProgress,
+      publicationConfig,
+      refreshPublicationConfig,
       state,
     }),
     [
@@ -992,6 +1014,8 @@ export function PlatformProvider({ children }) {
       analyticsSyncStatus,
       progressSyncStatus,
       refreshMyComputedProgress,
+      publicationConfig,
+      refreshPublicationConfig,
       state,
     ],
   );

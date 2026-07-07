@@ -17,7 +17,7 @@ import {
 } from "../config/onboardingPolicy.js";
 import { buildAssessmentSummary } from "../../src/lib/assessmentSummary.js";
 import { getLatestSubmittedAttempt } from "./quizAttemptRepository.js";
-import { getPublishedDaysFromServerEnv } from "../../src/config/publicationPolicy.js";
+import { getPublishedDaysCount } from "../config/publication.js";
 
 export function getOnboardingStatus(studentId) {
   const bingoRow = queryOne(
@@ -157,7 +157,7 @@ export function getAllOnboardingSummary() {
 
   const progressRows = queryAll(`SELECT student_id, progress_json FROM student_progress`);
   const preAssessmentMap = {};
-  const publishedDays = getPublishedDaysFromServerEnv();
+  const publishedDays = getPublishedDaysCount();
   for (const row of progressRows) {
     students.add(row.student_id);
     const progress = JSON.parse(row.progress_json || "{}");

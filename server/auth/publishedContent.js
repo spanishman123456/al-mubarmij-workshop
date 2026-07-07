@@ -1,7 +1,7 @@
-import { getPublishedDaysCount } from "../config/publication.js";
+import { getPublishedDaysCount, getUnlockPolicy } from "../config/publication.js";
 import { isLessonIdPublished, isPathPublished } from "../../src/config/publicationPolicy.js";
 import { LESSON_ID_TO_DAY } from "../../src/config/publicationPolicy.js";
-import { DAY_LOCKED_MESSAGE_AR, parseUnlockPolicy } from "../../src/lib/dayUnlockPolicy.js";
+import { DAY_LOCKED_MESSAGE_AR } from "../../src/lib/dayUnlockPolicy.js";
 import { isLessonDayUnlockedForStudent } from "../progress/dayUnlockService.js";
 
 export function rejectUnpublishedLessonProgress(req, res, next) {
@@ -13,7 +13,7 @@ export function rejectUnpublishedLessonProgress(req, res, next) {
     return res.status(403).json({ ok: false, error: "content_not_published" });
   }
   const day = LESSON_ID_TO_DAY[lessonId];
-  if (day != null && parseUnlockPolicy() === "sequential" && !isLessonDayUnlockedForStudent(req.auth.userId, day)) {
+  if (day != null && getUnlockPolicy() === "sequential" && !isLessonDayUnlockedForStudent(req.auth.userId, day)) {
     return res.status(403).json({ ok: false, error: "day_locked", messageAr: DAY_LOCKED_MESSAGE_AR });
   }
   return next();
