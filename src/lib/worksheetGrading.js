@@ -1,43 +1,47 @@
 /** Auto-grading for structured worksheet questions. */
 
-export function normalizeAnswer(value, mode = "text") {
-  const s = String(value ?? "")
-    .trim()
-    .replace(/\s+/g, "");
-  if (mode === "binary") return s.replace(/[^01]/gi, "");
-  if (mode === "numeric") return s.replace(/[^\d.-]/g, "");
-  if (mode === "lower") return s.toLowerCase();
-  return s.toLowerCase();
-}
+import { gradeStructuredItem, normalizeAnswer } from "./assessment/unifiedAssessment.js";
 
-export function gradeShortAnswer(userValue, { acceptedAnswers = [], normalize = "text" } = {}) {
-  const normalized = normalizeAnswer(userValue, normalize);
-  if (!normalized) return { correct: false, status: "unanswered" };
-  const accepted = acceptedAnswers.map((a) => normalizeAnswer(a, normalize));
-  const ok = accepted.includes(normalized);
-  return { correct: ok, status: ok ? "correct" : "incorrect" };
+export { normalizeAnswer };
+
+export function gradeShortAnswer(userValue, opts = {}) {
+  const result = gradeStructuredItem(
+    { type: "short_answer", acceptedAnswers: opts.acceptedAnswers, normalize: opts.normalize },
+    userValue,
+  );
+  return {
+    correct: result.correct,
+    status:
+      result.gradingStatus === "unanswered"
+        ? "unanswered"
+        : result.correct
+          ? "correct"
+          : "incorrect",
+  };
 }
 
 export function gradeMultipleChoice(userValue, correctId) {
-  if (userValue == null || userValue === "") return { correct: false, status: "unanswered" };
-  const ok = String(userValue) === String(correctId);
-  return { correct: ok, status: ok ? "correct" : "incorrect" };
+  return gradeStructuredItem(
+    { type: "multiple_choice", correctAnswer: correctId, choices: [{ id: correctId }] },
+    userValue,
+  );
 }
 
 export function gradeTrueFalse(userValue, correct) {
-  if (userValue == null || userValue === "") return { correct: false, status: "unanswered" };
-  const ok = Boolean(userValue) === Boolean(correct);
-  return { correct: ok, status: ok ? "correct" : "incorrect" };
+  return gradeStructuredItem({ type: "true_false", correct }, userValue);
 }
 
 export function gradeWorksheetPart(part, userValue) {
-  const type = part.type || "short_answer";
-  if (type === "multiple_choice") return gradeMultipleChoice(userValue, part.correctAnswer);
-  if (type === "true_false") return gradeTrueFalse(userValue, part.correct);
-  if (type === "short_answer" || type === "numeric_answer") {
-    return gradeShortAnswer(userValue, part);
-  }
-  return { correct: null, status: "pending" };
+  const result = gradeStructuredItem(part, userValue);
+  return {
+    correct: result.correct,
+    status:
+      result.gradingStatus === "unanswered"
+        ? "unanswered"
+        : result.correct
+          ? "correct"
+          : "incorrect",
+  };
 }
 
 export function gradeWorksheetTask(task, answer) {

@@ -2,14 +2,20 @@ import { useState } from "react";
 import { isValidInBase } from "../../lib/numberSystems/conversions";
 import { recordLessonAttemptApi } from "../../lib/platformApi";
 import { feedbackAfterFailedAttempt } from "../../lib/exerciseFeedbackPolicy.js";
+import { gradeStructuredItem } from "../../lib/assessment/unifiedAssessment.js";
 
-function normalizeAnswer(s) {
+function normalizeLegacyAnswer(s) {
   return String(s || "").trim().toUpperCase().replace(/\s/g, "");
 }
 
+function isStructuredExercise(exercise) {
+  const type = exercise?.type;
+  return type && type !== "numeric" && !exercise.kind;
+}
+
 function classifyError(userAnswer, expected, exercise) {
-  const u = normalizeAnswer(userAnswer);
-  const e = normalizeAnswer(expected);
+  const u = normalizeLegacyAnswer(userAnswer);
+  const e = normalizeLegacyAnswer(expected);
   if (!u) return { type: "empty", message: "أدخل إجابة قبل التحقق." };
   if (exercise.base && !isValidInBase(u, exercise.base)) {
     return {
@@ -29,6 +35,74 @@ function classifyError(userAnswer, expected, exercise) {
   return { type: "wrong_answer", message: "الإجابة غير صحيحة. راجع الخطوة الحالية في الجدول." };
 }
 
+function StructuredExerciseInput({ exercise, value, onChange, disabled }) {
+  const type = exercise.type;
+  if (type === "multiple_choice" || type === "mcq") {
+    return (
+      <div className="space-y-2">
+        {(exercise.choices || []).map((c) => {
+          const picked = String(value) === String(c.id);
+          return (
+            <label
+              key={c.id}
+              className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition ${
+                picked ? "border-violet-500 bg-violet-50" : "border-slate-200 bg-white hover:border-violet-200"
+              }`}
+            >
+              <input
+                type="radio"
+                name={exercise.id}
+                checked={picked}
+                onChange={() => onChange(c.id)}
+                disabled={disabled}
+                className="mt-1"
+              />
+              <span>{c.textAr || c.text}</span>
+            </label>
+          );
+        })}
+      </div>
+    );
+  }
+  if (type === "true_false" || type === "truefalse") {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {[
+          { v: true, label: "صح" },
+          { v: false, label: "خطأ" },
+        ].map(({ v, label }) => (
+          <button
+            key={label}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(v)}
+            className={`rounded-lg border px-4 py-2 text-sm font-bold transition ${
+              value === v
+                ? "border-violet-600 bg-violet-600 text-white"
+                : "border-slate-200 bg-white text-slate-700 hover:border-violet-300"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    );
+  }
+  const isNumeric = type === "numeric_answer" || type === "fill";
+  return (
+    <input
+      type="text"
+      inputMode={isNumeric ? "numeric" : "text"}
+      className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono"
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      dir="ltr"
+      placeholder="إجابتك"
+    />
+  );
+}
+
 export function LessonPractice({ exercises, mode, lessonId, userId, onStepComplete }) {
   const [idx, setIdx] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -44,8 +118,45 @@ export function LessonPractice({ exercises, mode, lessonId, userId, onStepComple
   const hints = ex.hints || [];
 
   function check() {
-    const norm = normalizeAnswer(answer);
-    const ok = norm === normalizeAnswer(expected) || norm === String(expected);
+    if (isStructuredExercise(ex)) {
+      const graded = gradeStructuredItem(ex, answer);
+      if (graded.gradingStatus === "unanswered") {
+        setFeedback("أدخل إجابة قبل التحقق.");
+        return;
+      }
+      if (graded.correct) {
+        setFeedback("إجابة صحيحة ✓");
+        setDone((d) => ({ ...d, [ex.id]: true }));
+        if (userId) {
+          recordLessonAttemptApi(userId, {
+            lessonId,
+            exerciseId: `${mode}-${ex.id}`,
+            answer,
+            correct: true,
+            hintsUsed: hintLevel,
+          });
+        }
+        onStepComplete?.(ex.id);
+        return;
+      }
+      const nextFail = failAttempts + 1;
+      setFailAttempts(nextFail);
+      setFeedback(feedbackAfterFailedAttempt(nextFail, hints, ex.feedback?.incorrect || "الإجابة غير صحيحة."));
+      if (userId) {
+        recordLessonAttemptApi(userId, {
+          lessonId,
+          exerciseId: `${mode}-${ex.id}`,
+          answer,
+          correct: false,
+          hintsUsed: hintLevel,
+          errorType: "wrong_answer",
+        });
+      }
+      return;
+    }
+
+    const norm = normalizeLegacyAnswer(answer);
+    const ok = norm === normalizeLegacyAnswer(expected) || norm === String(expected);
 
     if (ok) {
       setFeedback("إجابة صحيحة ✓");
@@ -94,14 +205,23 @@ export function LessonPractice({ exercises, mode, lessonId, userId, onStepComple
         {mode === "guided" ? "تدريب موجّه" : "تدريب مستقل"} — {idx + 1}/{exercises.length}
       </p>
       <p className="mt-2 font-semibold text-slate-900">{ex.promptAr}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <input
-          className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          dir="ltr"
-          placeholder="إجابتك"
-        />
+      <div className="mt-3 flex flex-wrap items-start gap-2">
+        {isStructuredExercise(ex) ? (
+          <StructuredExerciseInput
+            exercise={ex}
+            value={answer}
+            onChange={setAnswer}
+            disabled={Boolean(done[ex.id])}
+          />
+        ) : (
+          <input
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            dir="ltr"
+            placeholder="إجابتك"
+          />
+        )}
         <button type="button" className="edu-btn edu-btn-primary text-sm" onClick={check}>
           تحقق
         </button>

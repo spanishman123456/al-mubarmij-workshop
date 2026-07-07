@@ -2,8 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getQuizById } from "../data/quizzes";
 import { usePlatform } from "../context/PlatformContext";
-import { computeQuizResult, isAutoGradable, isQuestionCorrect, prepareQuizForAttempt } from "../lib/quizEngine";
+import { computeQuizResult, prepareQuizForAttempt } from "../lib/quizEngine";
 import { QuizQuestionRenderer, questionTypeLabel } from "../components/quiz/QuizQuestionRenderer";
+import {
+  formatModelAnswerDisplay,
+  formatUserAnswerDisplay,
+  gradeQuestion,
+  hasAnswerValue,
+} from "../lib/assessment/unifiedAssessment";
 import {
   PRE_ASSESSMENT_DEFER_CONFIRM_AR,
   PRE_ASSESSMENT_DEFERRED_AR,
@@ -85,10 +91,7 @@ function LegacyQuizTakePage({ quizId }) {
   }
 
   const result = submitted ? computeQuizResult(quiz, answers) : null;
-  const answeredCount = quiz.questions.filter((q) => {
-    const a = answers[q.id];
-    return a !== undefined && a !== null && String(a).trim() !== "";
-  }).length;
+  const answeredCount = quiz.questions.filter((q) => hasAnswerValue(answers[q.id])).length;
   const progressPercent = Math.round((answeredCount / quiz.questions.length) * 100);
 
   function setAnswer(questionId, value) {
@@ -97,10 +100,7 @@ function LegacyQuizTakePage({ quizId }) {
   }
 
   function handleSubmit() {
-    const unanswered = quiz.questions.filter((q) => {
-      const a = answers[q.id];
-      return a === undefined || a === null || String(a).trim() === "";
-    });
+    const unanswered = quiz.questions.filter((q) => !hasAnswerValue(answers[q.id]));
     if (unanswered.length > 0) {
       const ok = window.confirm(`لم تُجِب عن ${unanswered.length} سؤالاً. هل تريد الإرسال على أي حال؟`);
       if (!ok) return;
@@ -213,54 +213,12 @@ function LegacyQuizTakePage({ quizId }) {
                     </pre>
                   )}
 
-                  {qType === "fill" ? (
-                    <input
-                      type="text"
-                      className="edu-input w-full bg-white/10 text-white placeholder:text-slate-500"
-                      placeholder="اكتب إجابتك هنا"
-                      value={answers[q.id] ?? ""}
-                      onChange={(e) => setAnswer(q.id, e.target.value)}
-                      dir="auto"
-                    />
-                  ) : qType === "essay" || qType === "code" ? (
-                    <textarea
-                      className="edu-input min-h-[140px] w-full resize-y bg-white/10 font-mono text-sm text-white placeholder:text-slate-500"
-                      placeholder={
-                        qType === "code"
-                          ? "اكتب الكود أو الخوارزمية هنا..."
-                          : "اكتب إجابتك أو ارسم في دفترك ثم صف الحل هنا..."
-                      }
-                      value={answers[q.id] ?? ""}
-                      onChange={(e) => setAnswer(q.id, e.target.value)}
-                      dir={qType === "code" ? "ltr" : "rtl"}
-                    />
-                  ) : (
-                    <div className="space-y-2" dir="rtl">
-                      {(q.optionsAr || []).map((opt, i) => {
-                        const id = `${q.id}-opt-${i}`;
-                        const picked = answers[q.id] === i;
-                        return (
-                          <label
-                            key={id}
-                            className={`quiz-option flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-right text-sm transition ${
-                              picked
-                                ? "border-emerald-500/60 bg-emerald-950/40"
-                                : "border-white/10 bg-white/5 hover:border-white/20"
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name={q.id}
-                              checked={picked}
-                              onChange={() => setAnswer(q.id, i)}
-                              className="mt-1"
-                            />
-                            <span className="flex-1 leading-relaxed">{opt}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <QuizQuestionRenderer
+                    question={q}
+                    value={answers[q.id]}
+                    onChange={(value) => setAnswer(q.id, value)}
+                    disabled={false}
+                  />
                 </fieldset>
               );
             })}
@@ -373,8 +331,9 @@ function LegacyQuizTakePage({ quizId }) {
             <ul className="space-y-4">
               {quiz.questions.map((q, idx) => {
                 const userAns = answers[q.id];
-                const auto = isAutoGradable(q);
-                const ok = auto ? isQuestionCorrect(q, userAns) : String(userAns ?? "").trim().length > 0;
+                const graded = gradeQuestion(q, userAns);
+                const auto = graded.autoGraded;
+                const ok = auto ? graded.correct === true : hasAnswerValue(userAns);
                 const qType = q.type || "mcq";
                 return (
                   <li
@@ -393,18 +352,12 @@ function LegacyQuizTakePage({ quizId }) {
                     </p>
                     <p className="mt-2 text-sm text-slate-400">
                       إجابتك:{" "}
-                      {userAns !== undefined && String(userAns).trim() !== "" ? (
-                        <span
-                          dir={qType === "fill" || qType === "code" ? "ltr" : "rtl"}
-                          className="whitespace-pre-wrap text-slate-200"
-                        >
-                          {qType === "fill" || qType === "essay" || qType === "code"
-                            ? userAns
-                            : q.optionsAr?.[userAns] ?? userAns}
-                        </span>
-                      ) : (
-                        "لم تُجِب"
-                      )}
+                      <span
+                        dir={qType === "fill" || qType === "code" ? "ltr" : "rtl"}
+                        className="whitespace-pre-wrap text-slate-200"
+                      >
+                        {formatUserAnswerDisplay(q, userAns)}
+                      </span>
                     </p>
                     {!auto && (
                       <p className="mt-1 text-sm text-violet-300/90">
@@ -413,12 +366,7 @@ function LegacyQuizTakePage({ quizId }) {
                     )}
                     {auto && !ok && (
                       <p className="mt-1 text-sm text-emerald-300/90">
-                        الصحيح:{" "}
-                        <span dir="ltr">
-                          {qType === "fill"
-                            ? q.correctAnswer
-                            : q.optionsAr?.[q.correctIndex]}
-                        </span>
+                        الصحيح: <span dir="ltr">{formatModelAnswerDisplay(q)}</span>
                       </p>
                     )}
                     <p className="mt-3 border-t border-white/10 pt-3 text-sm leading-relaxed text-slate-300">

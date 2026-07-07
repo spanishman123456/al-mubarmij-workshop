@@ -3,17 +3,13 @@ import {
   OFFICIAL_POST_TEST_QUESTIONS,
 } from "../../src/data/officialPdfAssessments.js";
 import {
-  gradeCardFlip,
-  gradeCardSheet,
-  gradeFlowchart,
-  gradeLogicCircuit,
-  gradeMatch,
-  gradeOrder,
-  gradeTruthTable,
   logicCircuitModelLabel,
   truthTableModelAnswer,
 } from "../../src/lib/quiz/grading.js";
+import { gradeQuestion, isAutoGradable } from "../../src/lib/assessment/unifiedAssessment.js";
 import { buildSectionGroups, getSectionsForQuiz } from "./quizSections.js";
+
+export { gradeQuestion, isAutoGradable };
 
 const BANKS = {
   "quiz-pre": OFFICIAL_PRE_TEST_QUESTIONS,
@@ -82,72 +78,6 @@ export function getPublicQuizPayload(quizId) {
     sections,
     sectionMeta: getSectionsForQuiz(quizId).map(({ id, titleAr }) => ({ id, titleAr })),
   };
-}
-
-function normalizeAnswerText(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[ًٌٍَُِّْ]/g, "");
-}
-
-export function isAutoGradable(question) {
-  const type = question.type || "mcq";
-  return [
-    "mcq", "truefalse", "fill", "match", "order",
-    "truth-table", "binary-cards", "binary-cards-sheet", "flowchart", "logic-circuit",
-  ].includes(type);
-}
-
-function hasUserAnswer(userAnswer) {
-  if (userAnswer === undefined || userAnswer === null) return false;
-  if (typeof userAnswer === "string") return userAnswer.trim() !== "";
-  return true;
-}
-
-export function gradeQuestion(question, userAnswer) {
-  const type = question.type || "mcq";
-  const manualTypes = ["essay", "code", "code-editor"];
-  if (manualTypes.includes(type)) {
-    return {
-      correct: null,
-      gradingStatus: hasUserAnswer(userAnswer) ? "pending_teacher_review" : "unanswered",
-      autoGraded: false,
-    };
-  }
-  if (!isAutoGradable(question)) {
-    return {
-      correct: null,
-      gradingStatus: hasUserAnswer(userAnswer) ? "pending_teacher_review" : "unanswered",
-      autoGraded: false,
-    };
-  }
-
-  let correct = false;
-  if (type === "fill") {
-    const normalized = normalizeAnswerText(userAnswer);
-    const accepted = question.acceptAnswers?.length ? question.acceptAnswers : [question.correctAnswer];
-    correct = Boolean(normalized) && accepted.some((a) => normalizeAnswerText(a) === normalized);
-  } else if (type === "match") {
-    correct = gradeMatch(question, userAnswer);
-  } else if (type === "order") {
-    correct = gradeOrder(question, userAnswer);
-  } else if (type === "truth-table") {
-    correct = gradeTruthTable(question, userAnswer);
-  } else if (type === "binary-cards") {
-    correct = gradeCardFlip(question, userAnswer);
-  } else if (type === "binary-cards-sheet") {
-    correct = gradeCardSheet(question, userAnswer);
-  } else if (type === "flowchart") {
-    correct = gradeFlowchart(question, userAnswer);
-  } else if (type === "logic-circuit") {
-    correct = gradeLogicCircuit(question, userAnswer);
-  } else if (hasUserAnswer(userAnswer)) {
-    correct = Number(userAnswer) === question.correctIndex;
-  }
-
-  return { correct, gradingStatus: correct ? "correct" : "incorrect", autoGraded: true };
 }
 
 export function gradeAttempt(quizId, answers) {
