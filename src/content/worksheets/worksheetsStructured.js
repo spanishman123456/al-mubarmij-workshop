@@ -1,0 +1,287 @@
+/**
+ * Structured worksheet tasks — auto-gradable, no long free-text essays.
+ * Legacy essay tasks without `type` fall back to textarea in the UI.
+ */
+
+const FB = {
+  dec: "راجع القسمة المتكررة على 2 أو القيم المكانية.",
+  bin: "راجع تحويل الثنائي: اجمع قوى 2 للخانات = 1.",
+};
+
+/** @type {Record<string, { tasks: object[] }>} */
+export const STRUCTURED_WORKSHEETS = {
+  "ws-day-01": {
+    tasks: [
+      {
+        n: 1,
+        type: "multi_part",
+        pdfRef: "ص 77",
+        textAr: "حوّل الأعداد التالية من النظام العشري إلى النظام الثنائي (6 خانات لكل رقم):",
+        parts: [
+          { id: "d2", type: "short_answer", promptAr: "2₁₀ → ثنائي", acceptedAnswers: ["000010", "10"], normalize: "binary", feedback: FB.dec },
+          { id: "d11", type: "short_answer", promptAr: "11₁₀ → ثنائي", acceptedAnswers: ["001011", "1011"], normalize: "binary", feedback: FB.dec },
+          { id: "d24", type: "short_answer", promptAr: "24₁₀ → ثنائي", acceptedAnswers: ["011000", "11000"], normalize: "binary", feedback: FB.dec },
+          { id: "d50", type: "short_answer", promptAr: "50₁₀ → ثنائي", acceptedAnswers: ["110010"], normalize: "binary", feedback: FB.dec },
+          { id: "d616", type: "short_answer", promptAr: "616₁₀ → ثنائي", acceptedAnswers: ["1001101000"], normalize: "binary", feedback: FB.dec },
+          { id: "d22", type: "short_answer", promptAr: "22₁₀ → ثنائي", acceptedAnswers: ["010110", "10110"], normalize: "binary", feedback: FB.dec },
+        ],
+      },
+      {
+        n: 2,
+        type: "multi_part",
+        pdfRef: "ص 77",
+        textAr: "حوّل الأعداد التالية من النظام الثنائي إلى العشري:",
+        parts: [
+          { id: "b1", type: "numeric_answer", promptAr: "101101₂ → عشري", acceptedAnswers: ["45"], normalize: "numeric", feedback: FB.bin },
+          { id: "b2", type: "numeric_answer", promptAr: "111111₂ → عشري", acceptedAnswers: ["63"], normalize: "numeric", feedback: FB.bin },
+          { id: "b3", type: "numeric_answer", promptAr: "00111011₂ → عشري", acceptedAnswers: ["59"], normalize: "numeric", feedback: FB.bin },
+          { id: "b4", type: "numeric_answer", promptAr: "011010₂ → عشري", acceptedAnswers: ["26"], normalize: "numeric", feedback: FB.bin },
+        ],
+      },
+      {
+        n: 3,
+        type: "short_answer",
+        pdfRef: "ص 77",
+        textAr: "ما القيمة العشرية للعدد الثنائي 1111111؟",
+        acceptedAnswers: ["127"],
+        normalize: "numeric",
+        explanationAr: "1111111₂ = 64+32+16+8+4+2+1 = 127",
+        feedback: { incorrect: FB.bin },
+      },
+      {
+        n: 4,
+        type: "multi_part",
+        pdfRef: "ص 77",
+        textAr: "أكمّل جدول التحويل — القيمة العشرية لكل عدد ثنائي:",
+        parts: [
+          { id: "t11", type: "numeric_answer", promptAr: "11₂", acceptedAnswers: ["3"], normalize: "numeric" },
+          { id: "t111", type: "numeric_answer", promptAr: "111₂", acceptedAnswers: ["7"], normalize: "numeric" },
+          { id: "t1111", type: "numeric_answer", promptAr: "1111₂", acceptedAnswers: ["15"], normalize: "numeric" },
+          { id: "t11111", type: "numeric_answer", promptAr: "11111₂", acceptedAnswers: ["31"], normalize: "numeric" },
+          { id: "t111111", type: "numeric_answer", promptAr: "111111₂", acceptedAnswers: ["63"], normalize: "numeric" },
+        ],
+      },
+      {
+        n: 5,
+        type: "binary_cards_sheet",
+        pdfRef: "ص 78–79",
+        textAr: "بطاقات النظام الثنائي: مثّل الأعداد 12، 5، 16، 31 بقلب البطاقات (1، 2، 4، 8، 16).",
+        cardValues: [16, 8, 4, 2, 1],
+        targets: [12, 5, 16, 31],
+        instructionAr: "اقلب البطاقات داخل المنصة — الظاهرة = 1، المخفية = 0.",
+      },
+      {
+        n: 6,
+        type: "multi_part",
+        pdfRef: "ص 52–55",
+        textAr: "الألوان RGB — اختر القيمة العشرية الصحيحة:",
+        parts: [
+          {
+            id: "red",
+            type: "multiple_choice",
+            promptAr: "اللون الأحمر FF0000",
+            choices: [
+              { id: "a", textAr: "255" },
+              { id: "b", textAr: "16777215" },
+              { id: "c", textAr: "65280" },
+              { id: "d", textAr: "65535" },
+            ],
+            correctAnswer: "b",
+            explanationAr: "FF0000 = 255×256² = 16777215",
+          },
+          {
+            id: "white",
+            type: "multiple_choice",
+            promptAr: "اللون الأبيض",
+            choices: [
+              { id: "a", textAr: "000000" },
+              { id: "b", textAr: "FFFFFF" },
+              { id: "c", textAr: "FF0000" },
+              { id: "d", textAr: "00FF00" },
+            ],
+            correctAnswer: "b",
+          },
+          {
+            id: "black",
+            type: "multiple_choice",
+            promptAr: "اللون الأسود",
+            choices: [
+              { id: "a", textAr: "000000" },
+              { id: "b", textAr: "FFFFFF" },
+              { id: "c", textAr: "808080" },
+              { id: "d", textAr: "111111" },
+            ],
+            correctAnswer: "a",
+          },
+        ],
+      },
+      {
+        n: 7,
+        type: "multi_part",
+        pdfRef: "ص 37–40",
+        textAr: "ASCII و Unicode:",
+        parts: [
+          {
+            id: "tf1",
+            type: "true_false",
+            promptAr: "Unicode يدعم تمثيل الحروف العربية.",
+            correct: true,
+            explanationAr: "Unicode يغطي معظم لغات العالم بما فيها العربية.",
+          },
+          {
+            id: "mc1",
+            type: "multiple_choice",
+            promptAr: "أي ترميز يقتصر غالبًا على 128 حرفًا إنجليزيًا؟",
+            choices: [
+              { id: "a", textAr: "ASCII" },
+              { id: "b", textAr: "Unicode" },
+              { id: "c", textAr: "UTF-16 فقط" },
+              { id: "d", textAr: "HTML" },
+            ],
+            correctAnswer: "a",
+          },
+        ],
+      },
+      {
+        n: 8,
+        type: "multi_part",
+        pdfRef: "ص 14",
+        textAr: "ميثاق الصف والتقويم القبلي:",
+        parts: [
+          {
+            id: "charter",
+            type: "multiple_choice",
+            promptAr: "أي سلوك يتوافق مع ميثاق الصف الرقمي؟",
+            choices: [
+              { id: "a", textAr: "مشاركة كلمات المرور مع الزملاء" },
+              { id: "b", textAr: "الاحترام والالتزام بقواعد الاستخدام المقبول" },
+              { id: "c", textAr: "نسخ إجابات الآخرين دون إذن" },
+              { id: "d", textAr: "إرسال روابط غير موثوقة" },
+            ],
+            correctAnswer: "b",
+          },
+          {
+            id: "pre",
+            type: "multiple_choice",
+            promptAr: "لماذا التقويم القبلي مهم؟",
+            choices: [
+              { id: "a", textAr: "لمنع الطالب من بدء الدرس" },
+              { id: "b", textAr: "تشخيصي — يساعد المعلم على دعم مستوى كل طالب" },
+              { id: "c", textAr: "لتحديد رسوب الطالب نهائيًا" },
+              { id: "d", textAr: "لا فائدة منه" },
+            ],
+            correctAnswer: "b",
+          },
+        ],
+      },
+    ],
+  },
+  "ws-day-02": {
+    tasks: [
+      {
+        n: 1,
+        type: "multi_part",
+        pdfRef: "ص 93–96",
+        textAr: "التحويلات — اكتب الناتج فقط:",
+        parts: [
+          { id: "bin", type: "numeric_answer", promptAr: "1010₂ → عشري", acceptedAnswers: ["10"], normalize: "numeric" },
+          { id: "dec", type: "short_answer", promptAr: "25₁₀ → ثنائي", acceptedAnswers: ["11001"], normalize: "binary" },
+          { id: "hex", type: "numeric_answer", promptAr: "A3₁₆ → عشري", acceptedAnswers: ["163"], normalize: "numeric" },
+        ],
+      },
+      {
+        n: 2,
+        type: "multi_part",
+        pdfRef: "ص 101",
+        textAr: "حساب الأساس — اكتب ناتج الجمع:",
+        parts: [
+          { id: "badd", type: "short_answer", promptAr: "1011₂ + 1101₂ = (ثنائي)", acceptedAnswers: ["11000"], normalize: "binary" },
+          { id: "padd", type: "short_answer", promptAr: "23₅ + 14₅ = (أساس 5)", acceptedAnswers: ["42"], normalize: "numeric" },
+        ],
+      },
+      {
+        n: 3,
+        type: "multiple_choice",
+        pdfRef: "ص 117",
+        textAr: "أي وصف ينطبق على الخوارزمية الجيدة؟",
+        choices: [
+          { id: "a", textAr: "خطوات واضحة ومحددة قابلة للتنفيذ" },
+          { id: "b", textAr: "جملة واحدة غامضة بدون ترتيب" },
+          { id: "c", textAr: "كود بايثون فقط بدون شرح" },
+          { id: "d", textAr: "نتيجة عشوائية" },
+        ],
+        correctAnswer: "a",
+        explanationAr: "الخوارزمية = خطوات مرقمة واضحة من مدخلات إلى مخرجات.",
+      },
+      {
+        n: 4,
+        type: "true_false",
+        pdfRef: "ص 115",
+        textAr: "إذا كانت درجة الطالب 55، فالبرنامج if grade >= 50 يطبع «نجح».",
+        correct: true,
+        explanationAr: "55 ≥ 50 → الشرط صحيح.",
+      },
+      {
+        n: 5,
+        type: "multiple_choice",
+        pdfRef: "ص 115",
+        textAr: "أي تقدير يطبع البرنامج لدرجة 85؟",
+        choices: [
+          { id: "a", textAr: "ممتاز" },
+          { id: "b", textAr: "جيد جداً" },
+          { id: "c", textAr: "جيد" },
+          { id: "d", textAr: "مقبول" },
+        ],
+        correctAnswer: "b",
+        explanationAr: "85 ≥ 80 و < 90 → جيد جداً.",
+      },
+      {
+        n: 6,
+        type: "short_answer",
+        pdfRef: "ص 126",
+        textAr: "ما ناتج جمع الأعداد من 1 إلى 5 باستخدام while؟ (رقم فقط)",
+        acceptedAnswers: ["15"],
+        normalize: "numeric",
+      },
+      {
+        n: 7,
+        type: "numeric_answer",
+        pdfRef: "ص 126",
+        textAr: "ما مربع العدد 7؟ (ناتج for i in range(1,11) عند i=7)",
+        acceptedAnswers: ["49"],
+        normalize: "numeric",
+      },
+      {
+        n: 8,
+        type: "true_false",
+        pdfRef: "ص 94–96",
+        textAr: "0.1 + 0.2 قد لا يساوي بالضبط 0.3 في الحاسب بسبب تمثيل محدود للأعداد العائمة.",
+        correct: true,
+      },
+      {
+        n: 9,
+        type: "multiple_choice",
+        pdfRef: "ص 127",
+        textAr: "ما وظيفة range في بايثون؟",
+        choices: [
+          { id: "a", textAr: "توليد تسلسل أعداد للتكرار" },
+          { id: "b", textAr: "طباعة نص فقط" },
+          { id: "c", textAr: "إيقاف البرنامج" },
+          { id: "d", textAr: "تحويل ثنائي إلى عشري" },
+        ],
+        correctAnswer: "a",
+      },
+      {
+        n: 10,
+        type: "true_false",
+        pdfRef: "ص 127",
+        textAr: "يمكن استخدام if لاتخاذ قرار في برنامج بايثون.",
+        correct: true,
+      },
+    ],
+  },
+};
+
+export function getStructuredTasks(worksheetId) {
+  return STRUCTURED_WORKSHEETS[worksheetId]?.tasks ?? null;
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getWorksheet15ById } from "../data/worksheets15Days";
 import { WORKSHEET_MODEL_ANSWERS } from "../content/teacher/worksheetModelAnswers.js";
@@ -13,17 +13,24 @@ import {
   WorksheetAccessState,
   getWorksheetAccessState,
 } from "../lib/worksheetAccess";
+import { getPartGrade, WorksheetTaskInput } from "../components/worksheet/WorksheetTaskInput.jsx";
+import { gradeWorksheetTask, isStructuredTask, taskAnswerComplete } from "../lib/worksheetGrading.js";
+
+const EMPTY_ANSWERS = {};
 
 export default function WorksheetDetailPage() {
   const { worksheetId } = useParams();
   const ws = getWorksheet15ById(worksheetId);
   const { user, myProgress, myStats, saveWorksheetAnswers } = usePlatform();
-  const saved = myProgress?.worksheetAnswers?.[worksheetId]?.answers ?? {};
+  const savedBlob = myProgress?.worksheetAnswers?.[worksheetId];
+  const savedAnswers = savedBlob?.answers;
+  const savedUpdatedAt = savedBlob?.updatedAt;
   const status = myProgress?.worksheetStatus?.[worksheetId] ?? "not_started";
   const isTeacher = isTeacherRole(user?.role);
   const dayUnlockMap = myStats?.dayUnlock?.dayUnlockMap;
 
-  const [answers, setAnswers] = useState(saved);
+  const [answers, setAnswers] = useState(() => savedAnswers ?? EMPTY_ANSWERS);
+  const [checkedByTask, setCheckedByTask] = useState({});
   const [notice, setNotice] = useState("");
 
   const access =
@@ -37,8 +44,9 @@ export default function WorksheetDetailPage() {
       : WorksheetAccessState.OPEN;
 
   useEffect(() => {
-    setAnswers(saved);
-  }, [worksheetId, saved]);
+    setAnswers(savedAnswers ?? EMPTY_ANSWERS);
+    setCheckedByTask({});
+  }, [worksheetId, savedUpdatedAt]);
 
   useEffect(() => {
     if (!user?.id || user.role !== "student") return undefined;
@@ -47,6 +55,28 @@ export default function WorksheetDetailPage() {
       saveWorksheetAnswers(worksheetId, answers, "in_progress");
     });
   }, [user?.id, user?.role, worksheetId, answers, saveWorksheetAnswers, ws?.dayId, dayUnlockMap, myStats]);
+
+  const progress = useMemo(() => {
+    if (!ws?.tasks?.length) return { done: 0, total: 0 };
+    const structured = ws.tasks.filter(isStructuredTask);
+    const total = structured.length || ws.tasks.length;
+    const done = structured.length
+      ? structured.filter((t) => taskAnswerComplete(t, answers[t.n])).length
+      : ws.tasks.filter((t) => taskAnswerComplete(t, answers[t.n])).length;
+    return { done, total };
+  }, [ws, answers]);
+
+  const handleCheckPart = useCallback(
+    (task, partId) => {
+      const result = getPartGrade(task, partId, answers[task.n]);
+      if (!result) return;
+      setCheckedByTask((prev) => ({
+        ...prev,
+        [task.n]: { ...(prev[task.n] || {}), [partId]: result },
+      }));
+    },
+    [answers],
+  );
 
   if (!ws) {
     return (
@@ -85,7 +115,13 @@ export default function WorksheetDetailPage() {
       setNotice("سجّل الدخول كطالب لحفظ إجاباتك.");
       return;
     }
-    saveWorksheetAnswers(worksheetId, answers, submit ? "completed" : "in_progress");
+    const payload = { ...answers };
+    for (const task of ws.tasks) {
+      if (typeof answers[task.n] === "string" && isStructuredTask(task)) {
+        payload[`${task.n}_legacy`] = answers[task.n];
+      }
+    }
+    saveWorksheetAnswers(worksheetId, payload, submit ? "completed" : "in_progress");
     setNotice(submit ? "تم إرسال الورقة للمعلم ✓" : "تم حفظ الإجابات");
   }
 
@@ -99,6 +135,7 @@ export default function WorksheetDetailPage() {
         <EduCard className="mb-6" accent="amber">
           <p className="font-semibold text-amber-900">معاينة المعلم — {teacherBadge?.label}</p>
           <p className="mt-2 text-sm text-amber-800">{TEACHER_PREVIEW_BADGE_AR}</p>
+          <p className="mt-1 text-xs text-amber-700">نفس واجهة الطالب — الإجابات النموذجية أسفل كل سؤال.</p>
           {model?.teacherDayRoute ? (
             <Link to={model.teacherDayRoute} className="edu-btn edu-btn-outline mt-3 inline-flex text-sm">
               مفتاح إجابات اليوم في لوحة المعلم
@@ -112,17 +149,22 @@ export default function WorksheetDetailPage() {
           ← كل أوراق العمل
         </Link>
         {!isTeacher ? (
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-bold ${
-              status === "completed"
-                ? "bg-emerald-100 text-emerald-800"
-                : status === "in_progress"
-                  ? "bg-amber-100 text-amber-800"
-                  : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {status === "completed" ? "مكتملة" : status === "in_progress" ? "قيد العمل" : "لم تبدأ"}
-          </span>
+          <>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-bold ${
+                status === "completed"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : status === "in_progress"
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {status === "completed" ? "مكتملة" : status === "in_progress" ? "قيد العمل" : "لم تبدأ"}
+            </span>
+            <span className="text-xs text-slate-600">
+              التقدم: {progress.done} / {progress.total}
+            </span>
+          </>
         ) : null}
         <button type="button" onClick={() => window.print()} className="edu-btn edu-btn-outline text-sm">
           طباعة
@@ -134,13 +176,35 @@ export default function WorksheetDetailPage() {
       <div className="space-y-6">
         {ws.tasks.map((task) => {
           const modelTask = model?.tasks?.find((t) => t.n === task.n);
+          const taskGrade = isStructuredTask(task) ? gradeWorksheetTask(task, answers[task.n]) : null;
           return (
-            <EduCard key={task.n} accent="violet">
+            <EduCard key={task.n} accent="violet" data-testid={`ws-task-${task.n}`}>
               <h2 className="font-bold text-violet-800">السؤال {task.n}.</h2>
               {task.pdfRef ? (
                 <span className="mt-1 inline-block text-xs font-medium text-slate-500">مرجع PDF: {task.pdfRef}</span>
               ) : null}
               <p className="mt-2 leading-relaxed text-slate-800">{task.textAr}</p>
+              {task.type ? (
+                <span className="mt-1 inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                  {task.type === "multi_part" ? "أسئلة فرعية" : task.type.replace(/_/g, " ")}
+                </span>
+              ) : null}
+
+              <WorksheetTaskInput
+                task={task}
+                value={answers[task.n]}
+                onChange={(v) => setAnswers((prev) => ({ ...prev, [task.n]: v }))}
+                disabled={false}
+                checkedParts={checkedByTask[task.n] || {}}
+                onCheckPart={isTeacher ? null : (partId) => handleCheckPart(task, partId)}
+                showTeacherMeta={isTeacher}
+              />
+
+              {!isTeacher && taskGrade?.graded && taskGrade.totalGradable > 0 ? (
+                <p className="mt-2 text-xs text-slate-600">
+                  صحيح: {taskGrade.correctCount} / {taskGrade.totalGradable}
+                </p>
+              ) : null}
 
               {isTeacher && modelTask ? (
                 <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm print:hidden">
@@ -154,17 +218,7 @@ export default function WorksheetDetailPage() {
                     </ol>
                   ) : null}
                 </div>
-              ) : (
-                <label className="mt-4 block print:hidden">
-                  <span className="edu-label">مساحة الإجابة</span>
-                  <textarea
-                    className="edu-input min-h-[100px]"
-                    value={answers[task.n] ?? ""}
-                    onChange={(e) => setAnswers((prev) => ({ ...prev, [task.n]: e.target.value }))}
-                    placeholder="اكتب إجابتك هنا..."
-                  />
-                </label>
-              )}
+              ) : null}
 
               <div className="mt-4 hidden border-b border-dashed border-slate-300 pb-12 print:block" />
             </EduCard>
@@ -186,7 +240,9 @@ export default function WorksheetDetailPage() {
             <p className="mt-4 rounded-lg bg-violet-50 px-3 py-2 text-sm font-medium text-violet-800">{notice}</p>
           ) : null}
         </>
-      ) : null}
+      ) : (
+        <p className="mt-6 text-center text-sm text-slate-500 no-print">معاينة المعلم — لا تُحفظ إجابات من هذا الحساب.</p>
+      )}
     </PageShell>
   );
 }
