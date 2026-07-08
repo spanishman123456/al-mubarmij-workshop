@@ -113,6 +113,22 @@ function scheduleActivitySync(studentId, analytics) {
   }, 3000);
 }
 
+function shouldHydrateFromServer(localProgress, serverProgress) {
+  if (!serverProgress) return false;
+  if (!localProgress) return true;
+  const localSnippets = localProgress.pythonSnippets?.length ?? 0;
+  const serverSnippets = serverProgress.pythonSnippets?.length ?? 0;
+  const localGraphics = localProgress.graphicProjects?.length ?? 0;
+  const serverGraphics = serverProgress.graphicProjects?.length ?? 0;
+  const localCompletedDays = localProgress.completedDays?.length ?? 0;
+  const serverCompletedDays = serverProgress.completedDays?.length ?? 0;
+  return (
+    serverSnippets > localSnippets ||
+    serverGraphics > localGraphics ||
+    serverCompletedDays > localCompletedDays
+  );
+}
+
 export function PlatformProvider({ children }) {
   const [state, setState] = useState(() => loadValidatedPlatformState());
   const [authReady, setAuthReady] = useState(false);
@@ -230,11 +246,36 @@ export function PlatformProvider({ children }) {
     }));
   }, []);
 
+  const hydrateProgressFromServer = useCallback(
+    (studentId, serverProgress) => {
+      if (!studentId || !serverProgress) return;
+      persist((prev) => {
+        const local = getStudentProgress(prev, studentId);
+        if (!shouldHydrateFromServer(local, serverProgress)) return prev;
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [studentId]: {
+              ...local,
+              ...serverProgress,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
+      });
+    },
+    [persist],
+  );
+
   const refreshMyComputedProgress = useCallback(async (studentId, localProgress) => {
     if (!studentId) return;
     setProgressSyncStatus((s) => ({ ...s, loading: true, error: null }));
     try {
       const synced = await syncProgressApi(studentId, localProgress);
+      if (synced.progress) {
+        hydrateProgressFromServer(studentId, synced.progress);
+      }
       if (synced.computed) {
         applyServerComputed(studentId, synced.computed);
         return synced.computed;
@@ -250,7 +291,7 @@ export function PlatformProvider({ children }) {
       }));
       return null;
     }
-  }, [applyServerComputed]);
+  }, [applyServerComputed, hydrateProgressFromServer]);
 
   const scheduleProgressSync = useCallback(
     (studentId, progress) => {
@@ -260,6 +301,9 @@ export function PlatformProvider({ children }) {
       progressSyncTimerRef.current = setTimeout(async () => {
         try {
           const res = await syncProgressApi(studentId, progress);
+          if (res.progress) {
+            hydrateProgressFromServer(studentId, res.progress);
+          }
           if (res.computed) applyServerComputed(studentId, res.computed);
         } catch (err) {
           console.error("[platform] progress sync failed", err?.message || err);
@@ -271,7 +315,7 @@ export function PlatformProvider({ children }) {
         }
       }, 2000);
     },
-    [applyServerComputed],
+    [applyServerComputed, hydrateProgressFromServer],
   );
 
   const loginTeacher = useCallback(

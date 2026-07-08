@@ -111,7 +111,7 @@ export function registerProgressRoutes(app, logError) {
         previousPercent: existing?.progress?._computedProgress?.availableProgressPercent ?? null,
         persistSnapshot: true,
       });
-      res.json({ ok: true, updatedAt: computed.calculatedAt, computed });
+      res.json({ ok: true, updatedAt: computed.calculatedAt, computed, progress: sanitized });
     } catch (err) {
       logError("progress.sync", err);
       res.status(500).json({ ok: false, error: "failed" });
