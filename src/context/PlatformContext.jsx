@@ -24,7 +24,19 @@ import {
   mergeRemoteAnalytics,
 } from "../lib/platformAnalytics";
 import { reportLoginEvent, reportActivityPatch, fetchAllAnalytics } from "../lib/analyticsApi";
-import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi, syncProgressApi, fetchComputedProgressMe, fetchTeacherRosterProgress, completeStudentDayApi, fetchPublicationConfigApi } from "../lib/platformApi";
+import {
+  loginStudentApi,
+  loginTeacherApi,
+  logoutApi,
+  fetchAuthMeApi,
+  savePreAssessmentApi,
+  syncProgressApi,
+  fetchComputedProgressMe,
+  fetchMyPythonSnippetsApi,
+  fetchTeacherRosterProgress,
+  completeStudentDayApi,
+  fetchPublicationConfigApi,
+} from "../lib/platformApi";
 import { setCachedPublicationConfig } from "../lib/publicationConfigStore.js";
 import {
   loadValidatedPlatformState,
@@ -275,6 +287,16 @@ export function PlatformProvider({ children }) {
       const synced = await syncProgressApi(studentId, localProgress);
       if (synced.progress) {
         hydrateProgressFromServer(studentId, synced.progress);
+      }
+      try {
+        const snippetsRes = await fetchMyPythonSnippetsApi();
+        if (Array.isArray(snippetsRes?.snippets)) {
+          hydrateProgressFromServer(studentId, {
+            pythonSnippets: snippetsRes.snippets,
+          });
+        }
+      } catch {
+        /* keep flow resilient if snippets endpoint is temporarily unavailable */
       }
       if (synced.computed) {
         applyServerComputed(studentId, synced.computed);

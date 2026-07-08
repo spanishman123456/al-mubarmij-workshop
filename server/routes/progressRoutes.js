@@ -26,6 +26,17 @@ export function registerProgressRoutes(app, logError) {
     }
   });
 
+  app.get("/api/progress/me/python-snippets", requireAuth, requireRole("student"), (req, res) => {
+    try {
+      const row = getStudentProgress(req.auth.userId);
+      const snippets = Array.isArray(row?.progress?.pythonSnippets) ? row.progress.pythonSnippets : [];
+      res.json({ ok: true, snippets, fetchedAt: new Date().toISOString() });
+    } catch (err) {
+      logError("progress.me.pythonSnippets", err);
+      res.status(500).json({ ok: false, error: "failed" });
+    }
+  });
+
   app.get("/api/progress/me/details", requireAuth, requireRole("student"), (req, res) => {
     try {
       const computed = calculateStudentProgressDetails(req.auth.userId, { reason: "api_me_details" });

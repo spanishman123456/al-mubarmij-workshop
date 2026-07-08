@@ -46,6 +46,12 @@ const MODES = [
   { id: "app", label: "مشروع رسومي (App)" },
 ];
 
+const TEACHER_SNIPPETS_STORAGE_PREFIX = "mubarmij-teacher-python-snippets";
+
+function teacherSnippetsStorageKey(teacherId) {
+  return `${TEACHER_SNIPPETS_STORAGE_PREFIX}:${teacherId || "unknown"}`;
+}
+
 export default function PythonLab() {
   const {
     user,
@@ -106,13 +112,16 @@ export default function PythonLab() {
     [runMode, activeAppId, activeId],
   );
   const myGraphicProjects = myProgress?.graphicProjects ?? [];
-  const myPythonSnippets = myProgress?.pythonSnippets ?? [];
+  const studentPythonSnippets = myProgress?.pythonSnippets ?? [];
+  const [teacherPythonSnippets, setTeacherPythonSnippets] = useState([]);
   const [snippetQuery, setSnippetQuery] = useState("");
   const [snippetSort, setSnippetSort] = useState("recent");
   const [snippetPreviewId, setSnippetPreviewId] = useState(null);
   const [libraryQuery, setLibraryQuery] = useState("");
   const [autoFixOnIndentError, setAutoFixOnIndentError] = useState(true);
   const savedLibraryRef = useRef(null);
+  const isTeacher = user?.role === "teacher";
+  const visiblePythonSnippets = isTeacher ? teacherPythonSnippets : studentPythonSnippets;
 
   function applyStepReset(plan) {
     const s = resetStepState();
@@ -300,6 +309,21 @@ export default function PythonLab() {
     return () => clearTimeout(t);
   }, [panelFromUrl, runMode]);
 
+  useEffect(() => {
+    if (!isTeacher || !user?.id) {
+      setTeacherPythonSnippets([]);
+      return;
+    }
+    const key = teacherSnippetsStorageKey(user.id);
+    try {
+      const raw = localStorage.getItem(key);
+      const parsed = raw ? JSON.parse(raw) : [];
+      setTeacherPythonSnippets(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setTeacherPythonSnippets([]);
+    }
+  }, [isTeacher, user?.id]);
+
   function onUnitFilterChange(next) {
     setUnitFilter(next);
     if (next === "all" || runMode !== "console") return;
@@ -447,17 +471,65 @@ export default function PythonLab() {
     }
   }
 
+  function persistTeacherSnippets(nextList) {
+    if (!isTeacher || !user?.id) return;
+    setTeacherPythonSnippets(nextList);
+    try {
+      localStorage.setItem(teacherSnippetsStorageKey(user.id), JSON.stringify(nextList));
+    } catch {
+      /* best effort local persistence */
+    }
+  }
+
+  function saveTeacherSnippet(title, snippetCode, meta = {}) {
+    const now = new Date().toISOString();
+    const snippet = {
+      id: `tpy-${Date.now()}`,
+      title: title || "كود محفوظ (معلم)",
+      code: snippetCode || "",
+      lessonId: meta.lessonId || null,
+      activityId: meta.activityId || null,
+      at: now,
+      updatedAt: now,
+    };
+    persistTeacherSnippets([snippet, ...teacherPythonSnippets].slice(0, 200));
+  }
+
+  function updateTeacherSnippet(snippetId, patch = {}) {
+    persistTeacherSnippets(
+      teacherPythonSnippets.map((s) =>
+        s.id === snippetId ? { ...s, ...patch, updatedAt: new Date().toISOString() } : s,
+      ),
+    );
+  }
+
+  function deleteTeacherSnippet(snippetId) {
+    persistTeacherSnippets(teacherPythonSnippets.filter((s) => s.id !== snippetId));
+  }
+
   function handleSave() {
-    if (!user || user.role !== "student") {
-      window.alert("سجّل الدخول كطالب لحفظ المشروع.");
+    if (!user) {
+      window.alert("سجّل الدخول لحفظ المشروع.");
       return;
     }
     if (runMode === "console") {
-      savePythonSnippet(exercise?.titleAr || "كود محفوظ", code, {
-        lessonId: exercise?.unitId || null,
-        activityId: exercise?.id || null,
-      });
-      window.alert("تم حفظ الكود في حسابك.");
+      if (isTeacher) {
+        saveTeacherSnippet(exercise?.titleAr || "كود محفوظ (معلم)", code, {
+          lessonId: exercise?.unitId || null,
+          activityId: exercise?.id || null,
+        });
+        window.alert("تم حفظ الكود في مكتبة المعلم.");
+      } else {
+        savePythonSnippet(exercise?.titleAr || "كود محفوظ", code, {
+          lessonId: exercise?.unitId || null,
+          activityId: exercise?.id || null,
+        });
+        window.alert("تم حفظ الكود في حسابك.");
+      }
+      return;
+    }
+    if (isTeacher) {
+      window.alert("حفظ مشاريع App متاح للطلاب فقط حاليًا. استخدم وضع Console لحفظ أمثلة المعلم.");
       return;
     }
     const title = projectTitle.trim() || appTemplate.titleAr;
@@ -492,7 +564,7 @@ export default function PythonLab() {
 
   const filteredSnippets = useMemo(() => {
     const q = snippetQuery.trim().toLowerCase();
-    const list = myPythonSnippets.filter((s) => {
+    const list = visiblePythonSnippets.filter((s) => {
       if (!q) return true;
       return (
         String(s.title || "").toLowerCase().includes(q) ||
@@ -507,14 +579,18 @@ export default function PythonLab() {
       return [...list].sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""), "ar"));
     }
     return [...list].sort((a, b) => new Date(b.updatedAt || b.at || 0) - new Date(a.updatedAt || a.at || 0));
-  }, [myPythonSnippets, snippetQuery, snippetSort]);
+  }, [visiblePythonSnippets, snippetQuery, snippetSort]);
 
   function loadSnippet(snippet, { clone = false } = {}) {
     if (!snippet) return;
     setRunMode("console");
     setCode(clone ? `${snippet.code}\n` : snippet.code);
     if (!clone) {
-      updatePythonSnippet?.(snippet.id, { lastOpenedAt: new Date().toISOString() });
+      if (isTeacher) {
+        updateTeacherSnippet(snippet.id, { lastOpenedAt: new Date().toISOString() });
+      } else {
+        updatePythonSnippet?.(snippet.id, { lastOpenedAt: new Date().toISOString() });
+      }
     }
   }
 
@@ -834,7 +910,7 @@ export default function PythonLab() {
               </div>
             ) : null}
 
-            {user?.role === "student" ? (
+            {user ? (
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -843,7 +919,7 @@ export default function PythonLab() {
                 >
                   حفظ {runMode === "app" ? "المشروع" : "الكود"}
                 </button>
-                {runMode === "app" ? (
+                {runMode === "app" && user?.role === "student" ? (
                   <button
                     type="button"
                     onClick={handleSubmit}
@@ -855,15 +931,17 @@ export default function PythonLab() {
               </div>
             ) : null}
 
-            {runMode === "console" && user?.role === "student" ? (
+            {runMode === "console" && user ? (
               <div
                 ref={savedLibraryRef}
                 className="mt-6 rounded-xl border border-cyan-500/25 bg-cyan-950/20 p-4"
                 data-testid="python-saved-library"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-bold text-cyan-200">مكتبة الأكواد المحفوظة</p>
-                  <p className="text-xs text-slate-300">{myPythonSnippets.length} كود محفوظ</p>
+                  <p className="text-sm font-bold text-cyan-200">
+                    {isTeacher ? "مكتبة أكواد المعلم" : "مكتبة الأكواد المحفوظة"}
+                  </p>
+                  <p className="text-xs text-slate-300">{visiblePythonSnippets.length} كود محفوظ</p>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <input
@@ -923,7 +1001,9 @@ export default function PythonLab() {
                             type="button"
                             className="rounded border border-red-500/40 px-2 py-1 text-red-200"
                             onClick={() => {
-                              if (window.confirm("حذف هذا الكود من المكتبة؟")) deletePythonSnippet?.(snippet.id);
+                              if (!window.confirm("حذف هذا الكود من المكتبة؟")) return;
+                              if (isTeacher) deleteTeacherSnippet(snippet.id);
+                              else deletePythonSnippet?.(snippet.id);
                             }}
                           >
                             حذف

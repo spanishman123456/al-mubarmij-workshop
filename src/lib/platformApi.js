@@ -84,6 +84,10 @@ export async function fetchComputedProgressMe() {
   return request("/api/progress/me");
 }
 
+export async function fetchMyPythonSnippetsApi() {
+  return request("/api/progress/me/python-snippets");
+}
+
 export async function fetchComputedProgressDetailsMe() {
   return request("/api/progress/me/details");
 }
