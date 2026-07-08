@@ -47,6 +47,7 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/teacher/day-06-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-07-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-08-answers", 1, "teacher")).toBe(true);
+    expect(isPathPublished("/teacher/day-09-answers", 1, "teacher")).toBe(true);
   });
 
   it("blocks day 6 lesson routes for students when PUBLISHED_DAYS=5", () => {
@@ -82,5 +83,15 @@ describe("publicationPolicy", () => {
     expect(isLessonIdPublished("linear-search", 1)).toBe(false);
     expect(isLessonIdPublished("python-scope", 2)).toBe(false);
     expect(isLessonIdPublished("fibonacci-sequence", 2)).toBe(false);
+    expect(isLessonIdPublished("python-recursion", 2)).toBe(false);
+  });
+
+  it("blocks day 9 lesson routes for students when PUBLISHED_DAYS=8", () => {
+    expect(isPathPublished("/lessons/python-recursion", 8, "student")).toBe(false);
+    expect(isPathPublished("/lessons/fractals-intro", 8, "student")).toBe(false);
+    expect(isPathPublished("/lessons/koch-snowflake", 8, "student")).toBe(false);
+    expect(isPathPublished("/lessons/sierpinski-triangle", 8, "student")).toBe(false);
+    expect(isPathPublished("/path/day/day-09", 8, "student")).toBe(false);
+    expect(isPathPublished("/worksheets/ws-day-09", 8, "student")).toBe(false);
   });
 });

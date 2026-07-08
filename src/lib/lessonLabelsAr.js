@@ -28,6 +28,10 @@ export const LESSON_LABELS_AR = {
   "algorithm-complexity": "تعقيد الخوارزميات (Big-O)",
   "tower-of-hanoi": "برج هانوي",
   "python-files-io": "الملفات في بايثون",
+  "python-recursion": "الاستدعاء الذاتي",
+  "fractals-intro": "الكسوريات والتشابه الذاتي",
+  "koch-snowflake": "ندفة Koch",
+  "sierpinski-triangle": "مثلث Sierpinski",
 };
 
 export function lessonLabelAr(lessonId) {

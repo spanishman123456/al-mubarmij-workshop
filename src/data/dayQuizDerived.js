@@ -423,6 +423,30 @@ export const DERIVED_QUESTIONS_BY_TOPIC = {
       acceptAnswers: ["الأساسية", "اساسية", "base case", "base"],
       explainAr: "Base case.",
     },
+    {
+      id: "drv-rec-04",
+      type: "mcq",
+      questionAr: "factorial(4) = ?",
+      optionsAr: ["24", "12", "120", "4"],
+      correctIndex: 0,
+      explainAr: "4×3×2×1 = 24",
+    },
+    {
+      id: "drv-rec-05",
+      type: "mcq",
+      questionAr: "ندفة Koch — 3 أضلاع، عمق 1 — كم قطعة خط؟",
+      optionsAr: ["12", "3", "48", "9"],
+      correctIndex: 0,
+      explainAr: "3 × 4 = 12",
+    },
+    {
+      id: "drv-rec-06",
+      type: "mcq",
+      questionAr: "مثلث Sierpinski — عمق 3 — كم مثلثًا صغيرًا؟",
+      optionsAr: ["27", "9", "81", "3"],
+      correctIndex: 0,
+      explainAr: "3³ = 27",
+    },
   ],
   oop: [
     {

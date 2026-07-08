@@ -81,6 +81,13 @@ export const DAY8_LESSON_ROUTES = new Set([
   "/lessons/python-files-io",
 ]);
 
+export const DAY9_LESSON_ROUTES = new Set([
+  "/lessons/python-recursion",
+  "/lessons/fractals-intro",
+  "/lessons/koch-snowflake",
+  "/lessons/sierpinski-triangle",
+]);
+
 /** @deprecated use DAY4_LESSON_ROUTES */
 const DAY4_PLUS_DRAFT_ROUTES = DAY4_LESSON_ROUTES;
 
@@ -135,6 +142,10 @@ export const LESSON_ID_TO_DAY = {
   "algorithm-complexity": 8,
   "tower-of-hanoi": 8,
   "python-files-io": 8,
+  "python-recursion": 9,
+  "fractals-intro": 9,
+  "koch-snowflake": 9,
+  "sierpinski-triangle": 9,
 };
 
 const ONBOARDING_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre"];
@@ -182,6 +193,7 @@ export function routeContentDay(pathname) {
   if (DAY6_LESSON_ROUTES.has(path)) return 6;
   if (DAY7_LESSON_ROUTES.has(path)) return 7;
   if (DAY8_LESSON_ROUTES.has(path)) return 8;
+  if (DAY9_LESSON_ROUTES.has(path)) return 9;
 
   let m = /^\/path\/day\/day-(\d+)$/.exec(path);
   if (m) return Number(m[1]);

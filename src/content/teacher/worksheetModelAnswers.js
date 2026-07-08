@@ -83,4 +83,19 @@ export const WORKSHEET_MODEL_ANSWERS = {
       { n: 10, modelAr: "O(n²) (أ)" },
     ],
   },
+  "ws-day-09": {
+    teacherDayRoute: "/teacher/day-09-answers",
+    tasks: [
+      { n: 1, modelAr: "120" },
+      { n: 2, modelAr: "إيقاف التكرار (أ)" },
+      { n: 3, modelAr: "21" },
+      { n: 4, modelAr: "تشابه ذاتي (أ)" },
+      { n: 5, modelAr: "12" },
+      { n: 6, modelAr: "صح" },
+      { n: 7, modelAr: "9" },
+      { n: 8, modelAr: "استدعاء ذاتي + turtle (أ)" },
+      { n: 9, modelAr: "صح" },
+      { n: 10, modelAr: "48" },
+    ],
+  },
 };
