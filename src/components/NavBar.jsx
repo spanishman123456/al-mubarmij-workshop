@@ -27,6 +27,11 @@ export function NavBar() {
 
   const dashLink = user.role === "teacher" ? "/teacher" : "/student";
   const dashLabel = user.role === "teacher" ? "لوحة المعلم" : "حسابي";
+  const roleLibraryLink =
+    user.role === "student"
+      ? { to: "/python?panel=saved", label: "مكتبة الأكواد", active: "bg-teal-600", match: ["/python"] }
+      : { to: "/teacher", label: "أكواد الطلاب", active: "bg-teal-600", match: ["/teacher"] };
+  const navLinks = [...LINKS.slice(0, 3), roleLibraryLink, ...LINKS.slice(3)];
 
   return (
     <header
@@ -60,7 +65,7 @@ export function NavBar() {
         <nav
           className={`${open ? "flex" : "hidden"} absolute left-0 right-0 top-full flex-col gap-1 border-b border-white/10 bg-[#1a1a4b] p-4 md:static md:flex md:flex-row md:flex-wrap md:items-center md:border-0 md:bg-transparent md:p-0`}
         >
-          {LINKS.map((link) => {
+          {navLinks.map((link) => {
             const active = isLinkActive(pathname, link);
             return (
               <NavLink

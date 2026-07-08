@@ -6,6 +6,7 @@ import {
   parseCompletionContext,
   shouldAutoTrigger,
 } from "../../lib/python/autocomplete.js";
+import { applySmartEnter, applyTabIndent } from "../../lib/python/indentation.js";
 
 const DEBOUNCE_MS = 150;
 
@@ -143,11 +144,35 @@ export function PythonCodeEditor({
   function handleKeyDown(e) {
     const ta = textareaRef.current;
     if (!ta) return;
+    const selectionStart = ta.selectionStart ?? 0;
+    const selectionEnd = ta.selectionEnd ?? selectionStart;
 
     if (e.ctrlKey && e.code === "Space") {
       e.preventDefault();
       manualOpenRef.current = true;
       refreshSuggestions(value, ta.selectionStart ?? 0, { force: true });
+      return;
+    }
+
+    if (e.key === "Enter" && !open) {
+      e.preventDefault();
+      const r = applySmartEnter(value, selectionStart);
+      onChange(r.code);
+      requestAnimationFrame(() => {
+        ta.setSelectionRange(r.cursor, r.cursor);
+        setCursorPos(r.cursor);
+      });
+      return;
+    }
+
+    if (e.key === "Tab" && (!open || !items.length)) {
+      e.preventDefault();
+      const r = applyTabIndent(value, selectionStart, selectionEnd, { shift: e.shiftKey });
+      onChange(r.code);
+      requestAnimationFrame(() => {
+        ta.setSelectionRange(r.selectionStart, r.selectionEnd);
+        setCursorPos(r.selectionEnd);
+      });
       return;
     }
 

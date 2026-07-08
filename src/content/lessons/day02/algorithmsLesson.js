@@ -190,7 +190,7 @@ export const algorithmsLesson = {
   interactiveExample: {
     type: "algorithm-steps",
     defaultValue: "max-two",
-    promptAr: "رتّب خطوات إيجاد أكبر عددين بالترتيب الصحيح.",
+    promptAr: "اختر الخطوات الصحيحة فقط ثم رتّبها لإيجاد أكبر عددين.",
   },
   commonMistakes: [
     { titleAr: "خطوات غامضة", bodyAr: "«عالج العدد» — حدد: قارن، اجمع، اطبع.", step: "definite" },
@@ -210,18 +210,24 @@ export const algorithmsLesson = {
   guidedPractice: [
     { id: "gp1", promptAr: "رتّب: (أ) اقرأ n (ب) اطبع n×2 — اكتب 1 أو 2 للترتيب: 1-2", answer: "1-2", hints: ["اقرأ قبل الطباعة"] },
     { id: "gp2", promptAr: "أكبر 5 و 12 — ما max؟", answer: "12", hints: ["12>5"] },
-    { id: "gp3", promptAr: "die1=4, die2=4 — النتيجة؟", answer: "تعادل", hints: ["متساويان"] },
+    { id: "gp3", promptAr: "die1=4, die2=4 — النتيجة؟", answer: "تعادل", acceptedAnswers: ["تعادل", "مساواة", "tie"], hints: ["متساويان"] },
     { id: "gp4", promptAr: "n=7 — زوجي أم فردي؟", answer: "فردي", hints: ["7%2=1"] },
     { id: "gp5", promptAr: "كم مدخل لخوارزمية أكبر ثلاثة؟", answer: "3", hints: ["a,b,c"] },
-    { id: "gp6", promptAr: "خطأ: طباعة قبل قراءة — نوع الخطأ؟", answer: "ترتيب", hints: ["order"] },
+    { id: "gp6", promptAr: "خطأ: طباعة قبل قراءة — نوع الخطأ؟", answer: "ترتيب", acceptedAnswers: ["ترتيب", "خطأ ترتيب", "order"], hints: ["order"] },
     { id: "gp7", promptAr: "خوارزمية vs برنامج — أيهما «وصفة»؟", answer: "خوارزمية", hints: [] },
   ],
   independentPractice: [
-    { id: "ip1", promptAr: "اكتب أول خطوتين لخوارزمية «جمع عددين» (كلمتان: اقرأ، اجمع)", answer: "اقرأ", hints: ["READ a,b"] },
+    {
+      id: "ip1",
+      promptAr: "اكتب أول خطوتين لخوارزمية «جمع عددين» (كلمتان: اقرأ، اجمع)",
+      answer: "اقرأ اجمع",
+      acceptedAnswers: ["اقرأ اجمع", "اقرأ، اجمع", "اقرأ ثم اجمع", "read add"],
+      hints: ["READ a,b ثم احسب المجموع"],
+    },
     { id: "ip2", promptAr: "a=3,b=8,c=5 — max؟", answer: "8", hints: [] },
     { id: "ip3", promptAr: "n=20 — زوجي أم فردي؟", answer: "زوجي", hints: [] },
-    { id: "ip4", promptAr: "die1=6,die2=2 — الفائز؟", answer: "1", hints: ["اللاعب 1"] },
-    { id: "ip5", promptAr: "خطأ ترتيب: طباعة قبل قراءة — نعم أم لا؟", answer: "نعم", hints: [] },
+    { id: "ip4", promptAr: "die1=6,die2=2 — الفائز؟", answer: "1", acceptedAnswers: ["1", "اللاعب 1", "player1", "player 1"], hints: ["اللاعب 1"] },
+    { id: "ip5", promptAr: "خطأ ترتيب: طباعة قبل قراءة — نعم أم لا؟", answer: "نعم", acceptedAnswers: ["نعم", "صح", "صحيح", "yes", "true"], hints: [] },
     { id: "ip6", promptAr: "رمز المعالجة في المخطط؟", answer: "مستطيل", hints: [] },
   ],
   challenge: [

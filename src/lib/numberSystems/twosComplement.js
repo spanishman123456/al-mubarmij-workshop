@@ -73,16 +73,21 @@ export function fromTwosComplement(bitStr) {
 }
 
 export function subtractViaTwosComplement(a, b, bits) {
-  const negB = toTwosComplement(-b, bits);
-  if (!negB.ok) return negB;
-  const aBits = toTwosComplement(a, bits);
-  if (!aBits.ok) return aBits;
-  // simple add a + (-b) in bits width
-  const sum = addBinaryFixed(aBits.bits, negB.bits);
+  const left = toTwosComplement(a, bits);
+  const rightNeg = toTwosComplement(-b, bits);
+  if (!left.ok) return left;
+  if (!rightNeg.ok) return rightNeg;
+  const sum = addBinaryFixed(left.bits, rightNeg.bits);
   if (!sum.ok) return sum;
-  const trimmed = sum.bits.slice(-bits);
-  const value = fromTwosComplement(trimmed);
-  return { ok: true, bits: trimmed, value: value.value, overflow: sum.overflow };
+  const signed = fromTwosComplement(sum.bits);
+  return {
+    ok: true,
+    bits: sum.bits,
+    value: signed.value,
+    carryOut: sum.carryOut,
+    discardedCarry: sum.carryOut,
+    overflow: detectOverflow(a, -b, bits),
+  };
 }
 
 function addBinaryFixed(a, b) {
@@ -91,14 +96,22 @@ function addBinaryFixed(a, b) {
   const db = b.padStart(max, "0").split("").reverse();
   let carry = 0;
   const out = [];
+  let carryIntoMsb = 0;
   for (let i = 0; i < max; i++) {
+    if (i === max - 1) carryIntoMsb = carry;
     const s = Number(da[i]) + Number(db[i]) + carry;
     out.push(String(s % 2));
     carry = Math.floor(s / 2);
   }
-  if (carry) out.push("1");
   const bits = out.reverse().join("");
-  return { ok: true, bits, overflow: bits.length > max };
+  const carryOut = carry;
+  return {
+    ok: true,
+    bits,
+    carryOut,
+    carryIntoMsb,
+    overflowByCarries: carryIntoMsb !== carryOut,
+  };
 }
 
 export function rangeForBits(bits) {

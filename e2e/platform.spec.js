@@ -169,7 +169,7 @@ test.describe("day-02 labs", () => {
     await expect(page.getByRole("button", { name: "countdown while" })).toBeVisible();
 
     await page.goto("/lessons/algorithms");
-    await expect(page.getByRole("button", { name: "تحقق من الترتيب" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /تحقق من (الإجابة|الترتيب)/ })).toBeVisible();
 
     await page.goto("/lessons/day02-computer-lab");
     await expect(page.getByRole("button", { name: "تشغيل" })).toBeVisible();

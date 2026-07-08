@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
-import { fetchOnboardingAll, fetchTeacherStudentProgress } from "../lib/platformApi";
+import {
+  fetchOnboardingAll,
+  fetchTeacherStudentProgress,
+  fetchTeacherStudentPythonSnippets,
+} from "../lib/platformApi";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { PrePostComparisonChart } from "../components/charts/PrePostComparisonChart";
@@ -43,6 +47,9 @@ export default function TeacherDashboard() {
   const [onboardingSummary, setOnboardingSummary] = useState(null);
   const [progressDetails, setProgressDetails] = useState(null);
   const [progressDetailsLoading, setProgressDetailsLoading] = useState(false);
+  const [snippetDetails, setSnippetDetails] = useState(null);
+  const [snippetDetailsLoading, setSnippetDetailsLoading] = useState(false);
+  const [snippetTargetStudentId, setSnippetTargetStudentId] = useState("");
 
   useEffect(() => {
     fetchOnboardingAll()
@@ -94,6 +101,24 @@ export default function TeacherDashboard() {
       setProgressDetails(null);
     } finally {
       setProgressDetailsLoading(false);
+    }
+  }
+
+  async function showSnippetDetails(student) {
+    setSnippetDetailsLoading(true);
+    try {
+      const res = await fetchTeacherStudentPythonSnippets(student.id);
+      setSnippetDetails({
+        studentName: student.nameAr,
+        snippets: res.snippets || [],
+      });
+    } catch {
+      setSnippetDetails({
+        studentName: student.nameAr,
+        snippets: [],
+      });
+    } finally {
+      setSnippetDetailsLoading(false);
     }
   }
 
@@ -216,6 +241,39 @@ export default function TeacherDashboard() {
         <SummaryCard value={needsFollowup.length} label="يحتاجون متابعة" color="amber" />
       </div>
 
+      <EduCard className="mt-6" accent="cyan" title="الوصول السريع لمكتبة أكواد الطلاب">
+        <p className="text-sm text-slate-600">
+          اختر الطالب ثم افتح مكتبة أكواد بايثون المحفوظة مباشرة (عرض/نسخ/مراجعة كمرجع تدريسي).
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <select
+            className="edu-select w-full max-w-md"
+            value={snippetTargetStudentId}
+            onChange={(e) => setSnippetTargetStudentId(e.target.value)}
+            data-testid="teacher-snippet-target-select"
+          >
+            <option value="">اختر طالبًا...</option>
+            {allStudentsProgress.map(({ student, progress }) => (
+              <option key={student.id} value={student.id}>
+                {student.nameAr} — ({(progress.pythonSnippets || []).length} كود)
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="edu-btn edu-btn-primary text-sm"
+            disabled={!snippetTargetStudentId}
+            onClick={() => {
+              const selected = allStudentsProgress.find((x) => x.student.id === snippetTargetStudentId)?.student;
+              if (selected) showSnippetDetails(selected);
+            }}
+            data-testid="teacher-open-snippet-library"
+          >
+            فتح مكتبة الأكواد
+          </button>
+        </div>
+      </EduCard>
+
       <EduCard className="mt-6 flex flex-wrap items-center gap-3" accent="violet">
         <span className="text-sm font-bold text-slate-700">تصفية حسب آخر دخول:</span>
         {[
@@ -269,6 +327,7 @@ export default function TeacherDashboard() {
           const pagesCount = Object.values(analytics?.pagesVisited || {}).reduce((a, b) => a + b, 0);
           const loginHistory = analytics?.loginHistory || [];
           const showHistory = expandedHistory === student.id;
+          const pythonSnippets = progress.pythonSnippets || [];
 
           return (
             <EduCard key={student.id} accent="violet">
@@ -318,6 +377,7 @@ export default function TeacherDashboard() {
                 <Info label="الاختبارات" value={<LtrValue>{stats.quizCount ?? quizCount}</LtrValue>} />
                 <Info label="المحاكاة" value={<LtrValue>{simRuns}</LtrValue>} />
                 <Info label="تشغيل بايثون" value={<LtrValue>{analytics?.pythonRuns ?? 0}</LtrValue>} />
+                <Info label="أكواد محفوظة" value={<LtrValue>{pythonSnippets.length}</LtrValue>} />
                 <Info label="المشروع" value={progress.project?.status ?? "لم يبدأ"} />
                 <Info
                   label="قبلي → بعدي (تشخيصي)"
@@ -373,6 +433,13 @@ export default function TeacherDashboard() {
                 >
                   إضافة ملاحظة للطالب
                 </button>
+                <button
+                  type="button"
+                  className="edu-btn edu-btn-outline text-xs"
+                  onClick={() => showSnippetDetails(student)}
+                >
+                  مكتبة أكواد بايثون
+                </button>
               </div>
 
               {showHistory ? (
@@ -397,6 +464,27 @@ export default function TeacherDashboard() {
                       ))}
                     </ul>
                   )}
+                </div>
+              ) : null}
+
+              {pythonSnippets.length ? (
+                <div className="mt-4 rounded-lg border border-cyan-200 bg-cyan-50 p-3">
+                  <p className="text-sm font-bold text-cyan-900">مكتبة أكواد الطالب المحفوظة</p>
+                  <div className="mt-2 max-h-56 space-y-2 overflow-y-auto">
+                    {pythonSnippets.slice(0, 10).map((snippet) => (
+                      <details key={snippet.id} className="rounded border border-cyan-100 bg-white p-2">
+                        <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                          {snippet.title} —{" "}
+                          <span className="text-xs text-slate-500" dir="ltr">
+                            {formatDate(snippet.updatedAt || snippet.at)}
+                          </span>
+                        </summary>
+                        <pre className="mt-2 max-h-36 overflow-auto whitespace-pre-wrap rounded bg-slate-900 p-2 text-xs text-emerald-200" dir="ltr">
+                          {snippet.code}
+                        </pre>
+                      </details>
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </EduCard>
@@ -462,6 +550,46 @@ export default function TeacherDashboard() {
                 type="button"
                 className="edu-btn edu-btn-outline mt-4 text-sm"
                 onClick={() => setProgressDetails(null)}
+              >
+                إغلاق
+              </button>
+            </>
+          )}
+        </EduCard>
+      ) : null}
+
+      {snippetDetails || snippetDetailsLoading ? (
+        <EduCard className="fixed inset-x-4 bottom-4 z-50 mx-auto max-h-[70vh] max-w-xl overflow-y-auto shadow-2xl md:inset-x-auto md:right-8 md:top-24" accent="cyan" title="مكتبة الأكواد المحفوظة">
+          {snippetDetailsLoading ? (
+            <p className="text-sm text-slate-600">جاري التحميل...</p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-700">
+                الطالب: <span className="font-bold">{snippetDetails.studentName}</span>
+              </p>
+              <div className="mt-3 space-y-2">
+                {snippetDetails.snippets?.length ? (
+                  snippetDetails.snippets.map((snippet) => (
+                    <details key={snippet.id} className="rounded border border-cyan-100 bg-white p-2">
+                      <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                        {snippet.title}
+                      </summary>
+                      <p className="mt-1 text-xs text-slate-500" dir="ltr">
+                        {formatDate(snippet.updatedAt || snippet.at)}
+                      </p>
+                      <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-slate-900 p-2 text-xs text-emerald-200" dir="ltr">
+                        {snippet.code}
+                      </pre>
+                    </details>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-500">لا توجد أكواد محفوظة لهذا الطالب.</p>
+                )}
+              </div>
+              <button
+                type="button"
+                className="edu-btn edu-btn-outline mt-4 text-sm"
+                onClick={() => setSnippetDetails(null)}
               >
                 إغلاق
               </button>

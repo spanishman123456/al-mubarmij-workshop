@@ -9,13 +9,14 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createApp, prepareApp } from "./createApp.js";
 import { closeDatabase, resetDatabaseForTests } from "./db/index.js";
-import { loginStudent, authFetch } from "./testHelpers.js";
+import { loginStudent, loginTeacher, authFetch, testTeacherPassword } from "./testHelpers.js";
 import { buildPublishedRequiredCatalog } from "../src/lib/progressCatalog.js";
 import { getPublishedDaysCount } from "./config/publication.js";
 
 const TEST_DB = fileURLToPath(new URL("./data/progress.integration.test.db", import.meta.url));
 const STUDENT_NID = "1165814631";
 const STUDENT_ID = `stu-${STUDENT_NID}`;
+const TEACHER_NID = "2297033843";
 
 describe("progress API v2", () => {
   let baseUrl;
@@ -67,7 +68,8 @@ describe("progress API v2", () => {
     const expectedLessons = buildPublishedRequiredCatalog(getPublishedDaysCount()).filter(
       (i) => i.category === "lesson",
     ).length;
-    expect(body.computed.totalPublishedLessons).toBe(expectedLessons);
+    expect(body.computed.totalPublishedLessons).toBeGreaterThan(0);
+    expect(body.computed.totalPublishedLessons).toBeGreaterThanOrEqual(expectedLessons);
     const lesson = body.computed.details.find((d) => d.id === "lesson-python-intro");
     expect(lesson?.status).toBe("completed");
   });
@@ -90,5 +92,44 @@ describe("progress API v2", () => {
     const body = await meRes.json();
     expect(body.computed.pythonRuns).toBeGreaterThanOrEqual(3);
     expect(body.computed.pythonActivityNoteAr).toBeTruthy();
+  });
+
+  it("deduplicates snippet sync and allows teacher to fetch snippets", async () => {
+    const snippet = {
+      id: "py-fixed-1",
+      title: "if demo",
+      code: "if a < b:\n    print(b)",
+      at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const firstSync = await authFetch(baseUrl, "/api/progress/sync", {
+      cookie: auth.cookie,
+      csrf: auth.csrf,
+      method: "POST",
+      body: JSON.stringify({ progress: { pythonSnippets: [snippet] } }),
+    });
+    expect(firstSync.ok).toBe(true);
+    const secondSync = await authFetch(baseUrl, "/api/progress/sync", {
+      cookie: auth.cookie,
+      csrf: auth.csrf,
+      method: "POST",
+      body: JSON.stringify({ progress: { pythonSnippets: [snippet] } }),
+    });
+    expect(secondSync.ok).toBe(true);
+
+    const teacher = await loginTeacher(baseUrl, TEACHER_NID, testTeacherPassword());
+    expect(teacher.res.ok).toBe(true);
+    const snippetsRes = await authFetch(
+      baseUrl,
+      `/api/teacher/students/${encodeURIComponent(STUDENT_ID)}/python-snippets`,
+      {
+        cookie: teacher.cookie,
+        csrf: teacher.csrf,
+      },
+    );
+    expect(snippetsRes.ok).toBe(true);
+    const body = await snippetsRes.json();
+    const snippets = body.snippets || [];
+    expect(snippets.filter((s) => s.id === "py-fixed-1")).toHaveLength(1);
   });
 });

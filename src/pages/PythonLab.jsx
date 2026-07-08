@@ -13,6 +13,12 @@ import { ProjectExportPanel } from "../components/python/ProjectExportPanel";
 import { AppModeHelp } from "../components/python/AppModeHelp";
 import { StepLearningPanel } from "../components/python/StepLearningPanel";
 import { PythonCodeEditor } from "../components/python/PythonCodeEditor";
+import { autoFixIndentation } from "../lib/python/indentation.js";
+import {
+  filterSnippetLibrary,
+  insertSnippetTemplate,
+  PYTHON_SNIPPET_LIBRARY,
+} from "../lib/python/snippetLibrary.js";
 import {
   CODE_ASSIST_LABELS_AR,
   getBuildTimeAssistMode,
@@ -41,11 +47,21 @@ const MODES = [
 ];
 
 export default function PythonLab() {
-  const { user, myProgress, savePythonSnippet, saveGraphicProject, submitGraphicProject, trackPythonRun } = usePlatform();
+  const {
+    user,
+    myProgress,
+    savePythonSnippet,
+    updatePythonSnippet,
+    deletePythonSnippet,
+    saveGraphicProject,
+    submitGraphicProject,
+    trackPythonRun,
+  } = usePlatform();
   const [searchParams, setSearchParams] = useSearchParams();
   const exFromUrl = searchParams.get("ex");
   const modeFromUrl = searchParams.get("mode");
   const appFromUrl = searchParams.get("app");
+  const panelFromUrl = searchParams.get("panel");
 
   const [runMode, setRunMode] = useState(modeFromUrl === "app" ? "app" : "console");
   const [activeId, setActiveId] = useState(pythonExercises[0].id);
@@ -90,6 +106,13 @@ export default function PythonLab() {
     [runMode, activeAppId, activeId],
   );
   const myGraphicProjects = myProgress?.graphicProjects ?? [];
+  const myPythonSnippets = myProgress?.pythonSnippets ?? [];
+  const [snippetQuery, setSnippetQuery] = useState("");
+  const [snippetSort, setSnippetSort] = useState("recent");
+  const [snippetPreviewId, setSnippetPreviewId] = useState(null);
+  const [libraryQuery, setLibraryQuery] = useState("");
+  const [autoFixOnIndentError, setAutoFixOnIndentError] = useState(true);
+  const savedLibraryRef = useRef(null);
 
   function applyStepReset(plan) {
     const s = resetStepState();
@@ -267,6 +290,16 @@ export default function PythonLab() {
     }
   }, [exFromUrl, modeFromUrl, appFromUrl]);
 
+  useEffect(() => {
+    if (panelFromUrl !== "saved") return;
+    if (runMode !== "console") setRunMode("console");
+    // Delay scroll until the saved library block is mounted.
+    const t = setTimeout(() => {
+      savedLibraryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [panelFromUrl, runMode]);
+
   function onUnitFilterChange(next) {
     setUnitFilter(next);
     if (next === "all" || runMode !== "console") return;
@@ -327,7 +360,28 @@ export default function PythonLab() {
       setOut(text);
       if (user?.role === "student") trackPythonRun();
     } catch (e) {
-      setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
+      const nextFeedback = e?.feedback ?? formatSkulptError(e, { appMode: false });
+      const detail = String(nextFeedback?.detail || "").toLowerCase();
+      const maybeIndentError =
+        /indentationerror|expected an indented block|unexpected indent|unindent/i.test(detail);
+      if (autoFixOnIndentError && maybeIndentError) {
+        const fixed = autoFixIndentation(code);
+        if (fixed !== code) {
+          setCode(fixed);
+          setFeedback({
+            headlineAr: "تم إصلاح المسافات تلقائيًا بعد اكتشاف خطأ indentation",
+            hintAr: "راجع الكود ثم اضغط «تشغيل الكود» مرة أخرى.",
+            detail: nextFeedback?.detail || "",
+            line: nextFeedback?.line ?? null,
+            fixableIndentation: false,
+          });
+          return;
+        }
+      }
+      setFeedback({
+        ...nextFeedback,
+        fixableIndentation: maybeIndentError,
+      });
     } finally {
       setBusy(false);
     }
@@ -399,7 +453,10 @@ export default function PythonLab() {
       return;
     }
     if (runMode === "console") {
-      savePythonSnippet(exercise?.titleAr || "كود محفوظ", code);
+      savePythonSnippet(exercise?.titleAr || "كود محفوظ", code, {
+        lessonId: exercise?.unitId || null,
+        activityId: exercise?.id || null,
+      });
       window.alert("تم حفظ الكود في حسابك.");
       return;
     }
@@ -407,6 +464,58 @@ export default function PythonLab() {
     const id = saveGraphicProject(title, code, savedProjectId);
     if (id) setSavedProjectId(id);
     window.alert("تم حفظ المشروع الرسومي في حسابك.");
+  }
+
+  function handleAutoIndentFix() {
+    const fixed = autoFixIndentation(code);
+    setCode(fixed);
+    setFeedback({
+      headlineAr: "تم إصلاح المسافات تلقائيًا",
+      hintAr: "راجع السطور التي فيها if/else/for/while وتأكد أن المنطق مطابق لتمرينك.",
+      detail: "",
+    });
+  }
+
+  const snippetLibraryItems = useMemo(() => filterSnippetLibrary(libraryQuery), [libraryQuery]);
+
+  function handleInsertLibrarySnippet(item) {
+    if (!item?.code) return;
+    setCode((prev) => insertSnippetTemplate(prev, item.code));
+    setFeedback({
+      headlineAr: "تم إدراج قالب من مكتبة بايثون",
+      hintAr: `أُضيف قالب «${item.titleAr}». عدّل الأسماء/القيم ثم شغّل الكود.`,
+      detail: "",
+      line: null,
+      fixableIndentation: false,
+    });
+  }
+
+  const filteredSnippets = useMemo(() => {
+    const q = snippetQuery.trim().toLowerCase();
+    const list = myPythonSnippets.filter((s) => {
+      if (!q) return true;
+      return (
+        String(s.title || "").toLowerCase().includes(q) ||
+        String(s.code || "").toLowerCase().includes(q) ||
+        String(s.activityId || "").toLowerCase().includes(q)
+      );
+    });
+    if (snippetSort === "oldest") {
+      return [...list].sort((a, b) => new Date(a.at || 0) - new Date(b.at || 0));
+    }
+    if (snippetSort === "title") {
+      return [...list].sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""), "ar"));
+    }
+    return [...list].sort((a, b) => new Date(b.updatedAt || b.at || 0) - new Date(a.updatedAt || a.at || 0));
+  }, [myPythonSnippets, snippetQuery, snippetSort]);
+
+  function loadSnippet(snippet, { clone = false } = {}) {
+    if (!snippet) return;
+    setRunMode("console");
+    setCode(clone ? `${snippet.code}\n` : snippet.code);
+    if (!clone) {
+      updatePythonSnippet?.(snippet.id, { lastOpenedAt: new Date().toISOString() });
+    }
   }
 
   function handleSubmit() {
@@ -466,6 +575,15 @@ export default function PythonLab() {
         <span className="font-semibold text-emerald-300">كيف تصحّح؟ </span>
         {feedback.hintAr}
       </div>
+      {feedback.fixableIndentation ? (
+        <button
+          type="button"
+          onClick={handleAutoIndentFix}
+          className="rounded-lg border border-amber-400/40 bg-amber-900/20 px-3 py-2 text-sm font-bold text-amber-100"
+        >
+          إصلاح المسافات تلقائيًا
+        </button>
+      ) : null}
     </div>
   ) : null;
 
@@ -661,7 +779,60 @@ export default function PythonLab() {
                   </button>
                 </>
               ) : null}
+              {runMode === "console" ? (
+                <button
+                  type="button"
+                  onClick={handleAutoIndentFix}
+                  className="rounded-xl border border-amber-400/40 bg-amber-900/20 px-4 py-3 text-sm font-bold text-amber-100 hover:bg-amber-900/30"
+                >
+                  إصلاح المسافات تلقائيًا
+                </button>
+              ) : null}
             </div>
+
+            {runMode === "console" ? (
+              <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs">
+                <input
+                  id="auto-fix-indent-on-run"
+                  type="checkbox"
+                  checked={autoFixOnIndentError}
+                  onChange={(e) => setAutoFixOnIndentError(e.target.checked)}
+                />
+                <label htmlFor="auto-fix-indent-on-run" className="text-slate-300">
+                  إصلاح تلقائي للمسافات عند اكتشاف خطأ indentation أثناء التشغيل
+                </label>
+              </div>
+            ) : null}
+
+            {runMode === "console" ? (
+              <div className="mt-4 rounded-xl border border-fuchsia-500/25 bg-fuchsia-950/20 p-4" data-testid="python-function-library">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-bold text-fuchsia-200">مكتبة دوال وقوالب بايثون</p>
+                  <p className="text-xs text-slate-300">{PYTHON_SNIPPET_LIBRARY.length} قالب جاهز</p>
+                </div>
+                <input
+                  className="mt-3 w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm"
+                  placeholder="ابحث: if, for, def, try ..."
+                  value={libraryQuery}
+                  onChange={(e) => setLibraryQuery(e.target.value)}
+                  data-testid="python-function-library-search"
+                />
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {snippetLibraryItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="rounded-lg border border-fuchsia-400/25 bg-black/20 px-3 py-2 text-right hover:bg-black/30"
+                      onClick={() => handleInsertLibrarySnippet(item)}
+                      data-testid={`python-function-library-item-${item.id}`}
+                    >
+                      <p className="text-xs text-fuchsia-300">{item.categoryAr}</p>
+                      <p className="text-sm font-semibold text-white">{item.titleAr}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             {user?.role === "student" ? (
               <div className="mt-2 flex flex-wrap gap-2">
@@ -681,6 +852,101 @@ export default function PythonLab() {
                     إرسال للمعلم
                   </button>
                 ) : null}
+              </div>
+            ) : null}
+
+            {runMode === "console" && user?.role === "student" ? (
+              <div
+                ref={savedLibraryRef}
+                className="mt-6 rounded-xl border border-cyan-500/25 bg-cyan-950/20 p-4"
+                data-testid="python-saved-library"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-bold text-cyan-200">مكتبة الأكواد المحفوظة</p>
+                  <p className="text-xs text-slate-300">{myPythonSnippets.length} كود محفوظ</p>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <input
+                    className="flex-1 rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm"
+                    placeholder="بحث بالعنوان أو الكود..."
+                    value={snippetQuery}
+                    onChange={(e) => setSnippetQuery(e.target.value)}
+                    data-testid="python-library-search"
+                  />
+                  <select
+                    className="rounded-lg border border-white/15 bg-black/30 px-2 py-2 text-sm"
+                    value={snippetSort}
+                    onChange={(e) => setSnippetSort(e.target.value)}
+                    data-testid="python-library-sort"
+                  >
+                    <option value="recent">الأحدث</option>
+                    <option value="oldest">الأقدم</option>
+                    <option value="title">العنوان</option>
+                  </select>
+                </div>
+                <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
+                  {filteredSnippets.length ? (
+                    filteredSnippets.map((snippet) => (
+                      <div key={snippet.id} className="rounded-lg border border-white/15 bg-black/20 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-white">{snippet.title}</p>
+                          <p className="text-[11px] text-slate-400" dir="ltr">
+                            {new Date(snippet.updatedAt || snippet.at || Date.now()).toLocaleString("ar-SA")}
+                          </p>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-400" dir="ltr">
+                          {snippet.activityId || "python-console"} • {snippet.lessonId || "unit"}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                          <button
+                            type="button"
+                            className="rounded border border-cyan-500/40 px-2 py-1 text-cyan-200"
+                            onClick={() => loadSnippet(snippet)}
+                          >
+                            فتح بالمحرر
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded border border-violet-500/40 px-2 py-1 text-violet-200"
+                            onClick={() => loadSnippet(snippet, { clone: true })}
+                          >
+                            تعديل نسخة
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded border border-emerald-500/40 px-2 py-1 text-emerald-200"
+                            onClick={() => navigator.clipboard?.writeText(snippet.code || "")}
+                          >
+                            نسخ
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded border border-red-500/40 px-2 py-1 text-red-200"
+                            onClick={() => {
+                              if (window.confirm("حذف هذا الكود من المكتبة؟")) deletePythonSnippet?.(snippet.id);
+                            }}
+                          >
+                            حذف
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded border border-white/20 px-2 py-1 text-slate-200"
+                            onClick={() => setSnippetPreviewId((v) => (v === snippet.id ? null : snippet.id))}
+                          >
+                            {snippetPreviewId === snippet.id ? "إخفاء المعاينة" : "معاينة"}
+                          </button>
+                        </div>
+                        {snippetPreviewId === snippet.id ? (
+                          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-black/40 p-2 text-xs text-emerald-200" dir="ltr">
+                            {snippet.code}
+                          </pre>
+                        ) : null}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate-400">لا توجد نتائج.</p>
+                  )}
+                </div>
               </div>
             ) : null}
 

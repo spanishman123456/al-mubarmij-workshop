@@ -80,7 +80,7 @@ export const hexColorsLesson = {
     },
     {
       id: "ex-blue-mix",
-      titleAr: "مثال 3: #4444 (68,68,68) رمادي",
+      titleAr: "مثال 3: #444444 (68,68,68) رمادي",
       steps: ["68 ÷ 16 = 4 r4 → 44", "RR=GG=BB=44", "#444444"],
       result: "#444444",
     },

@@ -10,7 +10,7 @@ export const numbersStepsActivityLesson = {
     "قراءة جدول خطوة بخطوة.",
     "حفظ المحاولات والتلميحات.",
   ],
-  whyLearn: "تدريب على تتبّع الخوارزمية خطوة بخطوة قبل مسائل Collatz الأ сложнее.",
+  whyLearn: "تدريب على تتبّع الخوارزمية خطوة بخطوة قبل مسائل Collatz الأكثر تعقيدًا.",
   prerequisites: ["for", "while", "python-break-continue"],
   conceptSimple:
     "ابدأ من n. في كل خطوة: إذا n>0 اطرح 1 وزد عداد الخطوات. توقف عند n=0. مثال n=5 → 5,4,3,2,1,0 = 5 خطوات.",

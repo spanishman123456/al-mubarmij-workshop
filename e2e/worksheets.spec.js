@@ -35,7 +35,7 @@ test.describe("worksheets access", () => {
     await page.goto("/worksheets");
     await page.getByTestId("worksheet-card-ws-day-02").getByRole("link", { name: "فتح" }).click();
     await expect(page).toHaveURL(/\/worksheets\/ws-day-02/);
-    await expect(page.getByText(/التحويلات/)).toBeVisible();
+    await expect(page.getByText(/التحويلات/).first()).toBeVisible();
   });
 
   test("locked student sees day 2 worksheet as locked", async ({ page }) => {
@@ -75,13 +75,13 @@ test.describe("worksheets access", () => {
   test("student types in structured worksheet and answer persists", async ({ page }) => {
     await loginStudent(page, ELIGIBLE_STUDENT);
     await page.goto("/worksheets/ws-day-01");
-    await expect(page.getByTestId("ws-task-3")).toBeVisible();
-    const input = page.getByTestId("ws-task-3").getByTestId("ws-input-main");
+    const input = page.getByTestId("ws-input-main").first();
+    await expect(input).toBeVisible();
     await input.fill("127");
     await expect(input).toHaveValue("127");
     await page.getByRole("button", { name: "حفظ المسودة" }).click();
     await page.reload();
-    await expect(page.getByTestId("ws-task-3")).toBeVisible();
+    await expect(page.getByTestId("ws-input-main").first()).toBeVisible();
     await expect(input).toHaveValue("127");
     await expect(page.getByText(/مساحة الإجابة/i)).toHaveCount(0);
   });

@@ -36,6 +36,7 @@ import {
 import { INACTIVITY_LOGOUT_REASON } from "../lib/inactivityConfig.js";
 import { clearActivityTracking, resetActivityTracking } from "../lib/inactivitySync.js";
 import { PRE_ASSESSMENT_STATUS } from "../content/onboarding/onboardingPolicy.js";
+import { createSnippetRecord } from "../lib/python/snippets.js";
 
 const PlatformContext = createContext(null);
 
@@ -690,19 +691,18 @@ export function PlatformProvider({ children }) {
   );
 
   const savePythonSnippet = useCallback(
-    (title, code) => {
+    (title, code, meta = {}) => {
       if (!user || user.role !== "student") return;
       persist((prev) => {
         const current = getStudentProgress(prev, user.id);
         const analytics = recordPythonRun(getStudentAnalytics(prev, user.id));
         scheduleActivitySync(user.id, analytics);
-        const snippet = {
-          id: `py-${Date.now()}`,
-          title: title || "كود محفوظ",
+        const snippet = createSnippetRecord({
+          title,
           code,
-          at: new Date().toISOString(),
-          teacherNote: "",
-        };
+          lessonId: meta.lessonId || null,
+          activityId: meta.activityId || null,
+        });
         return {
           ...prev,
           progressByStudent: {
@@ -719,6 +719,66 @@ export function PlatformProvider({ children }) {
           },
         };
       });
+    },
+    [persist, user],
+  );
+
+  const updatePythonSnippet = useCallback(
+    (snippetId, patch = {}) => {
+      if (!user || user.role !== "student" || !snippetId) return false;
+      let found = false;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const snippets = (current.pythonSnippets || []).map((s) => {
+          if (s.id !== snippetId) return s;
+          found = true;
+          return {
+            ...s,
+            ...patch,
+            updatedAt: new Date().toISOString(),
+          };
+        });
+        if (!found) return prev;
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: {
+              ...current,
+              pythonSnippets: snippets,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
+      });
+      return found;
+    },
+    [persist, user],
+  );
+
+  const deletePythonSnippet = useCallback(
+    (snippetId) => {
+      if (!user || user.role !== "student" || !snippetId) return false;
+      let removed = false;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const list = current.pythonSnippets || [];
+        const snippets = list.filter((s) => s.id !== snippetId);
+        removed = snippets.length !== list.length;
+        if (!removed) return prev;
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: {
+              ...current,
+              pythonSnippets: snippets,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
+      });
+      return removed;
     },
     [persist, user],
   );
@@ -960,6 +1020,8 @@ export function PlatformProvider({ children }) {
       saveDrillResult,
       saveMicrobitProgress,
       savePythonSnippet,
+      updatePythonSnippet,
+      deletePythonSnippet,
       saveGraphicProject,
       submitGraphicProject,
       saveProject,
@@ -998,6 +1060,8 @@ export function PlatformProvider({ children }) {
       saveDrillResult,
       saveMicrobitProgress,
       savePythonSnippet,
+      updatePythonSnippet,
+      deletePythonSnippet,
       saveGraphicProject,
       submitGraphicProject,
       saveProject,

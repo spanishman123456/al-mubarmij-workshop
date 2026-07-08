@@ -10,12 +10,14 @@ export async function loginStudent(page, nid = STUDENT_NID) {
     await page.getByTestId("student-submit").click();
     try {
       await expect(page).toHaveURL(/\/student/, { timeout: 12_000 });
+      await completeRequiredOnboardingViaApi(page);
       return;
     } catch {
       await page.waitForTimeout(800);
     }
   }
   await expect(page).toHaveURL(/\/student/);
+  await completeRequiredOnboardingViaApi(page);
 }
 
 async function csrfFromPageCookies(page) {
@@ -30,6 +32,24 @@ async function syncStudentProgress(page, progress) {
     data: { progress },
   });
   expect(sync.ok()).toBeTruthy();
+}
+
+async function completeRequiredOnboardingViaApi(page) {
+  const csrf = await csrfFromPageCookies(page);
+  const headers = {
+    "Content-Type": "application/json",
+    "X-CSRF-Token": csrf,
+  };
+  await page.request.post("/api/onboarding/bingo", {
+    headers,
+    data: { cells: { c0: "زميل" }, status: "submitted", submittedAt: new Date().toISOString() },
+  });
+  for (const docType of ["honor_code", "acceptable_use", "honor_agreement", "tech_contract"]) {
+    await page.request.post("/api/onboarding/agreement", {
+      headers,
+      data: { docType, signatureText: "توقيع تجريبي", version: "1.0" },
+    });
+  }
 }
 
 /** Mark day 1 complete via API after student login. */

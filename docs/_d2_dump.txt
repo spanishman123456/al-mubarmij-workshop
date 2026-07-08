@@ -1,0 +1,57 @@
+93|None|شرح|ينفذ الطلاب اليوم م|ascii-unicode|done
+95|None|شرح|الأأهداف|ascii-unicode|done
+96|None|إجابة|رة الدليل المرجعي لبناء الجملة (نسان|number-systems|done
+97|None|شرح|دقائق10إلى قاعدة الحامقدمة|number-systems|done
+98|None|شرح|أكا)، وهي 17 =4+13) عند النقل16) تكون1إن قيمةا نظام العد فضأا) هو 16العد. ولأأن |number-systems|done
+99|None|مثال|5 .) بعد كتابته على اللوح5 ضآتي عن نظام العد الخمالأ الطلاب في المثال اضناق|number-systems|done
+100|None|مثال|7 . الطلاب في قواعد الجمع في النظام الثنائيضناق|if-statement|pending
+101|None|نشاط|12 .إذااقترالأ َّ اينأنه يتع اِّحًا سآتي على الطرح الثنائي، مُو لأاكتب على اللوح|number-systems|done
+102|None|إجابة|)2إلى مُكمِّل العدد امقدمة|None|pending
+103|None|شرح|الجمع في النظام الثنائي ريس الجمع في النظام الع|number-systems|done
+104|None|شرح|.أ ا).1إا 0فارس وجميع الأأ0فرسإا 1آحادلأقلب المنزلة الثنائية (بت) (تبديل جميع ا|None|pending
+105|None|شرح|خطوات التنفيذ:|None|pending
+106|None|شرح|دقائق)10لة المتحركةسحيحة ذات الفاسإلى الأأعداد الامقدمة|None|pending
+107|None|مثال|) خانات ثنائية.3ري يتكوَّن من سحقل الجزء الع|algorithms|pending
+108|None|شرح|خطوات التنفيذ:|algorithms|pending
+109|None|مثال|9 .أمَّا الأأولى فهي كتابة الخوارزميةا أن كلتا الطريقتين مقبولة. اأنه توجد طريقت|algorithms|pending
+110|None|نشاط|خطوات التنفيذ:|algorithms|pending
+111|None|ورقة عمل|دقيقة)15فوفاتسإلى المامقدمة|algorithms|pending
+112|None|شرح|خطوات التنفيذ|python-intro|partial
+113|None|مرجع|الدليل المرجعي لبناء الجمل(ن|sentence-reference|pending
+114|None|مرجع|2 .أجزاء مختلفة منها طوالاإكمال ارة الدليل المرجعي لبناء الجملة، ثم اطلب منهم سو|python-intro|partial
+115|None|شرح|9 .أثناء كتابتهايل البرنامج في سآتية بوالأ اعر|None|pending
+116|None|نشاط|دقائق10تطبيقات على الخوارزميات|algorithms|pending
+117|None|مرجع|رة الدليل المرجعي لبناء الجملة (تس ن|sentence-reference|pending
+118|None|شرح|5 .ارة الجمع والتعيين في زيادة القيمسإاِّ كيفية ا ينآتي الذي يُب لأاعر|loops|pending
+119|None|شرح|7 .افة والتعيسإلأكن ايُمأنه اِّ للطلاب ينب|loops|pending
+120|None|مرجع|رة الدليل المرجعي لبناء الجملة (تس ن|sentence-reference|pending
+121|None|شرح|أقل من قيمة البدايةاإن القيمة النهائية تكون اارة الزيادةسإاإذا كانت اأنه انبِّه |if-statement|pending
+122|None|شرح|اعفات سلة في نهاية عبارة الطباعة الأأولى. هذا يزيل ال سإلى الفا االفت انتباه الط|None|pending
+123|None|مرجع|رة الدليل المرجعي لبناء الجملة (تس ن|sentence-reference|pending
+124|None|شرح|4 .رةس)، ثم اطلب من الطلاب تدوينه في النwhileِّح على اللوح التركيب الأأسو|if-statement|pending
+125|None|نشاط|اط تطبيقات على الخوارزميات (تس ورقة ن|algorithms|pending
+126|None|شرح|إجراءاتلأا|algorithms|pending
+127|None|شرح|اط التمهيديسالن|None|pending
+128|36|شرح|15 .أن تتبادل اكنك يُماط سنتهاء من هذا الن لأفير ر س) لت ASCIIفسا|ascii-unicode|done
+129|None|شرح|إجاباتلأا|None|pending
+130|38|شرح|15 .أن تتبادل اكنك يُماط سنتهاء من هذا الن لأفير ر س) لت ASCIIفسا|ascii-unicode|done
+131|None|نشاط|تطبيقات على ح|None|pending
+132|None|شرح|آتيةلأري لجمع الأأرقام اسا|None|pending
+133|None|شرح|إجاباتلأا|None|pending
+134|None|شرح|آتيةلأري لجمع الأأرقام اسا|None|pending
+135|None|شرح|كتابة الخوارزمية|algorithms|pending
+136|44|إجابة|إجاباتلأا|algorithms|pending
+137|45|شرح|2 .طرح رقمين من ثلاث خانات|None|pending
+138|None|شرح|4 .أاتنظيف|loops|pending
+139|47|مرجع|الدليل المرجعي لبناء الجملة|sentence-reference|pending
+140|48|شرح|إجاباتلأا|if-statement|pending
+141|None|نشاط|تطبيقات على الخوارزميات|algorithms|pending
+142|None|إجابة|إجاباتلأا|algorithms|pending
+143|None|نشاط|)If Statementرطيةسإذااتطبيقات على جملة|hex-colors|done
+144|None|إجابة|إجاباتلأا|None|pending
+145|None|نشاط|اط عملي باسن|hex-colors|done
+146|None|شرح|2 .ًّ من لاُدِّد البيانات ك تح)، بحيث 15إا) 0حيحة الفردية جميعها منسأعداد اللااط|hex-colors|done
+147|None|إجابة|إجاباتلأا|hex-colors|done
+148|None|شرح|points = y * 10|None|pending
+149|None|شرح|if x > y > z or x > z > y:|loops|pending
+150|None|شرح|if count == 0:|loops|pending

@@ -54,6 +54,23 @@ export function registerProgressRoutes(app, logError) {
     },
   );
 
+  app.get(
+    "/api/teacher/students/:studentId/python-snippets",
+    requireAuth,
+    requireRole("teacher"),
+    requireProgressAccess,
+    (req, res) => {
+      try {
+        const row = getStudentProgress(req.params.studentId);
+        const snippets = Array.isArray(row?.progress?.pythonSnippets) ? row.progress.pythonSnippets : [];
+        res.json({ ok: true, snippets, fetchedAt: new Date().toISOString() });
+      } catch (err) {
+        logError("progress.teacher.student.pythonSnippets", err);
+        res.status(500).json({ ok: false, error: "failed" });
+      }
+    },
+  );
+
   app.get("/api/progress/teacher/roster", requireAuth, requireRole("teacher"), (_req, res) => {
     try {
       const byStudent = {};
@@ -183,6 +200,22 @@ export function registerProgressRoutes(app, logError) {
 }
 
 function mergeProgressBlob(server = {}, client = {}) {
+  const mergeById = (serverList, clientList, limit = 50) => {
+    const map = new Map();
+    for (const item of serverList || []) {
+      if (!item?.id) continue;
+      map.set(item.id, item);
+    }
+    for (const item of clientList || []) {
+      if (!item?.id) continue;
+      const prev = map.get(item.id);
+      map.set(item.id, { ...(prev || {}), ...item });
+    }
+    return [...map.values()]
+      .sort((a, b) => new Date(b.updatedAt || b.at || 0) - new Date(a.updatedAt || a.at || 0))
+      .slice(0, limit);
+  };
+
   const pickLatestObject = (a, b) => {
     if (!a || Object.keys(a).length === 0) return b || {};
     if (!b || Object.keys(b).length === 0) return a || {};
@@ -232,8 +265,8 @@ function mergeProgressBlob(server = {}, client = {}) {
     lessonCompletions,
     preAssessment: pickLatestObject(server.preAssessment, client.preAssessment),
     project: pickLatestObject(server.project, client.project),
-    pythonSnippets: [...(server.pythonSnippets || []), ...(client.pythonSnippets || [])].slice(0, 50),
-    graphicProjects: [...(server.graphicProjects || []), ...(client.graphicProjects || [])].slice(0, 50),
+    pythonSnippets: mergeById(server.pythonSnippets || [], client.pythonSnippets || [], 50),
+    graphicProjects: mergeById(server.graphicProjects || [], client.graphicProjects || [], 50),
     updatedAt: new Date().toISOString(),
   };
 

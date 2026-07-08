@@ -13,6 +13,7 @@ import { resolvePublishedDaysCount } from "../config/publication";
 const QUICK_LINKS = [
   { to: "/path", title: "المسار الدراسي", desc: "15 يومًا من الدروس والأنشطة" },
   { to: "/python", title: "مختبر بايثون", desc: "تمارين نصية ومشاريع رسومية" },
+  { to: "/python?panel=saved", title: "مكتبتي البرمجية", desc: "الرجوع إلى الأكواد المحفوظة واستعادتها" },
   { to: "/worksheets", title: "أوراق العمل", desc: "تمارين نظرية وتطبيقية" },
   { to: "/quizzes", title: "الاختبارات", desc: "قبلي، قصير، وبعدي" },
   { to: "/simulations", title: "المحاكاة", desc: "معمل تفاعلي للمفاهيم" },
@@ -113,6 +114,7 @@ export default function StudentDashboard() {
   const requiredTotal = myStats?.requiredItems ?? 0;
   const pythonRuns = myStats?.pythonRuns ?? analytics.pythonRuns ?? 0;
   const pythonSaved = myStats?.pythonSnippetsCount ?? progress.pythonSnippets?.length ?? 0;
+  const latestSnippets = (progress.pythonSnippets || []).slice(0, 5);
   const progressDetails = myStats?.details ?? [];
   const [showProgressDetails, setShowProgressDetails] = useState(false);
   const completedItems = progressDetails.filter((d) => d.status === "completed");
@@ -331,6 +333,31 @@ export default function StudentDashboard() {
             );
           })}
         </ul>
+      </EduCard>
+
+      <EduCard className="mt-8" title="مكتبة الأكواد المحفوظة" accent="violet">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-600">
+            لديك <LtrValue>{pythonSaved}</LtrValue> كودًا محفوظًا
+          </p>
+          <Link to="/python" className="text-sm font-semibold text-violet-700 hover:underline">
+            فتح مكتبة الأكواد في مختبر بايثون
+          </Link>
+        </div>
+        <div className="mt-3 space-y-2">
+          {latestSnippets.length ? (
+            latestSnippets.map((snippet) => (
+              <div key={snippet.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-sm font-semibold text-slate-900">{snippet.title}</p>
+                <p className="mt-1 text-xs text-slate-500" dir="ltr">
+                  {new Date(snippet.updatedAt || snippet.at || Date.now()).toLocaleString("ar-SA")}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-slate-500">لا توجد أكواد محفوظة بعد. احفظ كودك من صفحة المختبر.</p>
+          )}
+        </div>
       </EduCard>
     </PageShell>
   );

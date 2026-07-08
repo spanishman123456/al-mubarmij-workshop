@@ -4,8 +4,50 @@ import { recordLessonAttemptApi } from "../../lib/platformApi";
 import { feedbackAfterFailedAttempt } from "../../lib/exerciseFeedbackPolicy.js";
 import { gradeStructuredItem } from "../../lib/assessment/unifiedAssessment.js";
 
+function normalizeArabicDigits(s) {
+  // U+066B Arabic decimal separator, U+066C Arabic thousands separator.
+  return String(s || "")
+    .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d))
+    .replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+    .replace(/\u066B/g, ".")
+    .replace(/\u066C/g, "");
+}
+
 function normalizeLegacyAnswer(s) {
-  return String(s || "").trim().toUpperCase().replace(/\s/g, "");
+  return normalizeArabicDigits(s)
+    .trim()
+    .toLowerCase()
+    .replace(/[ًٌٍَُِّْ]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function compactLegacyAnswer(s) {
+  return normalizeLegacyAnswer(s).replace(/[\s.,،;:!?"'`~_\-()[\]{}\\/|]/g, "");
+}
+
+function canonicalBooleanToken(s) {
+  const c = compactLegacyAnswer(s);
+  if (["نعم", "صح", "صحيح", "true", "yes", "ok", "correct"].includes(c)) return "yes";
+  if (["لا", "خطا", "خطأ", "false", "no", "wrong", "incorrect"].includes(c)) return "no";
+  return c;
+}
+
+export function areLegacyAnswersEquivalent(userAnswer, expectedAnswer) {
+  const a = canonicalBooleanToken(userAnswer);
+  const b = canonicalBooleanToken(expectedAnswer);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const na = Number(a);
+  const nb = Number(b);
+  if (Number.isFinite(na) && Number.isFinite(nb)) return na === nb;
+  return false;
+}
+
+export function isLegacyAnswerCorrect(exercise, userAnswer) {
+  const accepted = Array.isArray(exercise?.acceptedAnswers) && exercise.acceptedAnswers.length
+    ? exercise.acceptedAnswers
+    : [exercise?.answer];
+  return accepted.some((ans) => areLegacyAnswersEquivalent(userAnswer, ans));
 }
 
 function isStructuredExercise(exercise) {
@@ -14,8 +56,8 @@ function isStructuredExercise(exercise) {
 }
 
 function classifyError(userAnswer, expected, exercise) {
-  const u = normalizeLegacyAnswer(userAnswer);
-  const e = normalizeLegacyAnswer(expected);
+  const u = compactLegacyAnswer(userAnswer);
+  const e = compactLegacyAnswer(expected);
   if (!u) return { type: "empty", message: "أدخل إجابة قبل التحقق." };
   if (exercise.base && !isValidInBase(u, exercise.base)) {
     return {
@@ -155,8 +197,7 @@ export function LessonPractice({ exercises, mode, lessonId, userId, onStepComple
       return;
     }
 
-    const norm = normalizeLegacyAnswer(answer);
-    const ok = norm === normalizeLegacyAnswer(expected) || norm === String(expected);
+    const ok = isLegacyAnswerCorrect(ex, answer);
 
     if (ok) {
       setFeedback("إجابة صحيحة ✓");
