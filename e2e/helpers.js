@@ -52,6 +52,32 @@ export async function seedStudentDay1Incomplete(page, nid) {
   await loginStudent(page, nid);
 }
 
+/** Mark selected curriculum days complete via progress sync API (exact set in E2E). */
+export async function seedStudentCompletedDays(page, dayNumbers, nid = STUDENT_NID) {
+  await loginStudent(page, nid);
+  const completedDays = dayNumbers.map((n) => (n <= 9 ? `day-0${n}` : `day-${n}`));
+  const dayCompletionTimes = Object.fromEntries(
+    completedDays.map((id) => [id, new Date().toISOString()]),
+  );
+  await syncStudentProgress(page, {
+    _e2eSetCompletedDays: completedDays,
+    completedDays,
+    dayCompletionTimes,
+    dayUnlockOverrides: [],
+  });
+}
+
+export async function fetchDayUnlockMap(page) {
+  const res = await page.request.get("/api/student/day-unlock");
+  expect(res.ok()).toBeTruthy();
+  const body = await res.json();
+  return body.dayUnlockMap || {};
+}
+
+export function dayCard(page, dayId) {
+  return page.locator(`article[data-day-id="${dayId}"]`);
+}
+
 /** Scroll to lesson progress footer and mark complete if needed. */
 export async function assertLessonProgressSaved(page) {
   const completeBtn = page.getByRole("button", { name: /أكملت هذا الدرس/i });

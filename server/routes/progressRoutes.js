@@ -191,7 +191,10 @@ function mergeProgressBlob(server = {}, client = {}) {
     return bAt >= aAt ? { ...a, ...b } : { ...b, ...a };
   };
 
-  const completedDays = [...new Set([...(server.completedDays || []), ...(client.completedDays || [])])];
+  const completedDays =
+    process.env.E2E_ALLOW_PROGRESS_SET === "1" && Array.isArray(client._e2eSetCompletedDays)
+      ? [...client._e2eSetCompletedDays]
+      : [...new Set([...(server.completedDays || []), ...(client.completedDays || [])])];
   const worksheetStatus = { ...(server.worksheetStatus || {}), ...(client.worksheetStatus || {}) };
   const worksheetAnswers = { ...(server.worksheetAnswers || {}), ...(client.worksheetAnswers || {}) };
   const quizScores = { ...(server.quizScores || {}), ...(client.quizScores || {}) };
@@ -209,9 +212,10 @@ function mergeProgressBlob(server = {}, client = {}) {
     lessonCompletions[lessonId] = clientDone || serverDone ? { ...serverEntry, ...entry, status: "completed" } : { ...serverEntry, ...entry };
   }
 
-  const dayUnlockOverrides = [
-    ...new Set([...(server.dayUnlockOverrides || []), ...(client.dayUnlockOverrides || [])]),
-  ];
+  const dayUnlockOverrides =
+    process.env.E2E_ALLOW_PROGRESS_SET === "1" && Array.isArray(client._e2eSetCompletedDays)
+      ? [...(client.dayUnlockOverrides || [])]
+      : [...new Set([...(server.dayUnlockOverrides || []), ...(client.dayUnlockOverrides || [])])];
   const dayCompletionTimes = { ...(server.dayCompletionTimes || {}), ...(client.dayCompletionTimes || {}) };
 
   const merged = {

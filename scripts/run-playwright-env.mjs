@@ -60,6 +60,7 @@ if (policy) {
   env.STUDENT_UNLOCK_POLICY = policy;
   env.VITE_STUDENT_UNLOCK_POLICY = policy;
 }
+env.E2E_ALLOW_PROGRESS_SET = "1";
 
 syncPublicationForE2e(days, policy || env.STUDENT_UNLOCK_POLICY || "open");
 
