@@ -255,6 +255,17 @@ export default function DayLessonPage() {
             </EduCard>
           ) : null}
 
+          {day.id === "day-08" ? (
+            <EduCard title="دروس اليوم الثامن" accent="violet">
+              <div className="mt-2 flex flex-col gap-2 text-sm">
+                <Link to="/lessons/fibonacci-sequence">1. متتالية فيبوناتشي</Link>
+                <Link to="/lessons/algorithm-complexity">2. تعقيد الخوارزميات (Big-O)</Link>
+                <Link to="/lessons/tower-of-hanoi">3. برج هانوي</Link>
+                <Link to="/lessons/python-files-io">4. الملفات في بايثون</Link>
+              </div>
+            </EduCard>
+          ) : null}
+
           <EduCard title="تطبيق عملي" accent="emerald">
             <p className="mt-2 text-slate-700">{day.practicalAr}</p>
             {day.exerciseIds?.length ? (

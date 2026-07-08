@@ -74,6 +74,13 @@ export const DAY7_LESSON_ROUTES = new Set([
   "/lessons/game-planning",
 ]);
 
+export const DAY8_LESSON_ROUTES = new Set([
+  "/lessons/fibonacci-sequence",
+  "/lessons/algorithm-complexity",
+  "/lessons/tower-of-hanoi",
+  "/lessons/python-files-io",
+]);
+
 /** @deprecated use DAY4_LESSON_ROUTES */
 const DAY4_PLUS_DRAFT_ROUTES = DAY4_LESSON_ROUTES;
 
@@ -124,6 +131,10 @@ export const LESSON_ID_TO_DAY = {
   "dice-random": 7,
   "tic-tac-toe": 7,
   "game-planning": 7,
+  "fibonacci-sequence": 8,
+  "algorithm-complexity": 8,
+  "tower-of-hanoi": 8,
+  "python-files-io": 8,
 };
 
 const ONBOARDING_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre"];
@@ -170,6 +181,7 @@ export function routeContentDay(pathname) {
   if (DAY5_LESSON_ROUTES.has(path)) return 5;
   if (DAY6_LESSON_ROUTES.has(path)) return 6;
   if (DAY7_LESSON_ROUTES.has(path)) return 7;
+  if (DAY8_LESSON_ROUTES.has(path)) return 8;
 
   let m = /^\/path\/day\/day-(\d+)$/.exec(path);
   if (m) return Number(m[1]);

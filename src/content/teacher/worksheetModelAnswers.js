@@ -68,4 +68,19 @@ export const WORKSHEET_MODEL_ANSWERS = {
       { n: 10, modelAr: "صح" },
     ],
   },
+  "ws-day-08": {
+    teacherDayRoute: "/teacher/day-08-answers",
+    tasks: [
+      { n: 1, modelAr: "13" },
+      { n: 2, modelAr: "n <= 1 (أ)" },
+      { n: 3, modelAr: "O(n) (أ)" },
+      { n: 4, modelAr: "O(log n) (أ)" },
+      { n: 5, modelAr: "7" },
+      { n: 6, modelAr: "خطأ" },
+      { n: 7, modelAr: "'w' (أ)" },
+      { n: 8, modelAr: "3" },
+      { n: 9, modelAr: "صح" },
+      { n: 10, modelAr: "O(n²) (أ)" },
+    ],
+  },
 };

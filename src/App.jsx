@@ -81,6 +81,12 @@ import {
   TicTacToeLessonPage,
   GamePlanningLessonPage,
 } from "./pages/lessons/Day07LessonPages.jsx";
+import {
+  FibonacciSequenceLessonPage,
+  AlgorithmComplexityLessonPage,
+  TowerOfHanoiLessonPage,
+  PythonFilesIoLessonPage,
+} from "./pages/lessons/Day08LessonPages.jsx";
 import TeacherDay01AnswersPage from "./pages/teacher/TeacherDay01AnswersPage.jsx";
 import TeacherDay02AnswersPage from "./pages/teacher/TeacherDay02AnswersPage.jsx";
 import TeacherDay03AnswersPage from "./pages/teacher/TeacherDay03AnswersPage.jsx";
@@ -88,6 +94,7 @@ import TeacherDay04AnswersPage from "./pages/teacher/TeacherDay04AnswersPage.jsx
 import TeacherDay05AnswersPage from "./pages/teacher/TeacherDay05AnswersPage.jsx";
 import TeacherDay06AnswersPage from "./pages/teacher/TeacherDay06AnswersPage.jsx";
 import TeacherDay07AnswersPage from "./pages/teacher/TeacherDay07AnswersPage.jsx";
+import TeacherDay08AnswersPage from "./pages/teacher/TeacherDay08AnswersPage.jsx";
 import TeacherQuizReviewPage from "./pages/teacher/TeacherQuizReviewPage.jsx";
 import { PublishedContentGate } from "./components/auth/PublishedContentGate.jsx";
 
@@ -304,6 +311,11 @@ function AppRoutes() {
         <Route path="/lessons/tic-tac-toe" element={<ProtectedRoute><TicTacToeLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/game-planning" element={<ProtectedRoute><GamePlanningLessonPage /></ProtectedRoute>} />
 
+        <Route path="/lessons/fibonacci-sequence" element={<ProtectedRoute><FibonacciSequenceLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/algorithm-complexity" element={<ProtectedRoute><AlgorithmComplexityLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/tower-of-hanoi" element={<ProtectedRoute><TowerOfHanoiLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/python-files-io" element={<ProtectedRoute><PythonFilesIoLessonPage /></ProtectedRoute>} />
+
         <Route path="/teacher/day-01-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay01AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-02-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay02AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-03-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay03AnswersPage /></ProtectedRoute>} />
@@ -311,6 +323,7 @@ function AppRoutes() {
         <Route path="/teacher/day-05-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay05AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-06-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay06AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-07-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay07AnswersPage /></ProtectedRoute>} />
+        <Route path="/teacher/day-08-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay08AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/quiz-review" element={<ProtectedRoute roles={["teacher"]}><TeacherQuizReviewPage /></ProtectedRoute>} />
 
         <Route

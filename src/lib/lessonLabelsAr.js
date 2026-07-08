@@ -24,6 +24,10 @@ export const LESSON_LABELS_AR = {
   "dice-random": "رمي النرد والعشوائية",
   "tic-tac-toe": "تيك-تاك-تو",
   "game-planning": "تخطيط اللعبة",
+  "fibonacci-sequence": "متتالية فيبوناتشي",
+  "algorithm-complexity": "تعقيد الخوارزميات (Big-O)",
+  "tower-of-hanoi": "برج هانوي",
+  "python-files-io": "الملفات في بايثون",
 };
 
 export function lessonLabelAr(lessonId) {

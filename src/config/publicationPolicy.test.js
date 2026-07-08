@@ -46,6 +46,7 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/teacher/day-02-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-06-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-07-answers", 1, "teacher")).toBe(true);
+    expect(isPathPublished("/teacher/day-08-answers", 1, "teacher")).toBe(true);
   });
 
   it("blocks day 6 lesson routes for students when PUBLISHED_DAYS=5", () => {
@@ -65,11 +66,21 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/worksheets/ws-day-07", 6, "student")).toBe(false);
   });
 
+  it("blocks day 8 lesson routes for students when PUBLISHED_DAYS=7", () => {
+    expect(isPathPublished("/lessons/fibonacci-sequence", 7, "student")).toBe(false);
+    expect(isPathPublished("/lessons/algorithm-complexity", 7, "student")).toBe(false);
+    expect(isPathPublished("/lessons/tower-of-hanoi", 7, "student")).toBe(false);
+    expect(isPathPublished("/lessons/python-files-io", 7, "student")).toBe(false);
+    expect(isPathPublished("/path/day/day-08", 7, "student")).toBe(false);
+    expect(isPathPublished("/worksheets/ws-day-08", 7, "student")).toBe(false);
+  });
+
   it("rejects unpublished lesson ids on server save", () => {
     expect(isLessonIdPublished("number-systems", 1)).toBe(true);
     expect(isLessonIdPublished("conversions-intro", 1)).toBe(false);
     expect(isLessonIdPublished("python-constants", 1)).toBe(false);
     expect(isLessonIdPublished("linear-search", 1)).toBe(false);
     expect(isLessonIdPublished("python-scope", 2)).toBe(false);
+    expect(isLessonIdPublished("fibonacci-sequence", 2)).toBe(false);
   });
 });

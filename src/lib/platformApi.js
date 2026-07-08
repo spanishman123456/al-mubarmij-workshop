@@ -202,3 +202,7 @@ export async function fetchTeacherDay06AnswersApi() {
 export async function fetchTeacherDay07AnswersApi() {
   return request("/api/teacher/day-07-answers");
 }
+
+export async function fetchTeacherDay08AnswersApi() {
+  return request("/api/teacher/day-08-answers");
+}

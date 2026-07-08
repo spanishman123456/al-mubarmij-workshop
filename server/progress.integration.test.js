@@ -10,6 +10,8 @@ import { fileURLToPath } from "node:url";
 import { createApp, prepareApp } from "./createApp.js";
 import { closeDatabase, resetDatabaseForTests } from "./db/index.js";
 import { loginStudent, authFetch } from "./testHelpers.js";
+import { buildPublishedRequiredCatalog } from "../src/lib/progressCatalog.js";
+import { getPublishedDaysCount } from "./config/publication.js";
 
 const TEST_DB = fileURLToPath(new URL("./data/progress.integration.test.db", import.meta.url));
 const STUDENT_NID = "1165814631";
@@ -62,7 +64,10 @@ describe("progress API v2", () => {
     expect(meRes.ok).toBe(true);
     const body = await meRes.json();
     expect(body.computed.completedLessons).toBeGreaterThanOrEqual(1);
-    expect(body.computed.totalPublishedLessons).toBe(9);
+    const expectedLessons = buildPublishedRequiredCatalog(getPublishedDaysCount()).filter(
+      (i) => i.category === "lesson",
+    ).length;
+    expect(body.computed.totalPublishedLessons).toBe(expectedLessons);
     const lesson = body.computed.details.find((d) => d.id === "lesson-python-intro");
     expect(lesson?.status).toBe("completed");
   });
