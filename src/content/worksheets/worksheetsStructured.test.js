@@ -1,0 +1,25 @@
+import { describe, expect, it } from "vitest";
+import { STRUCTURED_WORKSHEETS } from "./worksheetsStructured.js";
+import { WORKSHEET_MODEL_ANSWERS } from "../teacher/worksheetModelAnswers.js";
+
+describe("worksheets structured", () => {
+  it("includes ws-day-10 with 10 structured tasks", () => {
+    const ws = STRUCTURED_WORKSHEETS["ws-day-10"];
+    expect(ws).toBeTruthy();
+    expect(Array.isArray(ws.tasks)).toBe(true);
+    expect(ws.tasks.length).toBe(10);
+    for (const task of ws.tasks) {
+      expect(typeof task.n).toBe("number");
+      expect(typeof task.type).toBe("string");
+      expect(typeof task.textAr).toBe("string");
+    }
+  });
+
+  it("keeps ws-day-10 model answers aligned", () => {
+    const models = WORKSHEET_MODEL_ANSWERS["ws-day-10"];
+    expect(models?.teacherDayRoute).toBe("/teacher/day-10-answers");
+    expect(models?.tasks?.length).toBe(10);
+    expect(models.tasks.find((t) => t.n === 6)?.modelAr).toMatch(/1,4,9/);
+    expect(models.tasks.find((t) => t.n === 7)?.modelAr).toMatch(/1,4,6,4,1/);
+  });
+});

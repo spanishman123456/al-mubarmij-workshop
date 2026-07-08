@@ -32,6 +32,10 @@ export const LESSON_LABELS_AR = {
   "fractals-intro": "الكسوريات والتشابه الذاتي",
   "koch-snowflake": "ندفة Koch",
   "sierpinski-triangle": "مثلث Sierpinski",
+  "oop-foundations": "البرمجة كائنية التوجه",
+  "steganography-python": "إخفاء المعلومات",
+  "fractal-tree-recursion": "الشجرة المتكررة",
+  "locker-pascal-problem": "مشكلة الخزانة ومثلث باسكال",
 };
 
 export function lessonLabelAr(lessonId) {

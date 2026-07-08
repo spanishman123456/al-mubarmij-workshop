@@ -48,6 +48,7 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/teacher/day-07-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-08-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-09-answers", 1, "teacher")).toBe(true);
+    expect(isPathPublished("/teacher/day-10-answers", 1, "teacher")).toBe(true);
   });
 
   it("blocks day 6 lesson routes for students when PUBLISHED_DAYS=5", () => {
@@ -84,6 +85,7 @@ describe("publicationPolicy", () => {
     expect(isLessonIdPublished("python-scope", 2)).toBe(false);
     expect(isLessonIdPublished("fibonacci-sequence", 2)).toBe(false);
     expect(isLessonIdPublished("python-recursion", 2)).toBe(false);
+    expect(isLessonIdPublished("oop-foundations", 2)).toBe(false);
   });
 
   it("blocks day 9 lesson routes for students when PUBLISHED_DAYS=8", () => {
@@ -93,5 +95,14 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/lessons/sierpinski-triangle", 8, "student")).toBe(false);
     expect(isPathPublished("/path/day/day-09", 8, "student")).toBe(false);
     expect(isPathPublished("/worksheets/ws-day-09", 8, "student")).toBe(false);
+  });
+
+  it("blocks day 10 lesson routes for students when PUBLISHED_DAYS=9", () => {
+    expect(isPathPublished("/lessons/oop-foundations", 9, "student")).toBe(false);
+    expect(isPathPublished("/lessons/steganography-python", 9, "student")).toBe(false);
+    expect(isPathPublished("/lessons/fractal-tree-recursion", 9, "student")).toBe(false);
+    expect(isPathPublished("/lessons/locker-pascal-problem", 9, "student")).toBe(false);
+    expect(isPathPublished("/path/day/day-10", 9, "student")).toBe(false);
+    expect(isPathPublished("/worksheets/ws-day-10", 9, "student")).toBe(false);
   });
 });

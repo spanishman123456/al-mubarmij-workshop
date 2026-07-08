@@ -277,6 +277,17 @@ export default function DayLessonPage() {
             </EduCard>
           ) : null}
 
+          {day.id === "day-10" ? (
+            <EduCard title="دروس اليوم العاشر" accent="violet">
+              <div className="mt-2 flex flex-col gap-2 text-sm">
+                <Link to="/lessons/oop-foundations">1. البرمجة كائنية التوجه</Link>
+                <Link to="/lessons/steganography-python">2. إخفاء المعلومات</Link>
+                <Link to="/lessons/fractal-tree-recursion">3. الشجرة الهندسية المتكررة</Link>
+                <Link to="/lessons/locker-pascal-problem">4. مشكلة الخزانة ومثلث باسكال</Link>
+              </div>
+            </EduCard>
+          ) : null}
+
           <EduCard title="تطبيق عملي" accent="emerald">
             <p className="mt-2 text-slate-700">{day.practicalAr}</p>
             {day.exerciseIds?.length ? (

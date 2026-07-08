@@ -88,6 +88,13 @@ export const DAY9_LESSON_ROUTES = new Set([
   "/lessons/sierpinski-triangle",
 ]);
 
+export const DAY10_LESSON_ROUTES = new Set([
+  "/lessons/oop-foundations",
+  "/lessons/steganography-python",
+  "/lessons/fractal-tree-recursion",
+  "/lessons/locker-pascal-problem",
+]);
+
 /** @deprecated use DAY4_LESSON_ROUTES */
 const DAY4_PLUS_DRAFT_ROUTES = DAY4_LESSON_ROUTES;
 
@@ -146,6 +153,10 @@ export const LESSON_ID_TO_DAY = {
   "fractals-intro": 9,
   "koch-snowflake": 9,
   "sierpinski-triangle": 9,
+  "oop-foundations": 10,
+  "steganography-python": 10,
+  "fractal-tree-recursion": 10,
+  "locker-pascal-problem": 10,
 };
 
 const ONBOARDING_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre"];
@@ -194,6 +205,7 @@ export function routeContentDay(pathname) {
   if (DAY7_LESSON_ROUTES.has(path)) return 7;
   if (DAY8_LESSON_ROUTES.has(path)) return 8;
   if (DAY9_LESSON_ROUTES.has(path)) return 9;
+  if (DAY10_LESSON_ROUTES.has(path)) return 10;
 
   let m = /^\/path\/day\/day-(\d+)$/.exec(path);
   if (m) return Number(m[1]);

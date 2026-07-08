@@ -98,4 +98,19 @@ export const WORKSHEET_MODEL_ANSWERS = {
       { n: 10, modelAr: "48" },
     ],
   },
+  "ws-day-10": {
+    teacherDayRoute: "/teacher/day-10-answers",
+    tasks: [
+      { n: 1, modelAr: "class = قالب للكائنات (أ)" },
+      { n: 2, modelAr: "25" },
+      { n: 3, modelAr: "Teach" },
+      { n: 4, modelAr: "OR البِتي (ب)" },
+      { n: 5, modelAr: "7" },
+      { n: 6, modelAr: "1,4,9" },
+      { n: 7, modelAr: "1,4,6,4,1" },
+      { n: 8, modelAr: "صح" },
+      { n: 9, modelAr: "x = A() (ب)" },
+      { n: 10, modelAr: "صح" },
+    ],
+  },
 };

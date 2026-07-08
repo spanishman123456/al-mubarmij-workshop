@@ -26,6 +26,7 @@ import { day06TeacherAnswers } from "../src/content/teacher/day06TeacherAnswers.
 import { day07TeacherAnswers } from "../src/content/teacher/day07TeacherAnswers.js";
 import { day08TeacherAnswers } from "../src/content/teacher/day08TeacherAnswers.js";
 import { day09TeacherAnswers } from "../src/content/teacher/day09TeacherAnswers.js";
+import { day10TeacherAnswers } from "../src/content/teacher/day10TeacherAnswers.js";
 import { requirePublishedTeacherDay } from "./auth/publishedContent.js";
 import { registerPublicationRoutes } from "./routes/publicationRoutes.js";
 
@@ -151,6 +152,16 @@ export function createApp() {
     requirePublishedTeacherDay(9),
     (_req, res) => {
       res.json({ ok: true, ...day09TeacherAnswers });
+    },
+  );
+
+  app.get(
+    "/api/teacher/day-10-answers",
+    requireAuth,
+    requireRole("teacher"),
+    requirePublishedTeacherDay(10),
+    (_req, res) => {
+      res.json({ ok: true, ...day10TeacherAnswers });
     },
   );
 

@@ -1,0 +1,46 @@
+{
+  "dayId": "day-10",
+  "titleAr": "اليوم العاشر — OOP وإخفاء المعلومات والشجرة المتكررة",
+  "sourceOfTruth": "C:/Users/hosam/OneDrive/Desktop/برمجة الحاسب.pdf",
+  "pdfRefs": [
+    { "pdfPageIndex": 421, "topic": "مصطلحات البرمجة الكائنية" },
+    { "pdfPageIndex": 423, "topic": "تطبيقات Circle/Square/BankAcct" },
+    { "pdfPageIndex": 436, "topic": "إخفاء المعلومات" },
+    { "pdfPageIndex": 439, "topic": "bitwise OR و shift" },
+    { "pdfPageIndex": 441, "topic": "Fractal Tree" },
+    { "pdfPageIndex": 468, "topic": "Locker Problem و Pascal Triangle" }
+  ],
+  "lessons": [
+    {
+      "id": "oop-foundations",
+      "route": "/lessons/oop-foundations",
+      "hasDetailedStructure": true,
+      "lab": "oop-foundations-lab"
+    },
+    {
+      "id": "steganography-python",
+      "route": "/lessons/steganography-python",
+      "hasDetailedStructure": true,
+      "lab": "steganography-lab"
+    },
+    {
+      "id": "fractal-tree-recursion",
+      "route": "/lessons/fractal-tree-recursion",
+      "hasDetailedStructure": true,
+      "lab": "fractal-tree-lab"
+    },
+    {
+      "id": "locker-pascal-problem",
+      "route": "/lessons/locker-pascal-problem",
+      "hasDetailedStructure": true,
+      "lab": "locker-pascal-lab"
+    }
+  ],
+  "worksheetId": "ws-day-10",
+  "quizId": "quiz-day-10",
+  "teacherAnswersRoute": "/teacher/day-10-answers",
+  "studentVisibility": {
+    "publishedDaysRequirement": 10,
+    "currentExpectedStateWhenPublishedDays2": "draft-locked-for-students"
+  }
+}
