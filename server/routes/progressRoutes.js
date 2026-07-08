@@ -82,6 +82,52 @@ export function registerProgressRoutes(app, logError) {
     },
   );
 
+  app.post("/api/teacher/recover/python-snippets", requireAuth, requireRole("teacher"), (req, res) => {
+    try {
+      const payload = Array.isArray(req.body?.recoveries) ? req.body.recoveries : [];
+      if (!payload.length) {
+        return res.status(400).json({ ok: false, error: "invalid_payload" });
+      }
+      const allowed = new Set(STUDENTS_ROSTER.map((s) => `stu-${s.nationalId}`));
+      const report = [];
+      for (const item of payload) {
+        const studentId = String(item?.studentId || "").trim();
+        const snippets = Array.isArray(item?.snippets) ? item.snippets : [];
+        if (!allowed.has(studentId)) {
+          report.push({ studentId, imported: 0, skipped: snippets.length, reason: "unknown_student" });
+          continue;
+        }
+        if (!snippets.length) {
+          report.push({ studentId, imported: 0, skipped: 0, reason: "empty_snippets" });
+          continue;
+        }
+        const row = getStudentProgress(studentId);
+        const current = row?.progress || {};
+        const merged = mergeRecoverySnippets(current.pythonSnippets || [], snippets);
+        const imported = Math.max(0, merged.length - (current.pythonSnippets || []).length);
+        saveStudentProgress(studentId, {
+          ...current,
+          pythonSnippets: merged,
+          updatedAt: new Date().toISOString(),
+        });
+        report.push({
+          studentId,
+          imported,
+          skipped: Math.max(0, snippets.length - imported),
+          total: merged.length,
+        });
+      }
+      res.json({
+        ok: true,
+        report,
+        importedTotal: report.reduce((a, r) => a + (r.imported || 0), 0),
+      });
+    } catch (err) {
+      logError("progress.teacher.recover.pythonSnippets", err);
+      res.status(500).json({ ok: false, error: "failed" });
+    }
+  });
+
   app.get("/api/progress/teacher/roster", requireAuth, requireRole("teacher"), (_req, res) => {
     try {
       const byStudent = {};
@@ -208,6 +254,33 @@ export function registerProgressRoutes(app, logError) {
       }
     },
   );
+}
+
+function mergeRecoverySnippets(existing, incoming) {
+  const map = new Map();
+  const toSignature = (s) => `${String(s?.title || "").trim()}||${String(s?.code || "").trim()}`;
+  for (const s of existing || []) {
+    if (!s || !s.code) continue;
+    const id = s.id || toSignature(s);
+    map.set(id, s);
+  }
+  for (const s of incoming || []) {
+    if (!s || !String(s.code || "").trim()) continue;
+    const id = s.id || toSignature(s) || `rec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    if (map.has(id)) continue;
+    map.set(id, {
+      id,
+      title: s.title || "كود مسترجع",
+      code: s.code,
+      lessonId: s.lessonId || null,
+      activityId: s.activityId || null,
+      at: s.at || new Date().toISOString(),
+      updatedAt: s.updatedAt || s.at || new Date().toISOString(),
+    });
+  }
+  return [...map.values()]
+    .sort((a, b) => new Date(b.updatedAt || b.at || 0) - new Date(a.updatedAt || a.at || 0))
+    .slice(0, 500);
 }
 
 function mergeProgressBlob(server = {}, client = {}) {

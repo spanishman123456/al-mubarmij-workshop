@@ -104,6 +104,13 @@ export async function fetchTeacherStudentPythonSnippets(studentId) {
   return request(`/api/teacher/students/${encodeURIComponent(studentId)}/python-snippets`);
 }
 
+export async function recoverTeacherPythonSnippetsApi(recoveries) {
+  return request("/api/teacher/recover/python-snippets", {
+    method: "POST",
+    body: JSON.stringify({ recoveries }),
+  });
+}
+
 export async function recalculateProgressApi(reason = "teacher_recalculate") {
   return request("/api/progress/recalculate", {
     method: "POST",

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
 import {
   fetchOnboardingAll,
+  recoverTeacherPythonSnippetsApi,
   fetchTeacherStudentProgress,
   fetchTeacherStudentPythonSnippets,
 } from "../lib/platformApi";
@@ -50,6 +51,8 @@ export default function TeacherDashboard() {
   const [snippetDetails, setSnippetDetails] = useState(null);
   const [snippetDetailsLoading, setSnippetDetailsLoading] = useState(false);
   const [snippetTargetStudentId, setSnippetTargetStudentId] = useState("");
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryReport, setRecoveryReport] = useState(null);
 
   useEffect(() => {
     fetchOnboardingAll()
@@ -119,6 +122,37 @@ export default function TeacherDashboard() {
       });
     } finally {
       setSnippetDetailsLoading(false);
+    }
+  }
+
+  function normalizeRecoveryPayload(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray(raw.recoveries)) return raw.recoveries;
+    if (raw.studentId && Array.isArray(raw.snippets)) return [raw];
+    return [];
+  }
+
+  async function handleRecoveryFile(file) {
+    if (!file) return;
+    setRecoveryBusy(true);
+    setRecoveryReport(null);
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const recoveries = normalizeRecoveryPayload(parsed);
+      if (!recoveries.length) {
+        window.alert("ملف الاسترجاع غير صالح. الصيغة المطلوبة: studentId + snippets[].");
+        return;
+      }
+      const res = await recoverTeacherPythonSnippetsApi(recoveries);
+      setRecoveryReport(res);
+      await refreshTeacherAnalytics();
+      window.alert(`تم استيراد ${res.importedTotal || 0} كود بنجاح.`);
+    } catch {
+      window.alert("تعذر استيراد الملف. تأكد من JSON الصحيح ثم حاول مرة أخرى.");
+    } finally {
+      setRecoveryBusy(false);
     }
   }
 
@@ -272,6 +306,42 @@ export default function TeacherDashboard() {
             فتح مكتبة الأكواد
           </button>
         </div>
+      </EduCard>
+
+      <EduCard className="mt-6" accent="amber" title="استرجاع جماعي لأكواد الطلاب (JSON)">
+        <p className="text-sm text-slate-700">
+          ارفع ملف JSON مُجمّع من أجهزة الطلاب لاسترجاع الأكواد المفقودة. الصيغة المدعومة:
+          <span dir="ltr" className="mx-1 rounded bg-slate-100 px-1 py-0.5 font-mono text-xs">
+            {"[{ studentId, snippets: [...] } ]"}
+          </span>
+          أو
+          <span dir="ltr" className="mx-1 rounded bg-slate-100 px-1 py-0.5 font-mono text-xs">
+            {"{ recoveries: [...] }"}
+          </span>
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className="edu-btn edu-btn-outline text-sm">
+            {recoveryBusy ? "جارٍ الاستيراد..." : "اختيار ملف الاسترجاع"}
+            <input
+              type="file"
+              accept="application/json,.json"
+              disabled={recoveryBusy}
+              className="hidden"
+              onChange={(e) => handleRecoveryFile(e.target.files?.[0])}
+            />
+          </label>
+        </div>
+        {recoveryReport?.report?.length ? (
+          <div className="mt-3 max-h-48 overflow-y-auto rounded border border-amber-200 bg-amber-50 p-2 text-xs">
+            {recoveryReport.report.map((r) => (
+              <p key={`${r.studentId}-${r.reason || "ok"}`} dir="ltr">
+                {r.studentId}: imported={r.imported || 0}, skipped={r.skipped || 0}
+                {r.total != null ? `, total=${r.total}` : ""}
+                {r.reason ? `, reason=${r.reason}` : ""}
+              </p>
+            ))}
+          </div>
+        ) : null}
       </EduCard>
 
       <EduCard className="mt-6 flex flex-wrap items-center gap-3" accent="violet">
