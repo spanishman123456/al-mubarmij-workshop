@@ -49,6 +49,7 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/teacher/day-08-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-09-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-10-answers", 1, "teacher")).toBe(true);
+    expect(isPathPublished("/teacher/day-11-answers", 1, "teacher")).toBe(true);
   });
 
   it("blocks day 6 lesson routes for students when PUBLISHED_DAYS=5", () => {
@@ -86,6 +87,7 @@ describe("publicationPolicy", () => {
     expect(isLessonIdPublished("fibonacci-sequence", 2)).toBe(false);
     expect(isLessonIdPublished("python-recursion", 2)).toBe(false);
     expect(isLessonIdPublished("oop-foundations", 2)).toBe(false);
+    expect(isLessonIdPublished("ai-foundations", 2)).toBe(false);
   });
 
   it("blocks day 9 lesson routes for students when PUBLISHED_DAYS=8", () => {
@@ -104,5 +106,14 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/lessons/locker-pascal-problem", 9, "student")).toBe(false);
     expect(isPathPublished("/path/day/day-10", 9, "student")).toBe(false);
     expect(isPathPublished("/worksheets/ws-day-10", 9, "student")).toBe(false);
+  });
+
+  it("blocks day 11 lesson routes for students when PUBLISHED_DAYS=10", () => {
+    expect(isPathPublished("/lessons/ai-foundations", 10, "student")).toBe(false);
+    expect(isPathPublished("/lessons/machine-learning-basics", 10, "student")).toBe(false);
+    expect(isPathPublished("/lessons/ai-ethics-safety", 10, "student")).toBe(false);
+    expect(isPathPublished("/lessons/ai-research-presentation", 10, "student")).toBe(false);
+    expect(isPathPublished("/path/day/day-11", 10, "student")).toBe(false);
+    expect(isPathPublished("/worksheets/ws-day-11", 10, "student")).toBe(false);
   });
 });

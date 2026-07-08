@@ -95,6 +95,13 @@ export const DAY10_LESSON_ROUTES = new Set([
   "/lessons/locker-pascal-problem",
 ]);
 
+export const DAY11_LESSON_ROUTES = new Set([
+  "/lessons/ai-foundations",
+  "/lessons/machine-learning-basics",
+  "/lessons/ai-ethics-safety",
+  "/lessons/ai-research-presentation",
+]);
+
 /** @deprecated use DAY4_LESSON_ROUTES */
 const DAY4_PLUS_DRAFT_ROUTES = DAY4_LESSON_ROUTES;
 
@@ -157,6 +164,10 @@ export const LESSON_ID_TO_DAY = {
   "steganography-python": 10,
   "fractal-tree-recursion": 10,
   "locker-pascal-problem": 10,
+  "ai-foundations": 11,
+  "machine-learning-basics": 11,
+  "ai-ethics-safety": 11,
+  "ai-research-presentation": 11,
 };
 
 const ONBOARDING_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre"];
@@ -206,6 +217,7 @@ export function routeContentDay(pathname) {
   if (DAY8_LESSON_ROUTES.has(path)) return 8;
   if (DAY9_LESSON_ROUTES.has(path)) return 9;
   if (DAY10_LESSON_ROUTES.has(path)) return 10;
+  if (DAY11_LESSON_ROUTES.has(path)) return 11;
 
   let m = /^\/path\/day\/day-(\d+)$/.exec(path);
   if (m) return Number(m[1]);

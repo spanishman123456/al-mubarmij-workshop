@@ -156,6 +156,26 @@ test.describe("pilot PUBLISHED_DAYS=1", () => {
     await expect(page.getByRole("heading", { name: LOCKED_HEADING })).toBeVisible();
   });
 
+  test("all day 11 lesson routes blocked", async ({ page }) => {
+    await loginStudent(page);
+    const routes = [
+      "/lessons/ai-foundations",
+      "/lessons/machine-learning-basics",
+      "/lessons/ai-ethics-safety",
+      "/lessons/ai-research-presentation",
+    ];
+    for (const route of routes) {
+      await page.goto(route);
+      await expect(page.getByRole("heading", { name: LOCKED_HEADING })).toBeVisible();
+    }
+  });
+
+  test("day-11 hub blocked for student", async ({ page }) => {
+    await loginStudent(page);
+    await page.goto("/path/day/day-11");
+    await expect(page.getByRole("heading", { name: LOCKED_HEADING })).toBeVisible();
+  });
+
   test("day 01 lesson still accessible", async ({ page }) => {
     await loginStudent(page);
     await page.goto("/lessons/binary-cards");

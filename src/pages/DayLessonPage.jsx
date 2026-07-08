@@ -288,6 +288,17 @@ export default function DayLessonPage() {
             </EduCard>
           ) : null}
 
+          {day.id === "day-11" ? (
+            <EduCard title="دروس اليوم الحادي عشر" accent="violet">
+              <div className="mt-2 flex flex-col gap-2 text-sm">
+                <Link to="/lessons/ai-foundations">1. مقدمة الذكاء الاصطناعي</Link>
+                <Link to="/lessons/machine-learning-basics">2. أساسيات التعلم الآلي</Link>
+                <Link to="/lessons/ai-ethics-safety">3. أخلاقيات الذكاء الاصطناعي</Link>
+                <Link to="/lessons/ai-research-presentation">4. البحث والعرض في الذكاء الاصطناعي</Link>
+              </div>
+            </EduCard>
+          ) : null}
+
           <EduCard title="تطبيق عملي" accent="emerald">
             <p className="mt-2 text-slate-700">{day.practicalAr}</p>
             {day.exerciseIds?.length ? (

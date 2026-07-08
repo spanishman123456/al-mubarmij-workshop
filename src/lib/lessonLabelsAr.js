@@ -36,6 +36,10 @@ export const LESSON_LABELS_AR = {
   "steganography-python": "إخفاء المعلومات",
   "fractal-tree-recursion": "الشجرة المتكررة",
   "locker-pascal-problem": "مشكلة الخزانة ومثلث باسكال",
+  "ai-foundations": "مقدمة الذكاء الاصطناعي",
+  "machine-learning-basics": "أساسيات التعلم الآلي",
+  "ai-ethics-safety": "أخلاقيات الذكاء الاصطناعي",
+  "ai-research-presentation": "البحث والعرض في الذكاء الاصطناعي",
 };
 
 export function lessonLabelAr(lessonId) {

@@ -113,4 +113,19 @@ export const WORKSHEET_MODEL_ANSWERS = {
       { n: 10, modelAr: "صح" },
     ],
   },
+  "ws-day-11": {
+    teacherDayRoute: "/teacher/day-11-answers",
+    tasks: [
+      { n: 1, modelAr: "التعلم من البيانات لاكتشاف الأنماط (أ)" },
+      { n: 2, modelAr: "التدريب للتعلم والاختبار للقياس (أ)" },
+      { n: 3, modelAr: "70" },
+      { n: 4, modelAr: "توصيات المحتوى (أ)" },
+      { n: 5, modelAr: "صح" },
+      { n: 6, modelAr: "إخفاء الهوية (أ)" },
+      { n: 7, modelAr: "خطأ" },
+      { n: 8, modelAr: "مشكلة → حل → مثال → أثر (أ)" },
+      { n: 9, modelAr: "3" },
+      { n: 10, modelAr: "العدالة أو الخصوصية أو الشفافية" },
+    ],
+  },
 };
