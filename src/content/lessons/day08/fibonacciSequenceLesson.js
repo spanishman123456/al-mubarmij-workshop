@@ -141,6 +141,12 @@ export const fibonacciSequenceLesson = {
       step: "definition",
     },
   ],
+  quickCheck: {
+    questions: [
+      { id: "q1", promptAr: "ما قيمة F(6)؟", answer: "8", hintAr: "… 3, 5, 8" },
+      { id: "q2", promptAr: "ما الحالة الأساسية في fib؟", answer: "n<=1", hintAr: "0 و 1" },
+    ],
+  },
   guidedPractice: [
     { id: "g1", promptAr: "ما F(3) في فيبوناتشي؟", answer: "2", hints: ["1+1"] },
     { id: "g2", promptAr: "fib(0) في الدالة الذاتية = ?", answer: "0", hints: ["حالة أساس"] },

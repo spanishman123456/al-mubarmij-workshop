@@ -3,6 +3,7 @@ import { useState } from "react";
 import { getDayById } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
+import { getDayLessonRoutes } from "../content/lessons/dayLessonRoutes";
 import {
   canStudentAccessDayContent,
   getStudentDayState,
@@ -50,6 +51,7 @@ export default function DayLessonPage() {
   const studentPublished = isCurriculumDayPublished(dayId, resolvePublishedDaysForRole("student", myStats));
   const done = dayUnlock?.completed || myProgress?.completedDays?.includes(dayId);
   const incomplete = dayUnlock?.incompleteItems || [];
+  const dayLessons = getDayLessonRoutes(day.id);
 
   if (!day) {
     return (
@@ -137,145 +139,39 @@ export default function DayLessonPage() {
             </EduCard>
           ))}
 
-          {day.id === "day-01" ? (
-            <>
-              <EduCard title="دروس اليوم الأول — شرح تفصيلي" accent="violet">
-                <div className="mt-2 flex flex-col gap-2">
-                  <Link to="/lessons/binary-cards" className="text-sm font-semibold text-violet-700 hover:underline">
-                    1. بطاقات الأرقام الثنائية (pdfPageIndex 31–32) →
-                  </Link>
-                  <Link to="/lessons/binary-puzzle" className="text-sm font-semibold text-violet-700 hover:underline">
-                    2. أحجية الأرقام الثنائية (pdfPageIndex 70–76) →
-                  </Link>
-                  <Link to="/lessons/number-systems" className="text-sm font-semibold text-violet-700 hover:underline">
-                    3. أنظمة العد والتحويل →
-                  </Link>
-                  <Link to="/lessons/binary-matching" className="text-sm font-semibold text-violet-700 hover:underline">
-                    4. بطاقات المطابقة (pdfPageIndex 81–82) →
-                  </Link>
-                  <Link to="/lessons/python-intro" className="text-sm font-semibold text-violet-700 hover:underline">
-                    5. مقدمة بايثون →
-                  </Link>
-                  <Link to="/lessons/string-splitting" className="text-sm font-semibold text-violet-700 hover:underline">
-                    6. تقسيم سلاسل الرموز →
-                  </Link>
-                  <Link to="/lessons/ascii-unicode" className="text-sm font-semibold text-violet-700 hover:underline">
-                    7. ASCII و Unicode →
-                  </Link>
-                  <Link to="/lessons/hex-puzzle" className="text-sm font-semibold text-violet-700 hover:underline">
-                    8. أحجية hex →
-                  </Link>
-                  <Link to="/lessons/hex-colors" className="text-sm font-semibold text-violet-700 hover:underline">
-                    9. ألوان Hex و RGB →
-                  </Link>
-                  <Link to="/quizzes/run/quiz-pre" className="text-sm font-semibold text-amber-700 hover:underline">
-                    التقويم القبلي →
-                  </Link>
+          <div data-testid="day-lessons-section">
+            <EduCard title="دروس اليوم" accent="violet">
+              <p className="text-sm text-slate-600">
+                صفحة اليوم تعرض المسار العام. ابدأ من الدروس التفصيلية التالية للحصول على الشرح الكامل، الأمثلة، والتدريبات.
+              </p>
+              {dayLessons.length ? (
+                <div className="mt-3 space-y-2">
+                  {dayLessons.map((lesson, idx) => (
+                    <div
+                      key={lesson.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
+                    >
+                      <div className="text-sm text-slate-800">
+                        <span className="font-semibold">{idx + 1}. {lesson.titleAr}</span>
+                        {lesson.pdfRef ? <span className="mr-2 text-xs text-slate-500">(pdfPageIndex {lesson.pdfRef})</span> : null}
+                      </div>
+                      <Link
+                        to={lesson.to}
+                        data-testid={`day-lesson-link-${lesson.id}`}
+                        className="edu-btn edu-btn-primary inline-flex text-xs"
+                      >
+                        ابدأ الدرس
+                      </Link>
+                    </div>
+                  ))}
                 </div>
-              </EduCard>
-            </>
-          ) : null}
-
-          {day.id === "day-02" ? (
-            <EduCard title="دروس اليوم الثاني — ✅ مكتمل" accent="violet">
-              <p className="mb-2 text-sm text-emerald-800">راجع <code className="text-xs">docs/day02-coverage-status.md</code></p>
-              <div className="mt-2 flex flex-col gap-2 text-sm">
-                <Link to="/lessons/conversions-intro">1. تمهيد: تحويلات + ASCII</Link>
-                <Link to="/lessons/base-arithmetic">2. الحساب في الأنظمة</Link>
-                <Link to="/lessons/twos-complement">3. مكمل العدد 2</Link>
-                <Link to="/lessons/floating-point">4. الفاصلة العائمة</Link>
-                <Link to="/lessons/radix-practice">5. تطبيقات الأساس</Link>
-                <Link to="/lessons/card-sort-algorithm">6. فرز البطاقات</Link>
-                <Link to="/lessons/algorithms">7. الخوارزميات</Link>
-                <Link to="/lessons/python-arrays">8. المصفوفات/القوائم</Link>
-                <Link to="/lessons/python-for-range">9. for و range</Link>
-                <Link to="/lessons/python-while">10. while</Link>
-                <Link to="/lessons/sentence-reference">11. الدليل المرجعي</Link>
-                <Link to="/lessons/if-statement">12. جمل If</Link>
-                <Link to="/lessons/day02-computer-lab">13. مختبر 60 دقيقة</Link>
-              </div>
+              ) : (
+                <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  لا توجد دروس تفصيلية مرتبطة بهذا اليوم بعد.
+                </p>
+              )}
             </EduCard>
-          ) : null}
-
-          {day.id === "day-03" ? (
-            <EduCard title="دروس اليوم الثالث" accent="cyan">
-              <div className="mt-2 flex flex-col gap-2 text-sm">
-                <Link to="/lessons/python-constants">1. الثوابت</Link>
-                <Link to="/lessons/python-multi-arrays">2. مصفوفات متعددة الأبعاد</Link>
-                <Link to="/lessons/python-break-continue">3. break / continue / pass / else</Link>
-                <Link to="/lessons/divisors-activity">4. نشاط المقسومات</Link>
-                <Link to="/lessons/numbers-steps-activity">5. نشاط الأرقام والخطوات</Link>
-                <Link to="/lessons/collatz">6. تخمين Collatz</Link>
-                <Link to="/lessons/truth-tables">7. جداول الحقيقة</Link>
-                <Link to="/lessons/logic-gates">8. البوابات المنطقية</Link>
-              </div>
-            </EduCard>
-          ) : null}
-
-          {day.id === "day-04" ? (
-            <EduCard title="دروس اليوم الرابع" accent="violet">
-              <div className="mt-2 flex flex-col gap-2 text-sm">
-                <Link to="/lessons/karnaugh-maps">1. خريطة كارنوف</Link>
-                <Link to="/lessons/logic-equivalence">2. الاقترانات المنطقية والمكافئات</Link>
-                <Link to="/lessons/python-tuples">3. الحقول المترابطة (Tuples)</Link>
-                <Link to="/lessons/nested-loops-lab">4. الحلقات المتداخلة</Link>
-              </div>
-            </EduCard>
-          ) : null}
-
-          {day.id === "day-05" ? (
-            <EduCard title="دروس اليوم الخامس" accent="violet">
-              <div className="mt-2 flex flex-col gap-2 text-sm">
-                <Link to="/lessons/linear-search">1. البحث الخطي</Link>
-                <Link to="/lessons/binary-search">2. البحث الثنائي</Link>
-                <Link to="/lessons/sorting-algorithms">3. فرز الاختيار (Selection Sort)</Link>
-                <Link to="/lessons/sieve-primes">4. غربال إراتوستينس</Link>
-              </div>
-            </EduCard>
-          ) : null}
-
-          {day.id === "day-06" ? (
-            <EduCard title="دروس اليوم السادس" accent="violet">
-              <div className="mt-2 flex flex-col gap-2 text-sm">
-                <Link to="/lessons/caesar-cipher">1. شفرة قيصر وعلم التشفير</Link>
-                <Link to="/lessons/memory-hierarchy">2. الذاكرة والتخزين المؤقت</Link>
-                <Link to="/lessons/cpu-scheduling">3. جدولة عمليات المعالج</Link>
-              </div>
-            </EduCard>
-          ) : null}
-
-          {day.id === "day-07" ? (
-            <EduCard title="دروس اليوم السابع" accent="violet">
-              <div className="mt-2 flex flex-col gap-2 text-sm">
-                <Link to="/lessons/python-scope">1. نطاق المتغيرات (Scope)</Link>
-                <Link to="/lessons/dice-random">2. رمي النرد والعشوائية</Link>
-                <Link to="/lessons/tic-tac-toe">3. تيك-تاك-تو</Link>
-                <Link to="/lessons/game-planning">4. التخطيط التعاوني للألعاب</Link>
-              </div>
-            </EduCard>
-          ) : null}
-
-          {day.id === "day-08" ? (
-            <EduCard title="دروس اليوم الثامن" accent="violet">
-              <div className="mt-2 flex flex-col gap-2 text-sm">
-                <Link to="/lessons/fibonacci-sequence">1. متتالية فيبوناتشي</Link>
-                <Link to="/lessons/algorithm-complexity">2. تعقيد الخوارزميات (Big-O)</Link>
-                <Link to="/lessons/tower-of-hanoi">3. برج هانوي</Link>
-                <Link to="/lessons/python-files-io">4. الملفات في بايثون</Link>
-              </div>
-            </EduCard>
-          ) : null}
-
-          {day.id === "day-09" ? (
-            <EduCard title="دروس اليوم التاسع" accent="violet">
-              <div className="mt-2 flex flex-col gap-2 text-sm">
-                <Link to="/lessons/python-recursion">1. الاستدعاء الذاتي</Link>
-                <Link to="/lessons/fractals-intro">2. الكسوريات والتشابه الذاتي</Link>
-                <Link to="/lessons/koch-snowflake">3. ندفة Koch</Link>
-                <Link to="/lessons/sierpinski-triangle">4. مثلث Sierpinski</Link>
-              </div>
-            </EduCard>
-          ) : null}
+          </div>
 
           <EduCard title="تطبيق عملي" accent="emerald">
             <p className="mt-2 text-slate-700">{day.practicalAr}</p>

@@ -140,6 +140,12 @@ export const towerOfHanoiLesson = {
       step: "pattern",
     },
   ],
+  quickCheck: {
+    questions: [
+      { id: "q1", promptAr: "عدد حركات n=3 في برج هانوي؟", answer: "7", hintAr: "2^n-1" },
+      { id: "q2", promptAr: "ما الحالة الأساسية في hanoi؟", answer: "n==1", hintAr: "قرص واحد" },
+    ],
+  },
   guidedPractice: [
     { id: "g1", promptAr: "عدد حركات n=2?", answer: "3", hints: ["2²−1"] },
     { id: "g2", promptAr: "عدد حركات n=3?", answer: "7", hints: ["2³−1"] },

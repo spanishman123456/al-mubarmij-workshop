@@ -1,0 +1,83 @@
+export const DAY_LESSON_ROUTES = {
+  "day-01": [
+    { id: "binary-cards", titleAr: "بطاقات الأرقام الثنائية", to: "/lessons/binary-cards", pdfRef: "31–32" },
+    { id: "binary-puzzle", titleAr: "أحجية الأرقام الثنائية", to: "/lessons/binary-puzzle", pdfRef: "70–76" },
+    { id: "number-systems", titleAr: "أنظمة العد والتحويل", to: "/lessons/number-systems" },
+    { id: "binary-matching", titleAr: "بطاقات المطابقة", to: "/lessons/binary-matching", pdfRef: "81–82" },
+    { id: "python-intro", titleAr: "مقدمة بايثون", to: "/lessons/python-intro" },
+    { id: "string-splitting", titleAr: "تقسيم سلاسل الرموز", to: "/lessons/string-splitting" },
+    { id: "ascii-unicode", titleAr: "ASCII و Unicode", to: "/lessons/ascii-unicode" },
+    { id: "hex-puzzle", titleAr: "أحجية Hex", to: "/lessons/hex-puzzle" },
+    { id: "hex-colors", titleAr: "ألوان Hex و RGB", to: "/lessons/hex-colors" },
+  ],
+  "day-02": [
+    { id: "conversions-intro", titleAr: "تمهيد: التحويلات", to: "/lessons/conversions-intro" },
+    { id: "base-arithmetic", titleAr: "الحساب في الأنظمة", to: "/lessons/base-arithmetic" },
+    { id: "twos-complement", titleAr: "مكمل العدد 2", to: "/lessons/twos-complement" },
+    { id: "floating-point", titleAr: "الفاصلة العائمة", to: "/lessons/floating-point" },
+    { id: "radix-practice", titleAr: "تطبيقات الأساس", to: "/lessons/radix-practice" },
+    { id: "card-sort-algorithm", titleAr: "فرز البطاقات", to: "/lessons/card-sort-algorithm" },
+    { id: "algorithms", titleAr: "الخوارزميات", to: "/lessons/algorithms" },
+    { id: "python-arrays", titleAr: "المصفوفات/القوائم", to: "/lessons/python-arrays" },
+    { id: "python-for-range", titleAr: "for و range", to: "/lessons/python-for-range" },
+    { id: "python-while", titleAr: "while", to: "/lessons/python-while" },
+    { id: "sentence-reference", titleAr: "الدليل المرجعي", to: "/lessons/sentence-reference" },
+    { id: "if-statement", titleAr: "جمل If", to: "/lessons/if-statement" },
+    { id: "day02-computer-lab", titleAr: "مختبر 60 دقيقة", to: "/lessons/day02-computer-lab" },
+  ],
+  "day-03": [
+    { id: "python-constants", titleAr: "الثوابت", to: "/lessons/python-constants" },
+    { id: "python-multi-arrays", titleAr: "مصفوفات متعددة الأبعاد", to: "/lessons/python-multi-arrays" },
+    { id: "python-break-continue", titleAr: "break / continue / pass / else", to: "/lessons/python-break-continue" },
+    { id: "divisors-activity", titleAr: "نشاط المقسومات", to: "/lessons/divisors-activity" },
+    { id: "numbers-steps-activity", titleAr: "نشاط الأرقام والخطوات", to: "/lessons/numbers-steps-activity" },
+    { id: "collatz", titleAr: "تخمين Collatz", to: "/lessons/collatz" },
+    { id: "truth-tables", titleAr: "جداول الحقيقة", to: "/lessons/truth-tables" },
+    { id: "logic-gates", titleAr: "البوابات المنطقية", to: "/lessons/logic-gates" },
+  ],
+  "day-04": [
+    { id: "karnaugh-maps", titleAr: "خريطة كارنوف", to: "/lessons/karnaugh-maps" },
+    { id: "logic-equivalence", titleAr: "الاقترانات المنطقية والمكافئات", to: "/lessons/logic-equivalence" },
+    { id: "python-tuples", titleAr: "الحقول المترابطة (Tuples)", to: "/lessons/python-tuples" },
+    { id: "nested-loops-lab", titleAr: "الحلقات المتداخلة", to: "/lessons/nested-loops-lab" },
+  ],
+  "day-05": [
+    { id: "linear-search", titleAr: "البحث الخطي", to: "/lessons/linear-search" },
+    { id: "binary-search", titleAr: "البحث الثنائي", to: "/lessons/binary-search" },
+    { id: "sorting-algorithms", titleAr: "فرز الاختيار (Selection Sort)", to: "/lessons/sorting-algorithms" },
+    { id: "sieve-primes", titleAr: "غربال إراتوستينس", to: "/lessons/sieve-primes" },
+  ],
+  "day-06": [
+    { id: "caesar-cipher", titleAr: "شفرة قيصر وعلم التشفير", to: "/lessons/caesar-cipher" },
+    { id: "memory-hierarchy", titleAr: "الذاكرة والتخزين المؤقت", to: "/lessons/memory-hierarchy" },
+    { id: "cpu-scheduling", titleAr: "جدولة عمليات المعالج", to: "/lessons/cpu-scheduling" },
+  ],
+  "day-07": [
+    { id: "python-scope", titleAr: "نطاق المتغيرات (Scope)", to: "/lessons/python-scope" },
+    { id: "dice-random", titleAr: "رمي النرد والعشوائية", to: "/lessons/dice-random" },
+    { id: "tic-tac-toe", titleAr: "تيك-تاك-تو", to: "/lessons/tic-tac-toe" },
+    { id: "game-planning", titleAr: "التخطيط التعاوني للألعاب", to: "/lessons/game-planning" },
+  ],
+  "day-08": [
+    { id: "fibonacci-sequence", titleAr: "متتالية فيبوناتشي", to: "/lessons/fibonacci-sequence" },
+    { id: "algorithm-complexity", titleAr: "تعقيد الخوارزميات (Big-O)", to: "/lessons/algorithm-complexity" },
+    { id: "tower-of-hanoi", titleAr: "برج هانوي", to: "/lessons/tower-of-hanoi" },
+    { id: "python-files-io", titleAr: "الملفات في بايثون", to: "/lessons/python-files-io" },
+  ],
+  "day-09": [
+    { id: "python-recursion", titleAr: "الاستدعاء الذاتي", to: "/lessons/python-recursion" },
+    { id: "fractals-intro", titleAr: "الكسوريات والتشابه الذاتي", to: "/lessons/fractals-intro" },
+    { id: "koch-snowflake", titleAr: "ندفة Koch", to: "/lessons/koch-snowflake" },
+    { id: "sierpinski-triangle", titleAr: "مثلث Sierpinski", to: "/lessons/sierpinski-triangle" },
+  ],
+  "day-10": [],
+  "day-11": [],
+  "day-12": [],
+  "day-13": [],
+  "day-14": [],
+  "day-15": [],
+};
+
+export function getDayLessonRoutes(dayId) {
+  return DAY_LESSON_ROUTES[dayId] || [];
+}

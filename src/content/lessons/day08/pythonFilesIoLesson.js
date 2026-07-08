@@ -140,6 +140,12 @@ export const pythonFilesIoLesson = {
       step: "writing",
     },
   ],
+  quickCheck: {
+    questions: [
+      { id: "q1", promptAr: "ما وضع الإلحاق دون مسح الملف؟", answer: "a", hintAr: "append" },
+      { id: "q2", promptAr: "ما العبارة التي تغلق الملف تلقائيًا؟", answer: "with", hintAr: "context manager" },
+    ],
+  },
   guidedPractice: [
     { id: "g1", promptAr: "وضع القراءة فقط?", answer: "r", hints: ["read"] },
     { id: "g2", promptAr: "ما الذي يغلق الملف تلقائيًا?", answer: "with", hints: ["context manager"] },

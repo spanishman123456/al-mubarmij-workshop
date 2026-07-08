@@ -140,6 +140,12 @@ export const algorithmComplexityLesson = {
       step: "why",
     },
   ],
+  quickCheck: {
+    questions: [
+      { id: "q1", promptAr: "حلقة واحدة على n عناصر Big-O؟", answer: "O(n)", hintAr: "خطي" },
+      { id: "q2", promptAr: "Selection Sort غالبًا Big-O؟", answer: "O(n^2)", hintAr: "حلقتان" },
+    ],
+  },
   guidedPractice: [
     { id: "g1", promptAr: "for x in arr: print(x) — Big-O?", answer: "O(n)", hints: ["حلقة واحدة"] },
     { id: "g2", promptAr: "Linear Search — Big-O?", answer: "O(n)", hints: ["اليوم 5"] },
