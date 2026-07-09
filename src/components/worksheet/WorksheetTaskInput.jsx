@@ -1,5 +1,6 @@
 import { QuizCardSheetQuestion } from "../quiz/QuizCardFlipQuestion.jsx";
 import { gradeWorksheetPart, isStructuredTask } from "../../lib/worksheetGrading.js";
+import { renderMixedDirectionText } from "../MixedDirectionText";
 
 function PartFeedback({ result, part }) {
   if (!result || result.status === "unanswered") return null;
@@ -34,7 +35,7 @@ function McqOptions({ part, value, onChange, disabled, namePrefix }) {
               disabled={disabled}
               className="mt-1"
             />
-            <span>{c.textAr}</span>
+            <span>{renderMixedDirectionText(c.textAr)}</span>
           </label>
         );
       })}
@@ -144,7 +145,7 @@ export function WorksheetTaskInput({
           const partResult = checkedParts[part.id];
           return (
             <div key={part.id} className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="mb-2 text-sm font-semibold text-slate-800">{part.promptAr}</p>
+              <p className="mb-2 text-sm font-semibold text-slate-800">{renderMixedDirectionText(part.promptAr)}</p>
               {renderPartInput(
                 part,
                 obj[part.id],
@@ -164,13 +165,13 @@ export function WorksheetTaskInput({
               ) : null}
               <PartFeedback result={partResult} part={part} />
               {showTeacherMeta && part.correctAnswer != null ? (
-                <p className="mt-2 text-xs text-emerald-700">الإجابة: {part.correctAnswer}</p>
+                <p className="mt-2 text-xs text-emerald-700">الإجابة: {renderMixedDirectionText(String(part.correctAnswer))}</p>
               ) : null}
               {showTeacherMeta && part.correct != null && part.type === "true_false" ? (
                 <p className="mt-2 text-xs text-emerald-700">الإجابة: {part.correct ? "صح" : "خطأ"}</p>
               ) : null}
               {showTeacherMeta && part.acceptedAnswers ? (
-                <p className="mt-2 text-xs text-emerald-700">مقبول: {part.acceptedAnswers.join("، ")}</p>
+                <p className="mt-2 text-xs text-emerald-700">مقبول: {renderMixedDirectionText(part.acceptedAnswers.join("، "))}</p>
               ) : null}
             </div>
           );

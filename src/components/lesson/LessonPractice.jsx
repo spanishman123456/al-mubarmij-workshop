@@ -3,6 +3,7 @@ import { isValidInBase } from "../../lib/numberSystems/conversions";
 import { recordLessonAttemptApi } from "../../lib/platformApi";
 import { feedbackAfterFailedAttempt } from "../../lib/exerciseFeedbackPolicy.js";
 import { gradeStructuredItem } from "../../lib/assessment/unifiedAssessment.js";
+import { renderMixedDirectionText } from "../MixedDirectionText";
 
 function normalizeLegacyAnswer(s) {
   return String(s || "").trim().toUpperCase().replace(/\s/g, "");
@@ -57,7 +58,7 @@ function StructuredExerciseInput({ exercise, value, onChange, disabled }) {
                 disabled={disabled}
                 className="mt-1"
               />
-              <span>{c.textAr || c.text}</span>
+              <span>{renderMixedDirectionText(c.textAr || c.text)}</span>
             </label>
           );
         })}
@@ -204,7 +205,7 @@ export function LessonPractice({ exercises, mode, lessonId, userId, onStepComple
       <p className="text-xs font-bold text-violet-700">
         {mode === "guided" ? "تدريب موجّه" : "تدريب مستقل"} — {idx + 1}/{exercises.length}
       </p>
-      <p className="mt-2 font-semibold text-slate-900">{ex.promptAr}</p>
+      <p className="mt-2 font-semibold text-slate-900">{renderMixedDirectionText(ex.promptAr)}</p>
       <div className="mt-3 flex flex-wrap items-start gap-2">
         {isStructuredExercise(ex) ? (
           <StructuredExerciseInput
