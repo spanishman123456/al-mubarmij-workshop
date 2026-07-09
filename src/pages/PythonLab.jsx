@@ -46,6 +46,7 @@ export default function PythonLab() {
   const exFromUrl = searchParams.get("ex");
   const modeFromUrl = searchParams.get("mode");
   const appFromUrl = searchParams.get("app");
+  const panelFromUrl = searchParams.get("panel");
 
   const [runMode, setRunMode] = useState(modeFromUrl === "app" ? "app" : "console");
   const [activeId, setActiveId] = useState(pythonExercises[0].id);
@@ -55,6 +56,8 @@ export default function PythonLab() {
   const [projectTitle, setProjectTitle] = useState("");
   const [assistMode, setAssistMode] = useState(getBuildTimeAssistMode);
   const [assistSaving, setAssistSaving] = useState(false);
+  const [teacherSnippets, setTeacherSnippets] = useState([]);
+  const [snippetQuery, setSnippetQuery] = useState("");
 
   const exercise = useMemo(
     () => pythonExercises.find((e) => e.id === activeId) ?? pythonExercises[0],
@@ -84,12 +87,23 @@ export default function PythonLab() {
   const [appUi, setAppUi] = useState(null);
   const [appValues, setAppValues] = useState({});
   const [appConsole, setAppConsole] = useState("");
+  const savedPanelRef = useRef(null);
 
   const stepPlan = useMemo(
     () => getStepPlan(runMode === "app" ? "app" : "console", runMode === "app" ? activeAppId : activeId),
     [runMode, activeAppId, activeId],
   );
   const myGraphicProjects = myProgress?.graphicProjects ?? [];
+  const myStudentSnippets = myProgress?.pythonSnippets ?? [];
+  const teacherSnippetsStorageKey = user?.id ? `teacher-python-snippets:${user.id}` : null;
+  const snippetsSource = user?.role === "teacher" ? teacherSnippets : myStudentSnippets;
+  const visibleSnippets = useMemo(() => {
+    const q = snippetQuery.trim().toLowerCase();
+    if (!q) return snippetsSource;
+    return snippetsSource.filter((item) =>
+      `${item.title || ""} ${item.code || ""}`.toLowerCase().includes(q),
+    );
+  }, [snippetsSource, snippetQuery]);
 
   function applyStepReset(plan) {
     const s = resetStepState();
@@ -100,6 +114,19 @@ export default function PythonLab() {
     setSolutionRevealed(s.solutionRevealed);
     if (plan) setCode(getInitialCode(plan));
   }
+
+  const persistTeacherSnippets = useCallback(
+    (nextSnippets) => {
+      setTeacherSnippets(nextSnippets);
+      if (!teacherSnippetsStorageKey) return;
+      try {
+        localStorage.setItem(teacherSnippetsStorageKey, JSON.stringify(nextSnippets));
+      } catch {
+        /* ignore */
+      }
+    },
+    [teacherSnippetsStorageKey],
+  );
 
   const filteredExercises = useMemo(() => {
     if (unitFilter === "all") return pythonExercises;
@@ -267,6 +294,24 @@ export default function PythonLab() {
     }
   }, [exFromUrl, modeFromUrl, appFromUrl]);
 
+  useEffect(() => {
+    if (user?.role !== "teacher" || !teacherSnippetsStorageKey) return;
+    try {
+      const raw = localStorage.getItem(teacherSnippetsStorageKey);
+      setTeacherSnippets(raw ? JSON.parse(raw) : []);
+    } catch {
+      setTeacherSnippets([]);
+    }
+  }, [user?.role, teacherSnippetsStorageKey]);
+
+  useEffect(() => {
+    if (panelFromUrl !== "saved") return;
+    const id = setTimeout(() => {
+      savedPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => clearTimeout(id);
+  }, [panelFromUrl, user?.role, myStudentSnippets.length, teacherSnippets.length]);
+
   function onUnitFilterChange(next) {
     setUnitFilter(next);
     if (next === "all" || runMode !== "console") return;
@@ -394,8 +439,16 @@ export default function PythonLab() {
   }
 
   function handleSave() {
-    if (!user || user.role !== "student") {
-      window.alert("سجّل الدخول كطالب لحفظ المشروع.");
+    if (!user) {
+      window.alert("سجّل الدخول أولاً لحفظ الكود.");
+      return;
+    }
+    if (user.role === "teacher") {
+      const now = new Date().toISOString();
+      const title = runMode === "app" ? (projectTitle.trim() || appTemplate.titleAr) : (exercise?.titleAr || "كود محفوظ");
+      const record = { id: `tpy-${Date.now()}`, title, code, at: now };
+      persistTeacherSnippets([record, ...teacherSnippets]);
+      window.alert("تم حفظ الكود في مكتبة المعلم.");
       return;
     }
     if (runMode === "console") {
@@ -407,6 +460,24 @@ export default function PythonLab() {
     const id = saveGraphicProject(title, code, savedProjectId);
     if (id) setSavedProjectId(id);
     window.alert("تم حفظ المشروع الرسومي في حسابك.");
+  }
+
+  function openSnippet(snippet) {
+    stopAppSession();
+    setRunMode("console");
+    setCode(snippet.code || "");
+    setOut("");
+    setFeedback(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("mode", "console");
+      return next;
+    });
+  }
+
+  function deleteTeacherSnippet(snippetId) {
+    if (user?.role !== "teacher") return;
+    persistTeacherSnippets(teacherSnippets.filter((s) => s.id !== snippetId));
   }
 
   function handleSubmit() {
@@ -663,16 +734,16 @@ export default function PythonLab() {
               ) : null}
             </div>
 
-            {user?.role === "student" ? (
+            {user ? (
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={handleSave}
                   className="flex-1 rounded-xl border border-white/20 py-2 text-sm text-slate-200 hover:bg-white/10"
                 >
-                  حفظ {runMode === "app" ? "المشروع" : "الكود"}
+                  حفظ {runMode === "app" ? "المشروع" : "الكود"} {user.role === "teacher" ? "(المعلم)" : ""}
                 </button>
-                {runMode === "app" ? (
+                {runMode === "app" && user.role === "student" ? (
                   <button
                     type="button"
                     onClick={handleSubmit}
@@ -770,6 +841,68 @@ export default function PythonLab() {
             </p>
           </div>
         </div>
+
+        <section
+          ref={savedPanelRef}
+          id="python-saved-library"
+          className="mt-8 rounded-2xl border border-violet-500/30 bg-violet-950/20 p-5"
+        >
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-violet-100">
+              {user?.role === "teacher" ? "مكتبة أكواد المعلم" : "مكتبة الأكواد المحفوظة"}
+            </h2>
+            <span className="rounded-full bg-violet-900/60 px-3 py-1 text-xs font-bold text-violet-200">
+              {visibleSnippets.length} عنصر
+            </span>
+          </div>
+          <div className="mb-4">
+            <input
+              type="text"
+              value={snippetQuery}
+              onChange={(e) => setSnippetQuery(e.target.value)}
+              className="w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm text-white"
+              placeholder="ابحث بالعنوان أو الكود..."
+            />
+          </div>
+          {visibleSnippets.length === 0 ? (
+            <p className="text-sm text-slate-300">لا توجد أكواد محفوظة حالياً.</p>
+          ) : (
+            <div className="space-y-2">
+              {visibleSnippets.map((snippet) => (
+                <div
+                  key={snippet.id}
+                  className="rounded-lg border border-white/10 bg-black/30 p-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold text-white">{snippet.title || "كود محفوظ"}</p>
+                    <p className="text-xs text-slate-400">{snippet.at ? new Date(snippet.at).toLocaleString("ar-SA") : "—"}</p>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button type="button" onClick={() => openSnippet(snippet)} className="rounded-md bg-violet-600 px-3 py-1 text-xs font-bold text-white">
+                      فتح في المحرر
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard?.writeText(snippet.code || "")}
+                      className="rounded-md border border-white/20 px-3 py-1 text-xs text-slate-200"
+                    >
+                      نسخ
+                    </button>
+                    {user?.role === "teacher" ? (
+                      <button
+                        type="button"
+                        onClick={() => deleteTeacherSnippet(snippet.id)}
+                        className="rounded-md border border-red-400/40 px-3 py-1 text-xs text-red-200"
+                      >
+                        حذف
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

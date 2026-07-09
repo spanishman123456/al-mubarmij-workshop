@@ -13,6 +13,7 @@ import { resolvePublishedDaysCount } from "../config/publication";
 const QUICK_LINKS = [
   { to: "/path", title: "المسار الدراسي", desc: "15 يومًا من الدروس والأنشطة" },
   { to: "/python", title: "مختبر بايثون", desc: "تمارين نصية ومشاريع رسومية" },
+  { to: "/python?panel=saved", title: "مكتبتي البرمجية", desc: "افتح الأكواد المحفوظة مباشرة" },
   { to: "/worksheets", title: "أوراق العمل", desc: "تمارين نظرية وتطبيقية" },
   { to: "/quizzes", title: "الاختبارات", desc: "قبلي، قصير، وبعدي" },
   { to: "/simulations", title: "المحاكاة", desc: "معمل تفاعلي للمفاهيم" },

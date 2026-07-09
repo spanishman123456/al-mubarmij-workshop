@@ -43,6 +43,7 @@ export default function TeacherDashboard() {
   const [onboardingSummary, setOnboardingSummary] = useState(null);
   const [progressDetails, setProgressDetails] = useState(null);
   const [progressDetailsLoading, setProgressDetailsLoading] = useState(false);
+  const [selectedSnippetStudentId, setSelectedSnippetStudentId] = useState("");
 
   useEffect(() => {
     fetchOnboardingAll()
@@ -78,6 +79,9 @@ export default function TeacherDashboard() {
   );
   const onlineNow = allStudentsProgress.filter((x) => getPresenceStatus(x.analytics).key === "online");
   const publishedDays = publicationConfig?.publishedDays ?? 1;
+  const snippetStudents = allStudentsProgress.filter((item) => (item.progress?.pythonSnippets || []).length > 0);
+  const selectedSnippetStudent =
+    snippetStudents.find((item) => item.student.id === selectedSnippetStudentId) || snippetStudents[0] || null;
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -257,6 +261,45 @@ export default function TeacherDashboard() {
           </button>
         ))}
         <span className="text-xs text-slate-500">({filteredStudents.length} طالب)</span>
+      </EduCard>
+
+      <EduCard id="student-snippets" className="mt-6" accent="cyan" title="الوصول السريع لمكتبة أكواد الطلاب">
+        {snippetStudents.length === 0 ? (
+          <p className="text-sm text-slate-600">لا توجد أكواد طلاب محفوظة حالياً في البيانات المتاحة.</p>
+        ) : (
+          <>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <label className="text-sm font-semibold text-slate-700">اختر الطالب:</label>
+              <select
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                value={selectedSnippetStudent?.student.id || ""}
+                onChange={(e) => setSelectedSnippetStudentId(e.target.value)}
+              >
+                {snippetStudents.map((item) => (
+                  <option key={item.student.id} value={item.student.id}>
+                    {item.student.nameAr} ({maskNationalId(item.student.nationalId)})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="mb-2 text-sm text-slate-600">
+              عدد الأكواد: <LtrValue>{selectedSnippetStudent?.progress?.pythonSnippets?.length || 0}</LtrValue>
+            </p>
+            <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+              {(selectedSnippetStudent?.progress?.pythonSnippets || []).map((snippet) => (
+                <div key={snippet.id} className="rounded-md border border-slate-200 bg-white p-2">
+                  <p className="font-semibold text-slate-900">{snippet.title || "كود محفوظ"}</p>
+                  <p className="text-xs text-slate-500">
+                    {snippet.at ? formatLoginDateTime(snippet.at) : "—"}
+                  </p>
+                  <pre dir="ltr" className="mt-2 max-h-24 overflow-auto rounded bg-slate-900 p-2 text-xs text-emerald-200">
+                    {snippet.code || ""}
+                  </pre>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </EduCard>
 
       <PrePostComparisonChart className="mt-8" students={allStudentsProgress} />

@@ -27,6 +27,10 @@ export function NavBar() {
 
   const dashLink = user.role === "teacher" ? "/teacher" : "/student";
   const dashLabel = user.role === "teacher" ? "لوحة المعلم" : "حسابي";
+  const quickLibraryLink =
+    user.role === "teacher"
+      ? { to: "/teacher#student-snippets", label: "أكواد الطلاب", active: pathname.startsWith("/teacher") }
+      : { to: "/python?panel=saved", label: "مكتبة الأكواد", active: pathname.startsWith("/python") };
 
   return (
     <header
@@ -89,6 +93,17 @@ export function NavBar() {
           >
             {dashLabel}
           </NavLink>
+          <Link
+            to={quickLibraryLink.to}
+            onClick={() => setOpen(false)}
+            className={`rounded-full px-3 py-2 font-ar text-sm font-medium transition ${
+              quickLibraryLink.active
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-slate-300 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            {quickLibraryLink.label}
+          </Link>
           {user ? (
             <button
               type="button"
