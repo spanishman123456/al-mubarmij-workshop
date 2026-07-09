@@ -34,14 +34,48 @@ export const truthTablesLesson = {
     { titleAr: "AND vs OR", bodyAr: "AND أstrict.", step: "gate" },
     { titleAr: "صف ناقص", bodyAr: "4 صفوف لـ 2 var.", step: "rows" },
   ],
-  quickCheck: { questions: [{ id: "q1", promptAr: "1 AND 0?", answer: "0", hintAr: "" }] },
+  quickCheck: {
+    questions: [
+      {
+        id: "q1",
+        promptAr: "ما ناتج العملية المنطقية التالية؟",
+        expression: "1 AND 0",
+        answer: "0",
+        hintAr: "",
+      },
+    ],
+  },
   guidedPractice: [
-    { id: "g1", promptAr: "NOT 1?", answer: "0", hints: [] },
-    { id: "g2", promptAr: "1 OR 0?", answer: "1", hints: [] },
+    {
+      id: "g1",
+      promptAr: "ما ناتج العملية المنطقية التالية؟",
+      expression: "NOT 1",
+      answer: "0",
+      hints: [],
+    },
+    {
+      id: "g2",
+      promptAr: "ما ناتج العملية المنطقية التالية؟",
+      expression: "1 OR 0",
+      answer: "1",
+      hints: [],
+    },
   ],
   independentPractice: [
-    { id: "i1", promptAr: "NOT 0?", answer: "1", hints: [] },
-    { id: "i2", promptAr: "0 AND 0?", answer: "0", hints: [] },
+    {
+      id: "i1",
+      promptAr: "ما ناتج العملية المنطقية التالية؟",
+      expression: "NOT 0",
+      answer: "1",
+      hints: [],
+    },
+    {
+      id: "i2",
+      promptAr: "ما ناتج العملية المنطقية التالية؟",
+      expression: "0 AND 0",
+      answer: "0",
+      hints: [],
+    },
   ],
   summary: "جدول حقيقة = كل تركيبات المدخلات + ناتج التعبير.",
   linkedActivity: "/simulations#truth",

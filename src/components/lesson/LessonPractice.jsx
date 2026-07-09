@@ -3,10 +3,12 @@ import { isValidInBase } from "../../lib/numberSystems/conversions";
 import { recordLessonAttemptApi } from "../../lib/platformApi";
 import { feedbackAfterFailedAttempt } from "../../lib/exerciseFeedbackPolicy.js";
 import { gradeStructuredItem } from "../../lib/assessment/unifiedAssessment.js";
+import { areEquivalentLessonAnswers, normalizeLessonAnswer } from "../../lib/assessment/lessonAnswerEquivalence";
 import { renderMixedDirectionText } from "../MixedDirectionText";
+import { BilingualPrompt } from "../BilingualTextBlocks";
 
 function normalizeLegacyAnswer(s) {
-  return String(s || "").trim().toUpperCase().replace(/\s/g, "");
+  return normalizeLessonAnswer(s);
 }
 
 function isStructuredExercise(exercise) {
@@ -156,8 +158,10 @@ export function LessonPractice({ exercises, mode, lessonId, userId, onStepComple
       return;
     }
 
-    const norm = normalizeLegacyAnswer(answer);
-    const ok = norm === normalizeLegacyAnswer(expected) || norm === String(expected);
+    const accepted = Array.isArray(ex.acceptedAnswers) ? ex.acceptedAnswers : [];
+    const ok =
+      areEquivalentLessonAnswers(answer, expected) ||
+      accepted.some((candidate) => areEquivalentLessonAnswers(answer, candidate));
 
     if (ok) {
       setFeedback("إجابة صحيحة ✓");
@@ -205,7 +209,14 @@ export function LessonPractice({ exercises, mode, lessonId, userId, onStepComple
       <p className="text-xs font-bold text-violet-700">
         {mode === "guided" ? "تدريب موجّه" : "تدريب مستقل"} — {idx + 1}/{exercises.length}
       </p>
-      <p className="mt-2 font-semibold text-slate-900">{renderMixedDirectionText(ex.promptAr)}</p>
+      <div className="mt-2">
+        <BilingualPrompt
+          promptAr={ex.promptAr}
+          expression={ex.expression}
+          values={ex.values}
+          code={ex.code}
+        />
+      </div>
       <div className="mt-3 flex flex-wrap items-start gap-2">
         {isStructuredExercise(ex) ? (
           <StructuredExerciseInput

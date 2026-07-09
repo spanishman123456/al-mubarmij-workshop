@@ -115,6 +115,7 @@ export default function StudentDashboard() {
   const pythonRuns = myStats?.pythonRuns ?? analytics.pythonRuns ?? 0;
   const pythonSaved = myStats?.pythonSnippetsCount ?? progress.pythonSnippets?.length ?? 0;
   const progressDetails = myStats?.details ?? [];
+  const recentSnippets = (progress.pythonSnippets || []).slice(0, 5);
   const [showProgressDetails, setShowProgressDetails] = useState(false);
   const completedItems = progressDetails.filter((d) => d.status === "completed");
   const pendingItems = progressDetails.filter((d) => d.status !== "completed");
@@ -311,6 +312,33 @@ export default function StudentDashboard() {
           </Link>
         ))}
       </div>
+
+      <EduCard className="mt-6" title="مكتبة الأكواد المحفوظة (مختصر)" accent="violet">
+        {recentSnippets.length === 0 ? (
+          <p className="text-sm text-slate-600">لا توجد أكواد محفوظة بعد. احفظ أول كود من مختبر بايثون.</p>
+        ) : (
+          <ul className="space-y-2">
+            {recentSnippets.map((snippet) => (
+              <li key={snippet.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                <p className="font-semibold text-slate-900">{snippet.title || "كود محفوظ"}</p>
+                <p className="text-xs text-slate-500">
+                  {snippet.updatedAt
+                    ? new Date(snippet.updatedAt).toLocaleString("ar-SA")
+                    : snippet.at
+                      ? new Date(snippet.at).toLocaleString("ar-SA")
+                      : "—"}
+                </p>
+                <p className="text-xs text-violet-700">
+                  {snippet.lessonTitle || snippet.lessonId || "بدون ربط درس"} | النشاط: {snippet.activityId || "—"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Link to="/python?panel=saved" className="mt-3 inline-flex text-sm font-semibold text-violet-700 hover:underline">
+          فتح المكتبة الكاملة →
+        </Link>
+      </EduCard>
 
       <EduCard className="mt-8" title="آخر الدروس المتاحة" accent="cyan">
         <ul className="mt-3 space-y-2">

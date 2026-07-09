@@ -715,17 +715,22 @@ export function PlatformProvider({ children }) {
   );
 
   const savePythonSnippet = useCallback(
-    (title, code) => {
+    (title, code, meta = {}) => {
       if (!user || user.role !== "student") return;
       persist((prev) => {
         const current = getStudentProgress(prev, user.id);
         const analytics = recordPythonRun(getStudentAnalytics(prev, user.id));
         scheduleActivitySync(user.id, analytics);
+        const now = new Date().toISOString();
         const snippet = {
           id: `py-${Date.now()}`,
           title: title || "كود محفوظ",
           code,
-          at: new Date().toISOString(),
+          lessonId: meta.lessonId || "",
+          activityId: meta.activityId || "",
+          snippetType: meta.snippetType || "lesson",
+          at: now,
+          updatedAt: now,
           teacherNote: "",
         };
         return {
@@ -744,6 +749,68 @@ export function PlatformProvider({ children }) {
           },
         };
       });
+    },
+    [persist, user],
+  );
+
+  const updatePythonSnippet = useCallback(
+    (snippetId, patch = {}) => {
+      if (!user || user.role !== "student" || !snippetId) return false;
+      let updated = false;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const list = (current.pythonSnippets || []).map((snippet) => {
+          if (snippet.id !== snippetId) return snippet;
+          updated = true;
+          return {
+            ...snippet,
+            ...patch,
+            updatedAt: new Date().toISOString(),
+          };
+        });
+        if (!updated) return prev;
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: {
+              ...current,
+              pythonSnippets: list,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
+      });
+      return updated;
+    },
+    [persist, user],
+  );
+
+  const deletePythonSnippet = useCallback(
+    (snippetId) => {
+      if (!user || user.role !== "student" || !snippetId) return false;
+      let deleted = false;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const list = (current.pythonSnippets || []).filter((snippet) => {
+          if (snippet.id !== snippetId) return true;
+          deleted = true;
+          return false;
+        });
+        if (!deleted) return prev;
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: {
+              ...current,
+              pythonSnippets: list,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
+      });
+      return deleted;
     },
     [persist, user],
   );
@@ -985,6 +1052,8 @@ export function PlatformProvider({ children }) {
       saveDrillResult,
       saveMicrobitProgress,
       savePythonSnippet,
+      updatePythonSnippet,
+      deletePythonSnippet,
       saveGraphicProject,
       submitGraphicProject,
       saveProject,
@@ -1023,6 +1092,8 @@ export function PlatformProvider({ children }) {
       saveDrillResult,
       saveMicrobitProgress,
       savePythonSnippet,
+      updatePythonSnippet,
+      deletePythonSnippet,
       saveGraphicProject,
       submitGraphicProject,
       saveProject,

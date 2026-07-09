@@ -6,6 +6,7 @@ import { QuizCodeEditorQuestion } from "./QuizCodeEditorQuestion";
 import { QuizFlowchartBuilderQuestion } from "./QuizFlowchartBuilderQuestion";
 import { QuizLogicCircuitQuestion } from "./QuizLogicCircuitQuestion";
 import { renderMixedDirectionText } from "../MixedDirectionText";
+import { BilingualPrompt } from "../BilingualTextBlocks";
 
 export function questionTypeLabel(type) {
   if (type === "fill") return "إكمال";
@@ -35,9 +36,14 @@ export function QuizQuestionRenderer({ question, value, onChange, disabled, show
   return (
     <div dir="rtl">
       {question.instructionAr && !showReview ? (
-        <p className="mb-3 rounded-lg border border-violet-400/30 bg-violet-950/30 px-3 py-2 text-sm text-violet-100">
-          {renderMixedDirectionText(question.instructionAr)}
-        </p>
+        <div className="mb-3 rounded-lg border border-violet-400/30 bg-violet-950/30 px-3 py-2 text-sm text-violet-100">
+          <BilingualPrompt
+            promptAr={question.instructionAr}
+            expression={question.expression}
+            values={question.values}
+            code={question.code}
+          />
+        </div>
       ) : null}
 
       {qType === "fill" ? (

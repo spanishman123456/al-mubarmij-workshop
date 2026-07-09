@@ -4,6 +4,7 @@ import { LessonPractice } from "../../components/lesson/LessonPractice";
 import { LessonProgressFooter } from "../../components/lesson/LessonProgressFooter";
 import { usePlatform } from "../../context/PlatformContext";
 import { MixedDirectionText, renderMixedDirectionText } from "../../components/MixedDirectionText";
+import { BilingualPrompt, LtrCodeBlock, LtrInlineToken } from "../../components/BilingualTextBlocks";
 
 /**
  * قالب درس تفصيلي — يعرض كل أقسام validateLessonContent
@@ -97,9 +98,7 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
         {L.workedExamples.map((ex) => (
           <EduCard key={ex.id} title={ex.titleAr} accent="emerald">
             {ex.code ? (
-              <pre className="mb-3 overflow-x-auto rounded-lg bg-slate-900 p-3 text-sm text-emerald-300" dir="ltr">
-                {ex.code}
-              </pre>
+              <LtrCodeBlock code={ex.code} className="mb-3" />
             ) : null}
             <ol className="list-decimal space-y-1 pr-5 text-sm text-slate-700">
               {ex.steps.map((st, i) => (
@@ -107,8 +106,8 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
               ))}
             </ol>
             {ex.result ? (
-              <p className="mt-2 font-bold text-slate-800" dir="ltr">
-                = {renderMixedDirectionText(ex.result)}
+              <p className="mt-2 font-bold text-slate-800">
+                = <LtrInlineToken token={String(ex.result)} />
               </p>
             ) : null}
           </EduCard>
@@ -169,7 +168,12 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
         <ul className="space-y-2 text-sm">
           {L.quickCheck.questions.map((q) => (
             <li key={q.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <p className="font-semibold">{renderMixedDirectionText(q.promptAr)}</p>
+              <BilingualPrompt
+                promptAr={q.promptAr}
+                expression={q.expression}
+                values={q.values}
+                code={q.code}
+              />
               {q.hintAr ? <p className="mt-1 text-xs text-slate-500">تلميح: {renderMixedDirectionText(q.hintAr)}</p> : null}
               <p className="mt-2 text-xs text-violet-700">فكّر في الإجابة ثم ناقشها مع المعلم — الحل لا يُعرض هنا.</p>
             </li>

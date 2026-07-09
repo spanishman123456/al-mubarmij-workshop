@@ -34,6 +34,11 @@ import {
   registerDraftSaver,
   saveInactivityDraft,
 } from "../lib/draftFlush.js";
+import {
+  filterSnippets,
+  paginateSnippets,
+  sortSnippets,
+} from "../lib/python/snippetLibraryUi.js";
 
 const MODES = [
   { id: "console", label: "تشغيل نصي (Console)" },
@@ -62,7 +67,16 @@ function autoFixIndentationSimple(code) {
 }
 
 export default function PythonLab() {
-  const { user, myProgress, savePythonSnippet, saveGraphicProject, submitGraphicProject, trackPythonRun } = usePlatform();
+  const {
+    user,
+    myProgress,
+    savePythonSnippet,
+    updatePythonSnippet,
+    deletePythonSnippet,
+    saveGraphicProject,
+    submitGraphicProject,
+    trackPythonRun,
+  } = usePlatform();
   const [searchParams, setSearchParams] = useSearchParams();
   const exFromUrl = searchParams.get("ex");
   const modeFromUrl = searchParams.get("mode");
@@ -79,6 +93,12 @@ export default function PythonLab() {
   const [assistSaving, setAssistSaving] = useState(false);
   const [teacherSnippets, setTeacherSnippets] = useState([]);
   const [snippetQuery, setSnippetQuery] = useState("");
+  const [snippetFilter, setSnippetFilter] = useState("all");
+  const [snippetSort, setSnippetSort] = useState("newest");
+  const [snippetPage, setSnippetPage] = useState(1);
+  const [previewSnippetId, setPreviewSnippetId] = useState(null);
+  const [renameSnippetId, setRenameSnippetId] = useState(null);
+  const [renameTitle, setRenameTitle] = useState("");
 
   const exercise = useMemo(
     () => pythonExercises.find((e) => e.id === activeId) ?? pythonExercises[0],
@@ -119,12 +139,24 @@ export default function PythonLab() {
   const teacherSnippetsStorageKey = user?.id ? `teacher-python-snippets:${user.id}` : null;
   const snippetsSource = user?.role === "teacher" ? teacherSnippets : myStudentSnippets;
   const visibleSnippets = useMemo(() => {
-    const q = snippetQuery.trim().toLowerCase();
-    if (!q) return snippetsSource;
-    return snippetsSource.filter((item) =>
-      `${item.title || ""} ${item.code || ""}`.toLowerCase().includes(q),
-    );
-  }, [snippetsSource, snippetQuery]);
+    const filtered = filterSnippets(snippetsSource, {
+      query: snippetQuery,
+      type: snippetFilter === "recent" ? "all" : snippetFilter,
+    });
+    const recentFiltered =
+      snippetFilter === "recent"
+        ? filtered.filter((s) => {
+            const ref = Date.parse(s.updatedAt || s.at || "");
+            return Number.isFinite(ref) && ref >= Date.now() - 1000 * 60 * 60 * 24 * 7;
+          })
+        : filtered;
+    return sortSnippets(recentFiltered, snippetSort);
+  }, [snippetsSource, snippetQuery, snippetFilter, snippetSort]);
+
+  const pagedSnippets = useMemo(
+    () => paginateSnippets(visibleSnippets, snippetPage, 6),
+    [visibleSnippets, snippetPage],
+  );
 
   function applyStepReset(plan) {
     const s = resetStepState();
@@ -148,6 +180,10 @@ export default function PythonLab() {
     },
     [teacherSnippetsStorageKey],
   );
+
+  useEffect(() => {
+    setSnippetPage(1);
+  }, [snippetQuery, snippetFilter, snippetSort]);
 
   const filteredExercises = useMemo(() => {
     if (unitFilter === "all") return pythonExercises;
@@ -478,13 +514,28 @@ export default function PythonLab() {
     if (user.role === "teacher") {
       const now = new Date().toISOString();
       const title = runMode === "app" ? (projectTitle.trim() || appTemplate.titleAr) : (exercise?.titleAr || "كود محفوظ");
-      const record = { id: `tpy-${Date.now()}`, title, code, at: now };
+      const record = {
+        id: `tpy-${Date.now()}`,
+        title,
+        code,
+        lessonId: exercise?.lessonId || activeId,
+        lessonTitle: exercise?.titleAr || appTemplate?.titleAr || "",
+        activityId: exercise?.id || activeAppId,
+        snippetType: runMode === "app" ? "project" : "lesson",
+        at: now,
+        updatedAt: now,
+      };
       persistTeacherSnippets([record, ...teacherSnippets]);
       window.alert("تم حفظ الكود في مكتبة المعلم.");
       return;
     }
     if (runMode === "console") {
-      savePythonSnippet(exercise?.titleAr || "كود محفوظ", code);
+      savePythonSnippet(exercise?.titleAr || "كود محفوظ", code, {
+        lessonId: exercise?.lessonId || activeId,
+        lessonTitle: exercise?.titleAr || "",
+        activityId: exercise?.id || "",
+        snippetType: "lesson",
+      });
       window.alert("تم حفظ الكود في حسابك.");
       return;
     }
@@ -510,6 +561,66 @@ export default function PythonLab() {
   function deleteTeacherSnippet(snippetId) {
     if (user?.role !== "teacher") return;
     persistTeacherSnippets(teacherSnippets.filter((s) => s.id !== snippetId));
+  }
+
+  function handleRenameStart(snippet) {
+    setRenameSnippetId(snippet.id);
+    setRenameTitle(snippet.title || "كود محفوظ");
+  }
+
+  function handleRenameSave(snippet) {
+    const cleanTitle = renameTitle.trim() || "كود محفوظ";
+    if (user?.role === "teacher") {
+      persistTeacherSnippets(
+        teacherSnippets.map((item) =>
+          item.id === snippet.id ? { ...item, title: cleanTitle, updatedAt: new Date().toISOString() } : item,
+        ),
+      );
+    } else {
+      updatePythonSnippet(snippet.id, { title: cleanTitle });
+    }
+    setRenameSnippetId(null);
+    setRenameTitle("");
+  }
+
+  function handleDeleteSnippet(snippet) {
+    const ok = window.confirm(`هل تريد حذف الكود "${snippet.title || "كود محفوظ"}"؟`);
+    if (!ok) return;
+    if (user?.role === "teacher") {
+      deleteTeacherSnippet(snippet.id);
+      return;
+    }
+    deletePythonSnippet(snippet.id);
+  }
+
+  function handleSaveCopy(snippet) {
+    if (user?.role === "teacher") {
+      const now = new Date().toISOString();
+      const copy = {
+        ...snippet,
+        id: `tpy-${Date.now()}`,
+        title: `${snippet.title || "كود محفوظ"} (نسخة)`,
+        at: now,
+        updatedAt: now,
+      };
+      persistTeacherSnippets([copy, ...teacherSnippets]);
+      return;
+    }
+    savePythonSnippet(`${snippet.title || "كود محفوظ"} (نسخة)`, snippet.code || "", {
+      lessonId: snippet.lessonId || "",
+      lessonTitle: snippet.lessonTitle || "",
+      activityId: snippet.activityId || "",
+      snippetType: snippet.snippetType || "lesson",
+    });
+  }
+
+  async function copySnippet(snippet) {
+    try {
+      await navigator.clipboard?.writeText(snippet.code || "");
+      window.alert("تم نسخ الكود.");
+    } catch {
+      window.alert("تعذر النسخ من المتصفح الحالي.");
+    }
   }
 
   function handleSubmit() {
@@ -909,54 +1020,155 @@ export default function PythonLab() {
               {user?.role === "teacher" ? "مكتبة أكواد المعلم" : "مكتبة الأكواد المحفوظة"}
             </h2>
             <span className="rounded-full bg-violet-900/60 px-3 py-1 text-xs font-bold text-violet-200">
-              {visibleSnippets.length} عنصر
+              {pagedSnippets.totalItems} عنصر
             </span>
           </div>
-          <div className="mb-4">
+          <div className="mb-4 grid gap-2 md:grid-cols-3">
             <input
               type="text"
               value={snippetQuery}
               onChange={(e) => setSnippetQuery(e.target.value)}
               className="w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm text-white"
-              placeholder="ابحث بالعنوان أو الكود..."
+              placeholder="ابحث باسم الكود أو الدرس أو التاريخ"
             />
+            <select
+              className="rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm text-white"
+              value={snippetFilter}
+              onChange={(e) => setSnippetFilter(e.target.value)}
+            >
+              <option value="all">كل الأكواد</option>
+              <option value="lesson">أكواد الدروس</option>
+              <option value="project">أكواد المشاريع</option>
+              <option value="recent">آخر المحفوظات</option>
+            </select>
+            <select
+              className="rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm text-white"
+              value={snippetSort}
+              onChange={(e) => setSnippetSort(e.target.value)}
+            >
+              <option value="newest">الأحدث أولًا</option>
+              <option value="oldest">الأقدم أولًا</option>
+              <option value="lesson">حسب اسم الدرس</option>
+            </select>
           </div>
-          {visibleSnippets.length === 0 ? (
+          {pagedSnippets.totalItems === 0 ? (
             <p className="text-sm text-slate-300">لا توجد أكواد محفوظة حالياً.</p>
           ) : (
             <div className="space-y-2">
-              {visibleSnippets.map((snippet) => (
+              {pagedSnippets.items.map((snippet) => (
                 <div
                   key={snippet.id}
                   className="rounded-lg border border-white/10 bg-black/30 p-3"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold text-white">{snippet.title || "كود محفوظ"}</p>
-                    <p className="text-xs text-slate-400">{snippet.at ? new Date(snippet.at).toLocaleString("ar-SA") : "—"}</p>
+                    {renameSnippetId === snippet.id ? (
+                      <div className="flex flex-1 flex-wrap items-center gap-2">
+                        <input
+                          type="text"
+                          value={renameTitle}
+                          onChange={(e) => setRenameTitle(e.target.value)}
+                          className="rounded-md border border-white/20 bg-black/50 px-2 py-1 text-sm text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRenameSave(snippet)}
+                          className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-bold text-white"
+                        >
+                          حفظ الاسم
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRenameSnippetId(null)}
+                          className="rounded-md border border-white/20 px-2 py-1 text-xs text-slate-200"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="font-semibold text-white">{snippet.title || "كود محفوظ"}</p>
+                    )}
+                    <p className="text-xs text-slate-400">
+                      {snippet.updatedAt
+                        ? `آخر تعديل: ${new Date(snippet.updatedAt).toLocaleString("ar-SA")}`
+                        : snippet.at
+                          ? new Date(snippet.at).toLocaleString("ar-SA")
+                          : "—"}
+                    </p>
                   </div>
+                  <p className="mt-1 text-xs text-violet-200/90">
+                    {snippet.lessonTitle || snippet.lessonId || "—"} | النشاط: {snippet.activityId || "—"} | النوع:{" "}
+                    {snippet.snippetType || "lesson"}
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCopy(snippet)}
+                      className="rounded-md border border-emerald-400/40 px-3 py-1 text-xs text-emerald-200"
+                    >
+                      حفظ كود
+                    </button>
                     <button type="button" onClick={() => openSnippet(snippet)} className="rounded-md bg-violet-600 px-3 py-1 text-xs font-bold text-white">
                       فتح في المحرر
                     </button>
                     <button
                       type="button"
-                      onClick={() => navigator.clipboard?.writeText(snippet.code || "")}
+                      onClick={() => setPreviewSnippetId(previewSnippetId === snippet.id ? null : snippet.id)}
+                      className="rounded-md border border-cyan-400/40 px-3 py-1 text-xs text-cyan-200"
+                    >
+                      معاينة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copySnippet(snippet)}
                       className="rounded-md border border-white/20 px-3 py-1 text-xs text-slate-200"
                     >
                       نسخ
                     </button>
-                    {user?.role === "teacher" ? (
-                      <button
-                        type="button"
-                        onClick={() => deleteTeacherSnippet(snippet.id)}
-                        className="rounded-md border border-red-400/40 px-3 py-1 text-xs text-red-200"
-                      >
-                        حذف
-                      </button>
-                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => handleRenameStart(snippet)}
+                      className="rounded-md border border-amber-400/40 px-3 py-1 text-xs text-amber-200"
+                    >
+                      إعادة تسمية
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSnippet(snippet)}
+                      className="rounded-md border border-red-400/40 px-3 py-1 text-xs text-red-200"
+                    >
+                      حذف
+                    </button>
                   </div>
+                  {previewSnippetId === snippet.id ? (
+                    <pre className="mt-3 max-h-48 overflow-auto rounded-lg border border-white/10 bg-slate-950 p-3 text-left font-mono text-xs text-emerald-200" dir="ltr">
+                      {snippet.code || ""}
+                    </pre>
+                  ) : null}
                 </div>
               ))}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3 text-xs text-slate-300">
+                <span>
+                  صفحة {pagedSnippets.currentPage} من {pagedSnippets.totalPages}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSnippetPage((p) => Math.max(1, p - 1))}
+                    disabled={pagedSnippets.currentPage <= 1}
+                    className="rounded-md border border-white/20 px-3 py-1 disabled:opacity-40"
+                  >
+                    السابق
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSnippetPage((p) => Math.min(pagedSnippets.totalPages, p + 1))}
+                    disabled={pagedSnippets.currentPage >= pagedSnippets.totalPages}
+                    className="rounded-md border border-white/20 px-3 py-1 disabled:opacity-40"
+                  >
+                    التالي
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </section>

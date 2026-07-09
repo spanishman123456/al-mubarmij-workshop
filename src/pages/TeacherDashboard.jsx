@@ -23,6 +23,7 @@ import {
 } from "../lib/platformAnalytics";
 import { buildAssessmentSummary, formatAssessmentCardLine } from "../lib/assessmentSummary.js";
 import { DayPublicationPanel, StudentDayUnlockActions } from "../components/teacher/DayPublicationPanel";
+import { filterSnippets, paginateSnippets, sortSnippets } from "../lib/python/snippetLibraryUi.js";
 
 function formatDate(iso) {
   return formatLoginDateTime(iso) === "لم يسجل الدخول" ? "—" : formatLoginDateTime(iso);
@@ -50,6 +51,10 @@ export default function TeacherDashboard() {
   const [selectedSnippetStudentId, setSelectedSnippetStudentId] = useState("");
   const [selectedStudentSnippets, setSelectedStudentSnippets] = useState([]);
   const [snippetsLoading, setSnippetsLoading] = useState(false);
+  const [snippetQuery, setSnippetQuery] = useState("");
+  const [snippetSort, setSnippetSort] = useState("newest");
+  const [snippetPage, setSnippetPage] = useState(1);
+  const [previewSnippetId, setPreviewSnippetId] = useState(null);
 
   useEffect(() => {
     fetchOnboardingAll()
@@ -88,12 +93,20 @@ export default function TeacherDashboard() {
   const snippetStudents = allStudentsProgress;
   const selectedSnippetStudent =
     snippetStudents.find((item) => item.student.id === selectedSnippetStudentId) || snippetStudents[0] || null;
+  const filteredStudentSnippets = filterSnippets(selectedStudentSnippets, { query: snippetQuery, type: "all" });
+  const sortedStudentSnippets = sortSnippets(filteredStudentSnippets, snippetSort);
+  const pagedStudentSnippets = paginateSnippets(sortedStudentSnippets, snippetPage, 5);
 
   useEffect(() => {
     if (!selectedSnippetStudentId && snippetStudents.length > 0) {
       setSelectedSnippetStudentId(snippetStudents[0].student.id);
     }
   }, [selectedSnippetStudentId, snippetStudents]);
+
+  useEffect(() => {
+    setSnippetPage(1);
+    setPreviewSnippetId(null);
+  }, [snippetQuery, snippetSort, selectedSnippetStudentId]);
 
   useEffect(() => {
     if (!selectedSnippetStudentId) return;
@@ -314,26 +327,99 @@ export default function TeacherDashboard() {
               </select>
             </div>
             <p className="mb-2 text-sm text-slate-600">
-              عدد الأكواد: <LtrValue>{selectedStudentSnippets.length}</LtrValue>
+              عدد الأكواد: <LtrValue>{pagedStudentSnippets.totalItems}</LtrValue>
             </p>
+            <div className="mb-3 grid gap-2 md:grid-cols-2">
+              <input
+                type="text"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                value={snippetQuery}
+                onChange={(e) => setSnippetQuery(e.target.value)}
+                placeholder="ابحث باسم الكود أو النشاط أو التاريخ"
+              />
+              <select
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                value={snippetSort}
+                onChange={(e) => setSnippetSort(e.target.value)}
+              >
+                <option value="newest">الأحدث أولًا</option>
+                <option value="oldest">الأقدم أولًا</option>
+                <option value="lesson">حسب اسم الدرس</option>
+              </select>
+            </div>
             <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
               {snippetsLoading ? (
                 <p className="text-sm text-slate-500">جاري تحميل الأكواد...</p>
               ) : null}
-              {!snippetsLoading && selectedStudentSnippets.length === 0 ? (
+              {!snippetsLoading && pagedStudentSnippets.totalItems === 0 ? (
                 <p className="text-sm text-slate-500">لا توجد أكواد محفوظة لهذا الطالب حالياً.</p>
               ) : null}
-              {selectedStudentSnippets.map((snippet) => (
+              {pagedStudentSnippets.items.map((snippet) => (
                 <div key={snippet.id} className="rounded-md border border-slate-200 bg-white p-2">
                   <p className="font-semibold text-slate-900">{snippet.title || "كود محفوظ"}</p>
                   <p className="text-xs text-slate-500">
-                    {snippet.at ? formatLoginDateTime(snippet.at) : "—"}
+                    {snippet.updatedAt
+                      ? formatLoginDateTime(snippet.updatedAt)
+                      : snippet.at
+                        ? formatLoginDateTime(snippet.at)
+                        : "—"}
                   </p>
-                  <pre dir="ltr" className="mt-2 max-h-24 overflow-auto rounded bg-slate-900 p-2 text-xs text-emerald-200">
-                    {snippet.code || ""}
-                  </pre>
+                  <p className="text-xs text-slate-500">
+                    الدرس: {snippet.lessonTitle || snippet.lessonId || "—"} | النشاط: {snippet.activityId || "—"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewSnippetId(previewSnippetId === snippet.id ? null : snippet.id)}
+                      className="rounded-md border border-cyan-300 px-2 py-1 text-xs text-cyan-700"
+                    >
+                      معاينة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard?.writeText(snippet.code || "");
+                          window.alert("تم نسخ الكود.");
+                        } catch {
+                          window.alert("تعذر النسخ.");
+                        }
+                      }}
+                      className="rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700"
+                    >
+                      نسخ
+                    </button>
+                  </div>
+                  {previewSnippetId === snippet.id ? (
+                    <pre dir="ltr" className="mt-2 max-h-24 overflow-auto rounded bg-slate-900 p-2 text-xs text-emerald-200">
+                      {snippet.code || ""}
+                    </pre>
+                  ) : null}
                 </div>
               ))}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center justify-between text-xs text-slate-600">
+              <span>
+                صفحة {pagedStudentSnippets.currentPage} من {pagedStudentSnippets.totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSnippetPage((p) => Math.max(1, p - 1))}
+                  disabled={pagedStudentSnippets.currentPage <= 1}
+                  className="rounded-md border border-slate-300 px-2 py-1 disabled:opacity-40"
+                >
+                  السابق
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSnippetPage((p) => Math.min(pagedStudentSnippets.totalPages, p + 1))}
+                  disabled={pagedStudentSnippets.currentPage >= pagedStudentSnippets.totalPages}
+                  className="rounded-md border border-slate-300 px-2 py-1 disabled:opacity-40"
+                >
+                  التالي
+                </button>
+              </div>
             </div>
           </>
         )}

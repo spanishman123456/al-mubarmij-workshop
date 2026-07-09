@@ -1,6 +1,7 @@
 import { QuizCardSheetQuestion } from "../quiz/QuizCardFlipQuestion.jsx";
 import { gradeWorksheetPart, isStructuredTask } from "../../lib/worksheetGrading.js";
 import { renderMixedDirectionText } from "../MixedDirectionText";
+import { BilingualPrompt } from "../BilingualTextBlocks";
 
 function PartFeedback({ result, part }) {
   if (!result || result.status === "unanswered") return null;
@@ -145,7 +146,14 @@ export function WorksheetTaskInput({
           const partResult = checkedParts[part.id];
           return (
             <div key={part.id} className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="mb-2 text-sm font-semibold text-slate-800">{renderMixedDirectionText(part.promptAr)}</p>
+              <div className="mb-2">
+                <BilingualPrompt
+                  promptAr={part.promptAr}
+                  expression={part.expression}
+                  values={part.values}
+                  code={part.code}
+                />
+              </div>
               {renderPartInput(
                 part,
                 obj[part.id],
