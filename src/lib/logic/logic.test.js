@@ -102,9 +102,13 @@ describe("hanoi", () => {
   });
 
   it("detects solved state", () => {
-    const towers = [[], [], [1, 2, 3]];
+    const towers = [[], [], [3, 2, 1]];
     expect(isHanoiSolved(towers, 3)).toBe(true);
     expect(isHanoiSolved(createInitialTowers(3), 3)).toBe(false);
+  });
+
+  it("keeps compatibility with legacy solved ordering", () => {
+    expect(isHanoiSolved([[], [], [1, 2, 3]], 3)).toBe(true);
   });
 });
 

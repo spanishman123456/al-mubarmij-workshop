@@ -45,6 +45,8 @@ const DAY08_LESSONS = [
         await lab.getByTestId(`hanoi-column-${to}`).click();
       }
       await lab.getByRole("button", { name: /^تحقق$/ }).click();
+      await expect(lab).toContainText(/أحسنت! حلّيت اللغز بـ 7 حركة/);
+      await expect(lab).toContainText(/الحد الأدنى للحركات/);
     },
   },
   {
