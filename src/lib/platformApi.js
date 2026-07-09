@@ -96,6 +96,10 @@ export async function fetchTeacherStudentProgress(studentId) {
   return request(`/api/teacher/students/${encodeURIComponent(studentId)}/progress`);
 }
 
+export async function fetchTeacherStudentPythonSnippets(studentId) {
+  return request(`/api/teacher/students/${encodeURIComponent(studentId)}/python-snippets`);
+}
+
 export async function recalculateProgressApi(reason = "teacher_recalculate") {
   return request("/api/progress/recalculate", {
     method: "POST",

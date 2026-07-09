@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
-import { fetchOnboardingAll, fetchTeacherStudentProgress } from "../lib/platformApi";
+import {
+  fetchOnboardingAll,
+  fetchTeacherStudentProgress,
+  fetchTeacherStudentPythonSnippets,
+} from "../lib/platformApi";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { PrePostComparisonChart } from "../components/charts/PrePostComparisonChart";
@@ -44,6 +48,8 @@ export default function TeacherDashboard() {
   const [progressDetails, setProgressDetails] = useState(null);
   const [progressDetailsLoading, setProgressDetailsLoading] = useState(false);
   const [selectedSnippetStudentId, setSelectedSnippetStudentId] = useState("");
+  const [selectedStudentSnippets, setSelectedStudentSnippets] = useState([]);
+  const [snippetsLoading, setSnippetsLoading] = useState(false);
 
   useEffect(() => {
     fetchOnboardingAll()
@@ -79,9 +85,34 @@ export default function TeacherDashboard() {
   );
   const onlineNow = allStudentsProgress.filter((x) => getPresenceStatus(x.analytics).key === "online");
   const publishedDays = publicationConfig?.publishedDays ?? 1;
-  const snippetStudents = allStudentsProgress.filter((item) => (item.progress?.pythonSnippets || []).length > 0);
+  const snippetStudents = allStudentsProgress;
   const selectedSnippetStudent =
     snippetStudents.find((item) => item.student.id === selectedSnippetStudentId) || snippetStudents[0] || null;
+
+  useEffect(() => {
+    if (!selectedSnippetStudentId && snippetStudents.length > 0) {
+      setSelectedSnippetStudentId(snippetStudents[0].student.id);
+    }
+  }, [selectedSnippetStudentId, snippetStudents]);
+
+  useEffect(() => {
+    if (!selectedSnippetStudentId) return;
+    let cancelled = false;
+    (async () => {
+      setSnippetsLoading(true);
+      try {
+        const res = await fetchTeacherStudentPythonSnippets(selectedSnippetStudentId);
+        if (!cancelled) setSelectedStudentSnippets(res.snippets || []);
+      } catch {
+        if (!cancelled) setSelectedStudentSnippets([]);
+      } finally {
+        if (!cancelled) setSnippetsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSnippetStudentId]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -283,10 +314,16 @@ export default function TeacherDashboard() {
               </select>
             </div>
             <p className="mb-2 text-sm text-slate-600">
-              عدد الأكواد: <LtrValue>{selectedSnippetStudent?.progress?.pythonSnippets?.length || 0}</LtrValue>
+              عدد الأكواد: <LtrValue>{selectedStudentSnippets.length}</LtrValue>
             </p>
             <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
-              {(selectedSnippetStudent?.progress?.pythonSnippets || []).map((snippet) => (
+              {snippetsLoading ? (
+                <p className="text-sm text-slate-500">جاري تحميل الأكواد...</p>
+              ) : null}
+              {!snippetsLoading && selectedStudentSnippets.length === 0 ? (
+                <p className="text-sm text-slate-500">لا توجد أكواد محفوظة لهذا الطالب حالياً.</p>
+              ) : null}
+              {selectedStudentSnippets.map((snippet) => (
                 <div key={snippet.id} className="rounded-md border border-slate-200 bg-white p-2">
                   <p className="font-semibold text-slate-900">{snippet.title || "كود محفوظ"}</p>
                   <p className="text-xs text-slate-500">

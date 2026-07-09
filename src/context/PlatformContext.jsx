@@ -77,6 +77,15 @@ function mapComputedToStats(computed) {
   };
 }
 
+function shouldHydrateFromServer(localProgress, serverProgress) {
+  if (!serverProgress) return false;
+  const localSnippets = localProgress?.pythonSnippets?.length || 0;
+  const serverSnippets = serverProgress?.pythonSnippets?.length || 0;
+  const localGraphics = localProgress?.graphicProjects?.length || 0;
+  const serverGraphics = serverProgress?.graphicProjects?.length || 0;
+  return serverSnippets > localSnippets || serverGraphics > localGraphics;
+}
+
 function getOrCreateLoginSessionId() {
   try {
     let id = sessionStorage.getItem(LOGIN_SESSION_KEY);
@@ -234,6 +243,22 @@ export function PlatformProvider({ children }) {
     setProgressSyncStatus((s) => ({ ...s, loading: true, error: null }));
     try {
       const synced = await syncProgressApi(studentId, localProgress);
+      if (synced.progress && shouldHydrateFromServer(localProgress, synced.progress)) {
+        persist((prev) => {
+          const current = getStudentProgress(prev, studentId);
+          return {
+            ...prev,
+            progressByStudent: {
+              ...prev.progressByStudent,
+              [studentId]: {
+                ...current,
+                ...synced.progress,
+                updatedAt: synced.progress.updatedAt || new Date().toISOString(),
+              },
+            },
+          };
+        });
+      }
       if (synced.computed) {
         applyServerComputed(studentId, synced.computed);
         return synced.computed;
@@ -249,7 +274,7 @@ export function PlatformProvider({ children }) {
       }));
       return null;
     }
-  }, [applyServerComputed]);
+  }, [applyServerComputed, persist]);
 
   const scheduleProgressSync = useCallback(
     (studentId, progress) => {

@@ -39,7 +39,7 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
       </EduCard>
 
       <EduCard title="المفهوم الأساسي" className="mt-4">
-        <p className="leading-relaxed text-slate-700">{renderMixedDirectionText(L.conceptSimple)}</p>
+        <p className="leading-relaxed whitespace-pre-line text-slate-700">{renderMixedDirectionText(L.conceptSimple)}</p>
       </EduCard>
 
       {L.activityGuide ? (
@@ -61,7 +61,7 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           <h2 className="text-xl font-bold">شرح تفصيلي</h2>
           {L.deepSections.map((s) => (
             <EduCard key={s.id} title={s.titleAr}>
-              <p className="leading-relaxed text-slate-700">{renderMixedDirectionText(s.bodyAr)}</p>
+              <p className="leading-relaxed whitespace-pre-line text-slate-700">{renderMixedDirectionText(s.bodyAr)}</p>
             </EduCard>
           ))}
         </section>

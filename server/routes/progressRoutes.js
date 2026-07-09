@@ -54,6 +54,24 @@ export function registerProgressRoutes(app, logError) {
     },
   );
 
+  app.get(
+    "/api/teacher/students/:studentId/python-snippets",
+    requireAuth,
+    requireRole("teacher"),
+    requireProgressAccess,
+    (req, res) => {
+      try {
+        const studentId = req.effectiveStudentId || req.params.studentId;
+        const row = getStudentProgress(studentId);
+        const snippets = row?.progress?.pythonSnippets || [];
+        res.json({ ok: true, studentId, snippets, fetchedAt: new Date().toISOString() });
+      } catch (err) {
+        logError("progress.teacher.studentSnippets", err);
+        res.status(500).json({ ok: false, error: "failed" });
+      }
+    },
+  );
+
   app.get("/api/progress/teacher/roster", requireAuth, requireRole("teacher"), (_req, res) => {
     try {
       const byStudent = {};
@@ -94,7 +112,7 @@ export function registerProgressRoutes(app, logError) {
         previousPercent: existing?.progress?._computedProgress?.availableProgressPercent ?? null,
         persistSnapshot: true,
       });
-      res.json({ ok: true, updatedAt: computed.calculatedAt, computed });
+      res.json({ ok: true, updatedAt: computed.calculatedAt, computed, progress: sanitized });
     } catch (err) {
       logError("progress.sync", err);
       res.status(500).json({ ok: false, error: "failed" });
