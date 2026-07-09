@@ -8,6 +8,77 @@ import {
 } from "../../lib/python/autocomplete.js";
 
 const DEBOUNCE_MS = 150;
+const INDENT = "    ";
+
+function leadingSpaces(line) {
+  const m = line.match(/^\s*/);
+  return m ? m[0] : "";
+}
+
+function currentLineBounds(text, start, end = start) {
+  const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+  let lineEnd = text.indexOf("\n", end);
+  if (lineEnd === -1) lineEnd = text.length;
+  return { lineStart, lineEnd };
+}
+
+function applySmartEnterInline(text, cursor) {
+  const { lineStart } = currentLineBounds(text, cursor);
+  const beforeCursor = text.slice(lineStart, cursor);
+  const baseIndent = leadingSpaces(beforeCursor);
+  const trimmed = beforeCursor.trimEnd();
+  const needsBlockIndent = /:\s*$/.test(trimmed);
+  const nextIndent = `${baseIndent}${needsBlockIndent ? INDENT : ""}`;
+  const inserted = `\n${nextIndent}`;
+  const code = `${text.slice(0, cursor)}${inserted}${text.slice(cursor)}`;
+  const nextCursor = cursor + inserted.length;
+  return { code, cursor: nextCursor };
+}
+
+function applyTabIndentInline(text, selectionStart, selectionEnd, shift = false) {
+  const hasSelection = selectionEnd > selectionStart;
+  const startBounds = currentLineBounds(text, selectionStart);
+  const endBounds = currentLineBounds(text, selectionEnd);
+  const blockStart = startBounds.lineStart;
+  const blockEnd = hasSelection ? endBounds.lineEnd : startBounds.lineEnd;
+  const block = text.slice(blockStart, blockEnd);
+  const lines = block.split("\n");
+
+  if (!shift && !hasSelection) {
+    const code = `${text.slice(0, selectionStart)}${INDENT}${text.slice(selectionStart)}`;
+    const next = selectionStart + INDENT.length;
+    return { code, selectionStart: next, selectionEnd: next };
+  }
+
+  let deltaStart = 0;
+  let deltaEnd = 0;
+  const transformed = lines.map((line, idx) => {
+    if (!shift) {
+      deltaEnd += INDENT.length;
+      if (idx === 0) deltaStart += INDENT.length;
+      return `${INDENT}${line}`;
+    }
+    if (line.startsWith(INDENT)) {
+      deltaEnd -= INDENT.length;
+      if (idx === 0) deltaStart -= INDENT.length;
+      return line.slice(INDENT.length);
+    }
+    const spacePrefix = leadingSpaces(line);
+    const remove = Math.min(spacePrefix.length, INDENT.length);
+    if (remove > 0) {
+      deltaEnd -= remove;
+      if (idx === 0) deltaStart -= remove;
+      return line.slice(remove);
+    }
+    return line;
+  });
+
+  const replaced = transformed.join("\n");
+  const code = `${text.slice(0, blockStart)}${replaced}${text.slice(blockEnd)}`;
+  const nextStart = Math.max(blockStart, selectionStart + deltaStart);
+  const nextEnd = Math.max(nextStart, selectionEnd + deltaEnd);
+  return { code, selectionStart: nextStart, selectionEnd: nextEnd };
+}
 
 function getLineColumn(text, pos) {
   const before = text.slice(0, pos);
@@ -148,6 +219,33 @@ export function PythonCodeEditor({
       e.preventDefault();
       manualOpenRef.current = true;
       refreshSuggestions(value, ta.selectionStart ?? 0, { force: true });
+      return;
+    }
+
+    if (!open && e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      const cursor = ta.selectionStart ?? 0;
+      const r = applySmartEnterInline(value, cursor);
+      onChange(r.code);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(r.cursor, r.cursor);
+        setCursorPos(r.cursor);
+      });
+      return;
+    }
+
+    if (!open && e.key === "Tab") {
+      e.preventDefault();
+      const start = ta.selectionStart ?? 0;
+      const end = ta.selectionEnd ?? start;
+      const r = applyTabIndentInline(value, start, end, e.shiftKey);
+      onChange(r.code);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(r.selectionStart, r.selectionEnd);
+        setCursorPos(r.selectionEnd);
+      });
       return;
     }
 

@@ -40,6 +40,27 @@ const MODES = [
   { id: "app", label: "مشروع رسومي (App)" },
 ];
 
+function autoFixIndentationSimple(code) {
+  const lines = String(code || "").replace(/\t/g, "    ").split("\n");
+  let indentLevel = 0;
+  const out = [];
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      out.push("");
+      continue;
+    }
+    if (/^(elif|else|except|finally)\b/.test(trimmed) || trimmed === ")" || trimmed === "]" || trimmed === "}") {
+      indentLevel = Math.max(0, indentLevel - 1);
+    }
+    out.push(`${"    ".repeat(indentLevel)}${trimmed}`);
+    if (/:\s*$/.test(trimmed)) {
+      indentLevel += 1;
+    }
+  }
+  return out.join("\n");
+}
+
 export default function PythonLab() {
   const { user, myProgress, savePythonSnippet, saveGraphicProject, submitGraphicProject, trackPythonRun } = usePlatform();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -438,6 +459,17 @@ export default function PythonLab() {
     }
   }
 
+  function handleAutoFixIndentation() {
+    const fixed = autoFixIndentationSimple(code);
+    setCode(fixed);
+    setFeedback({
+      headlineAr: "تم إصلاح المسافات تلقائيًا",
+      hintAr: "راجع الكود ثم أعد التشغيل للتأكد من النتيجة.",
+      detail: fixed,
+      line: null,
+    });
+  }
+
   function handleSave() {
     if (!user) {
       window.alert("سجّل الدخول أولاً لحفظ الكود.");
@@ -539,6 +571,12 @@ export default function PythonLab() {
       </div>
     </div>
   ) : null;
+  const likelyIndentationIssue = Boolean(
+    feedback &&
+      /indent|مساف|indentation/i.test(
+        `${feedback.headlineAr || ""} ${feedback.hintAr || ""} ${feedback.detail || ""}`,
+      ),
+  );
 
   return (
     <div className="python-lab-page min-h-screen animate-fade-in bg-[#0a0e1a] pb-16 pt-24 font-ar text-white">
@@ -712,6 +750,16 @@ export default function PythonLab() {
               >
                 {busy ? "جارٍ التشغيل…" : runMode === "console" ? "تشغيل الكود" : "تشغيل المشروع"}
               </button>
+              {runMode === "console" ? (
+                <button
+                  type="button"
+                  onClick={handleAutoFixIndentation}
+                  disabled={busy}
+                  className="rounded-xl border border-amber-400/50 px-4 py-3 text-sm font-bold text-amber-200 hover:bg-amber-900/30 disabled:opacity-50"
+                >
+                  إصلاح المسافات تلقائيًا
+                </button>
+              ) : null}
               {runMode === "app" ? (
                 <>
                   <button
@@ -811,6 +859,15 @@ export default function PythonLab() {
                     {out || "اضغط «تشغيل الكود»"}
                   </pre>
                 )}
+                {likelyIndentationIssue ? (
+                  <button
+                    type="button"
+                    onClick={handleAutoFixIndentation}
+                    className="mt-3 rounded-lg border border-amber-400/50 bg-amber-900/20 px-3 py-2 text-xs font-bold text-amber-200 hover:bg-amber-900/30"
+                  >
+                    اكتُشف خطأ مسافات — اضغط لإصلاحها تلقائيًا
+                  </button>
+                ) : null}
               </>
             ) : (
               <>
