@@ -35,6 +35,7 @@ export function TowerOfHanoiLab({ lessonId, userId }) {
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [hints, setHints] = useState(0);
   const [feedback, setFeedback] = useState("");
+  const [dragging, setDragging] = useState(null);
 
   const solved = useMemo(() => isHanoiSolved(towers, DISK_COUNT), [towers]);
 
@@ -63,7 +64,47 @@ export function TowerOfHanoiLab({ lessonId, userId }) {
     setWrongAttempts(0);
     setFeedback("");
     setHints(0);
+    setDragging(null);
     save({ towers: initial, moveCount: 0, wrongAttempts: 0, hints: 0 });
+  }
+
+  function moveDisk(fromCol, toCol) {
+    if (fromCol === toCol) {
+      setSelectedFrom(null);
+      setDragging(null);
+      setFeedback("اختر عمودًا مختلفًا لإتمام النقل.");
+      return;
+    }
+
+    const check = validateHanoiMove(towers, fromCol, toCol);
+    if (!check.ok) {
+      const nextWrong = wrongAttempts + 1;
+      setWrongAttempts(nextWrong);
+      setSelectedFrom(null);
+      setDragging(null);
+      setFeedback(check.reason);
+      save({ wrongAttempts: nextWrong });
+      return;
+    }
+
+    const result = applyHanoiMove(towers, fromCol, toCol);
+    if (!result.ok) {
+      const nextWrong = wrongAttempts + 1;
+      setWrongAttempts(nextWrong);
+      setSelectedFrom(null);
+      setDragging(null);
+      setFeedback(result.reason);
+      save({ wrongAttempts: nextWrong });
+      return;
+    }
+
+    const nextMoves = moveCount + 1;
+    setTowers(result.towers);
+    setMoveCount(nextMoves);
+    setSelectedFrom(null);
+    setDragging(null);
+    setFeedback(`نُقل القرص ${result.disk} من ${HANOI_COLUMNS[fromCol]} إلى ${HANOI_COLUMNS[toCol]}.`);
+    save({ towers: result.towers, moveCount: nextMoves });
   }
 
   function handleColumnClick(colIndex) {
@@ -76,39 +117,23 @@ export function TowerOfHanoiLab({ lessonId, userId }) {
       setFeedback(`اختر عمود الوجهة لنقل القرص من ${HANOI_COLUMNS[colIndex]}.`);
       return;
     }
-
     if (selectedFrom === colIndex) {
       setSelectedFrom(null);
       setFeedback("تم إلغاء الاختيار.");
       return;
     }
+    moveDisk(selectedFrom, colIndex);
+  }
 
-    const check = validateHanoiMove(towers, selectedFrom, colIndex);
-    if (!check.ok) {
-      const nextWrong = wrongAttempts + 1;
-      setWrongAttempts(nextWrong);
-      setSelectedFrom(null);
-      setFeedback(check.reason);
-      save({ wrongAttempts: nextWrong });
-      return;
-    }
+  function handleDiskDragStart(colIndex, disk) {
+    setDragging({ from: colIndex, disk });
+    setSelectedFrom(colIndex);
+    setFeedback(`اسحب القرص ${disk} من ${HANOI_COLUMNS[colIndex]} ثم أفلت في العمود الهدف.`);
+  }
 
-    const result = applyHanoiMove(towers, selectedFrom, colIndex);
-    if (!result.ok) {
-      const nextWrong = wrongAttempts + 1;
-      setWrongAttempts(nextWrong);
-      setSelectedFrom(null);
-      setFeedback(result.reason);
-      save({ wrongAttempts: nextWrong });
-      return;
-    }
-
-    const nextMoves = moveCount + 1;
-    setTowers(result.towers);
-    setMoveCount(nextMoves);
-    setSelectedFrom(null);
-    setFeedback(`نُقل القرص ${result.disk} من ${HANOI_COLUMNS[selectedFrom]} إلى ${HANOI_COLUMNS[colIndex]}.`);
-    save({ towers: result.towers, moveCount: nextMoves });
+  function handleColumnDrop(colIndex) {
+    if (dragging == null) return;
+    moveDisk(dragging.from, colIndex);
   }
 
   function checkSolution() {
@@ -156,6 +181,9 @@ export function TowerOfHanoiLab({ lessonId, userId }) {
       <p className="mt-1 text-sm text-slate-700">
         انقل الأقراص من العمود A إلى C — قرص واحد في كل مرة، ولا قرص كبير فوق صغير.
       </p>
+      <p className="mt-1 text-xs text-rose-700">
+        يمكنك السحب والإفلات بالماوس (ضغط مستمر على القرص العلوي) أو النقل بالنقر على عمود المصدر ثم الوجهة.
+      </p>
 
       <div className="mt-4 flex justify-center gap-4" dir="ltr">
         {towers.map((column, colIndex) => (
@@ -163,8 +191,13 @@ export function TowerOfHanoiLab({ lessonId, userId }) {
             key={colIndex}
             type="button"
             onClick={() => handleColumnClick(colIndex)}
+            onDragOver={(ev) => ev.preventDefault()}
+            onDrop={(ev) => {
+              ev.preventDefault();
+              handleColumnDrop(colIndex);
+            }}
             className={`flex h-44 w-28 flex-col-reverse items-center rounded-lg border-2 pb-2 transition-colors ${
-              selectedFrom === colIndex
+              selectedFrom === colIndex || dragging?.from === colIndex
                 ? "border-rose-500 bg-rose-100"
                 : "border-rose-300 bg-white hover:bg-rose-50"
             }`}
@@ -175,7 +208,10 @@ export function TowerOfHanoiLab({ lessonId, userId }) {
             {column.map((disk, i) => (
               <span
                 key={`${colIndex}-${disk}-${i}`}
-                className={`mb-0.5 block h-5 rounded-full ${diskColor(disk)}`}
+                draggable={!solved && i === column.length - 1}
+                onDragStart={!solved && i === column.length - 1 ? () => handleDiskDragStart(colIndex, disk) : undefined}
+                onDragEnd={() => setDragging(null)}
+                className={`mb-0.5 block h-5 rounded-full ${diskColor(disk)} ${!solved && i === column.length - 1 ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
                 style={{ width: diskWidth(disk) }}
                 aria-hidden
               />
