@@ -310,6 +310,17 @@ export default function DayLessonPage() {
             </EduCard>
           ) : null}
 
+          {day.id === "day-13" ? (
+            <EduCard title="دروس اليوم الثالث عشر" accent="violet">
+              <div className="mt-2 flex flex-col gap-2 text-sm">
+                <Link to="/lessons/comprehensive-review">1. مراجعة شاملة</Link>
+                <Link to="/lessons/post-assessment-readiness">2. التقويم البعدي</Link>
+                <Link to="/lessons/project-ideation">3. صياغة فكرة المشروع</Link>
+                <Link to="/lessons/project-planning">4. تخطيط المشروع</Link>
+              </div>
+            </EduCard>
+          ) : null}
+
           <EduCard title="تطبيق عملي" accent="emerald">
             <p className="mt-2 text-slate-700">{day.practicalAr}</p>
             {day.exerciseIds?.length ? (

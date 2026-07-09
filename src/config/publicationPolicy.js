@@ -109,6 +109,13 @@ export const DAY12_LESSON_ROUTES = new Set([
   "/lessons/graph-theory-basics",
 ]);
 
+export const DAY13_LESSON_ROUTES = new Set([
+  "/lessons/comprehensive-review",
+  "/lessons/post-assessment-readiness",
+  "/lessons/project-ideation",
+  "/lessons/project-planning",
+]);
+
 /** @deprecated use DAY4_LESSON_ROUTES */
 const DAY4_PLUS_DRAFT_ROUTES = DAY4_LESSON_ROUTES;
 
@@ -179,6 +186,10 @@ export const LESSON_ID_TO_DAY = {
   "dfa-nfa-design": 12,
   "p-vs-np-intro": 12,
   "graph-theory-basics": 12,
+  "comprehensive-review": 13,
+  "post-assessment-readiness": 13,
+  "project-ideation": 13,
+  "project-planning": 13,
 };
 
 const ONBOARDING_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre"];
@@ -230,6 +241,7 @@ export function routeContentDay(pathname) {
   if (DAY10_LESSON_ROUTES.has(path)) return 10;
   if (DAY11_LESSON_ROUTES.has(path)) return 11;
   if (DAY12_LESSON_ROUTES.has(path)) return 12;
+  if (DAY13_LESSON_ROUTES.has(path)) return 13;
 
   let m = /^\/path\/day\/day-(\d+)$/.exec(path);
   if (m) return Number(m[1]);

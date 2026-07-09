@@ -143,4 +143,19 @@ export const WORKSHEET_MODEL_ANSWERS = {
       { n: 10, modelAr: "صح" },
     ],
   },
+  "ws-day-13": {
+    teacherDayRoute: "/teacher/day-13-answers",
+    tasks: [
+      { n: 1, modelAr: "70" },
+      { n: 2, modelAr: "صح" },
+      { n: 3, modelAr: "30" },
+      { n: 4, modelAr: "صح" },
+      { n: 5, modelAr: "تعريف المشكلة (أ)" },
+      { n: 6, modelAr: "صح" },
+      { n: 7, modelAr: "عشوائي (ج)" },
+      { n: 8, modelAr: "مثل: بايثون أو المنطق أو الخوارزميات" },
+      { n: 9, modelAr: "مثل: طالب أو معلم أو فصل" },
+      { n: 10, modelAr: "صح" },
+    ],
+  },
 };

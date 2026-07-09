@@ -44,6 +44,10 @@ export const LESSON_LABELS_AR = {
   "dfa-nfa-design": "الفرق بين DFA و NFA",
   "p-vs-np-intro": "مقدمة P و NP",
   "graph-theory-basics": "أساسيات نظرية المخططات",
+  "comprehensive-review": "مراجعة شاملة",
+  "post-assessment-readiness": "التقويم البعدي",
+  "project-ideation": "صياغة فكرة المشروع",
+  "project-planning": "تخطيط المشروع",
 };
 
 export function lessonLabelAr(lessonId) {

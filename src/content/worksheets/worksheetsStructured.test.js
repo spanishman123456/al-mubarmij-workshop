@@ -42,4 +42,14 @@ describe("worksheets structured", () => {
     expect(models?.tasks?.length).toBe(10);
     expect(models.tasks.find((t) => t.n === 6)?.modelAr).toBe("10");
   });
+
+  it("includes ws-day-13 and aligned model answers", () => {
+    const ws = STRUCTURED_WORKSHEETS["ws-day-13"];
+    expect(ws).toBeTruthy();
+    expect(ws.tasks.length).toBe(10);
+    const models = WORKSHEET_MODEL_ANSWERS["ws-day-13"];
+    expect(models?.teacherDayRoute).toBe("/teacher/day-13-answers");
+    expect(models?.tasks?.length).toBe(10);
+    expect(models.tasks.find((t) => t.n === 3)?.modelAr).toBe("30");
+  });
 });
