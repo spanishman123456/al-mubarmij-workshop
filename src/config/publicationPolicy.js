@@ -102,6 +102,13 @@ export const DAY11_LESSON_ROUTES = new Set([
   "/lessons/ai-research-presentation",
 ]);
 
+export const DAY12_LESSON_ROUTES = new Set([
+  "/lessons/regex-automata",
+  "/lessons/dfa-nfa-design",
+  "/lessons/p-vs-np-intro",
+  "/lessons/graph-theory-basics",
+]);
+
 /** @deprecated use DAY4_LESSON_ROUTES */
 const DAY4_PLUS_DRAFT_ROUTES = DAY4_LESSON_ROUTES;
 
@@ -168,6 +175,10 @@ export const LESSON_ID_TO_DAY = {
   "machine-learning-basics": 11,
   "ai-ethics-safety": 11,
   "ai-research-presentation": 11,
+  "regex-automata": 12,
+  "dfa-nfa-design": 12,
+  "p-vs-np-intro": 12,
+  "graph-theory-basics": 12,
 };
 
 const ONBOARDING_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre"];
@@ -218,6 +229,7 @@ export function routeContentDay(pathname) {
   if (DAY9_LESSON_ROUTES.has(path)) return 9;
   if (DAY10_LESSON_ROUTES.has(path)) return 10;
   if (DAY11_LESSON_ROUTES.has(path)) return 11;
+  if (DAY12_LESSON_ROUTES.has(path)) return 12;
 
   let m = /^\/path\/day\/day-(\d+)$/.exec(path);
   if (m) return Number(m[1]);

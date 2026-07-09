@@ -128,4 +128,19 @@ export const WORKSHEET_MODEL_ANSWERS = {
       { n: 10, modelAr: "العدالة أو الخصوصية أو الشفافية" },
     ],
   },
+  "ws-day-12": {
+    teacherDayRoute: "/teacher/day-12-answers",
+    tasks: [
+      { n: 1, modelAr: "[01]*01 (أ)" },
+      { n: 2, modelAr: "صح" },
+      { n: 3, modelAr: "خطأ" },
+      { n: 4, modelAr: "P (أ)" },
+      { n: 5, modelAr: "صح" },
+      { n: 6, modelAr: "10" },
+      { n: 7, modelAr: "15" },
+      { n: 8, modelAr: "عدد زوجي (أ)" },
+      { n: 9, modelAr: "شبكات أو طرق أو صداقات أو جدولة" },
+      { n: 10, modelAr: "صح" },
+    ],
+  },
 };

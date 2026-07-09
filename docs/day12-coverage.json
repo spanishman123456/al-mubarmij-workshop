@@ -1,0 +1,24 @@
+{
+  "dayId": "day-12",
+  "titleAr": "اليوم الثاني عشر — الآلات الحتمية والتعقيد والمخططات",
+  "sourceOfTruth": "C:/Users/hosam/OneDrive/Desktop/برمجة الحاسب.pdf",
+  "pdfRefs": [
+    { "pdfPageIndex": 439, "topic": "regex and automata" },
+    { "pdfPageIndex": 441, "topic": "DFA vs NFA" },
+    { "pdfPageIndex": 443, "topic": "P vs NP intro" },
+    { "pdfPageIndex": 445, "topic": "graph theory basics" }
+  ],
+  "lessons": [
+    { "id": "regex-automata", "route": "/lessons/regex-automata", "hasDetailedStructure": true, "lab": "automata-lab" },
+    { "id": "dfa-nfa-design", "route": "/lessons/dfa-nfa-design", "hasDetailedStructure": true, "lab": "automata-lab" },
+    { "id": "p-vs-np-intro", "route": "/lessons/p-vs-np-intro", "hasDetailedStructure": true, "lab": "complexity-lab" },
+    { "id": "graph-theory-basics", "route": "/lessons/graph-theory-basics", "hasDetailedStructure": true, "lab": "graph-lab" }
+  ],
+  "worksheetId": "ws-day-12",
+  "quizId": "quiz-day-12",
+  "teacherAnswersRoute": "/teacher/day-12-answers",
+  "studentVisibility": {
+    "publishedDaysRequirement": 12,
+    "currentExpectedStateWhenPublishedDays2": "draft-locked-for-students"
+  }
+}

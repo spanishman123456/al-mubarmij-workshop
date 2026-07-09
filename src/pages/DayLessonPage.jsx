@@ -299,6 +299,17 @@ export default function DayLessonPage() {
             </EduCard>
           ) : null}
 
+          {day.id === "day-12" ? (
+            <EduCard title="دروس اليوم الثاني عشر" accent="violet">
+              <div className="mt-2 flex flex-col gap-2 text-sm">
+                <Link to="/lessons/regex-automata">1. التعبيرات العادية وآلات الحالة</Link>
+                <Link to="/lessons/dfa-nfa-design">2. الفرق بين DFA و NFA</Link>
+                <Link to="/lessons/p-vs-np-intro">3. مقدمة P و NP</Link>
+                <Link to="/lessons/graph-theory-basics">4. أساسيات نظرية المخططات</Link>
+              </div>
+            </EduCard>
+          ) : null}
+
           <EduCard title="تطبيق عملي" accent="emerald">
             <p className="mt-2 text-slate-700">{day.practicalAr}</p>
             {day.exerciseIds?.length ? (

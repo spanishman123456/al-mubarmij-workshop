@@ -218,3 +218,7 @@ export async function fetchTeacherDay10AnswersApi() {
 export async function fetchTeacherDay11AnswersApi() {
   return request("/api/teacher/day-11-answers");
 }
+
+export async function fetchTeacherDay12AnswersApi() {
+  return request("/api/teacher/day-12-answers");
+}

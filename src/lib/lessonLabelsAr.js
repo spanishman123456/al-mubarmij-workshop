@@ -40,6 +40,10 @@ export const LESSON_LABELS_AR = {
   "machine-learning-basics": "أساسيات التعلم الآلي",
   "ai-ethics-safety": "أخلاقيات الذكاء الاصطناعي",
   "ai-research-presentation": "البحث والعرض في الذكاء الاصطناعي",
+  "regex-automata": "التعبيرات العادية وآلات الحالة",
+  "dfa-nfa-design": "الفرق بين DFA و NFA",
+  "p-vs-np-intro": "مقدمة P و NP",
+  "graph-theory-basics": "أساسيات نظرية المخططات",
 };
 
 export function lessonLabelAr(lessonId) {

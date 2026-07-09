@@ -50,6 +50,7 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/teacher/day-09-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-10-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-11-answers", 1, "teacher")).toBe(true);
+    expect(isPathPublished("/teacher/day-12-answers", 1, "teacher")).toBe(true);
   });
 
   it("blocks day 6 lesson routes for students when PUBLISHED_DAYS=5", () => {
@@ -88,6 +89,7 @@ describe("publicationPolicy", () => {
     expect(isLessonIdPublished("python-recursion", 2)).toBe(false);
     expect(isLessonIdPublished("oop-foundations", 2)).toBe(false);
     expect(isLessonIdPublished("ai-foundations", 2)).toBe(false);
+    expect(isLessonIdPublished("regex-automata", 2)).toBe(false);
   });
 
   it("blocks day 9 lesson routes for students when PUBLISHED_DAYS=8", () => {
@@ -115,5 +117,14 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/lessons/ai-research-presentation", 10, "student")).toBe(false);
     expect(isPathPublished("/path/day/day-11", 10, "student")).toBe(false);
     expect(isPathPublished("/worksheets/ws-day-11", 10, "student")).toBe(false);
+  });
+
+  it("blocks day 12 lesson routes for students when PUBLISHED_DAYS=11", () => {
+    expect(isPathPublished("/lessons/regex-automata", 11, "student")).toBe(false);
+    expect(isPathPublished("/lessons/dfa-nfa-design", 11, "student")).toBe(false);
+    expect(isPathPublished("/lessons/p-vs-np-intro", 11, "student")).toBe(false);
+    expect(isPathPublished("/lessons/graph-theory-basics", 11, "student")).toBe(false);
+    expect(isPathPublished("/path/day/day-12", 11, "student")).toBe(false);
+    expect(isPathPublished("/worksheets/ws-day-12", 11, "student")).toBe(false);
   });
 });
