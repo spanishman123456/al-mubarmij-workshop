@@ -1,0 +1,24 @@
+{
+  "dayId": "day-14",
+  "titleAr": "اليوم الرابع عشر — تنفيذ المشروع واختباره وتجهيز العرض",
+  "sourceOfTruth": "C:/Users/hosam/OneDrive/Desktop/برمجة الحاسب.pdf",
+  "pdfRefs": [
+    { "pdfPageIndex": 454, "topic": "project architecture" },
+    { "pdfPageIndex": 455, "topic": "implementation sprint" },
+    { "pdfPageIndex": 456, "topic": "testing and debugging" },
+    { "pdfPageIndex": 457, "topic": "presentation rehearsal" }
+  ],
+  "lessons": [
+    { "id": "project-architecture", "route": "/lessons/project-architecture", "hasDetailedStructure": true, "lab": "project-build-lab" },
+    { "id": "project-implementation-sprint", "route": "/lessons/project-implementation-sprint", "hasDetailedStructure": true, "lab": "project-build-lab" },
+    { "id": "project-testing-debugging", "route": "/lessons/project-testing-debugging", "hasDetailedStructure": true, "lab": "project-testing-lab" },
+    { "id": "project-presentation-rehearsal", "route": "/lessons/project-presentation-rehearsal", "hasDetailedStructure": true, "lab": "project-demo-lab" }
+  ],
+  "worksheetId": "ws-day-14",
+  "quizId": null,
+  "teacherAnswersRoute": "/teacher/day-14-answers",
+  "studentVisibility": {
+    "publishedDaysRequirement": 14,
+    "currentExpectedStateWhenPublishedDays2": "draft-locked-for-students"
+  }
+}

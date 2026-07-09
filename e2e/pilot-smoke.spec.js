@@ -216,6 +216,26 @@ test.describe("pilot PUBLISHED_DAYS=1", () => {
     await expect(page.getByRole("heading", { name: LOCKED_HEADING })).toBeVisible();
   });
 
+  test("all day 14 lesson routes blocked", async ({ page }) => {
+    await loginStudent(page);
+    const routes = [
+      "/lessons/project-architecture",
+      "/lessons/project-implementation-sprint",
+      "/lessons/project-testing-debugging",
+      "/lessons/project-presentation-rehearsal",
+    ];
+    for (const route of routes) {
+      await page.goto(route);
+      await expect(page.getByRole("heading", { name: LOCKED_HEADING })).toBeVisible();
+    }
+  });
+
+  test("day-14 hub blocked for student", async ({ page }) => {
+    await loginStudent(page);
+    await page.goto("/path/day/day-14");
+    await expect(page.getByRole("heading", { name: LOCKED_HEADING })).toBeVisible();
+  });
+
   test("day 01 lesson still accessible", async ({ page }) => {
     await loginStudent(page);
     await page.goto("/lessons/binary-cards");

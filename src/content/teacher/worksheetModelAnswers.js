@@ -158,4 +158,19 @@ export const WORKSHEET_MODEL_ANSWERS = {
       { n: 10, modelAr: "صح" },
     ],
   },
+  "ws-day-14": {
+    teacherDayRoute: "/teacher/day-14-answers",
+    tasks: [
+      { n: 1, modelAr: "75" },
+      { n: 2, modelAr: "صح" },
+      { n: 3, modelAr: "75" },
+      { n: 4, modelAr: "صح" },
+      { n: 5, modelAr: "المشكلة (أ)" },
+      { n: 6, modelAr: "صح" },
+      { n: 7, modelAr: "متابعة backlog يوميًا (أ)" },
+      { n: 8, modelAr: "مثل: اختبار وظيفي أو تكامل أو واجهة" },
+      { n: 9, modelAr: "مثل: تحسين التوقيت أو وضوح الشرح" },
+      { n: 10, modelAr: "صح" },
+    ],
+  },
 };

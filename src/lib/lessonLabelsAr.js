@@ -48,6 +48,10 @@ export const LESSON_LABELS_AR = {
   "post-assessment-readiness": "التقويم البعدي",
   "project-ideation": "صياغة فكرة المشروع",
   "project-planning": "تخطيط المشروع",
+  "project-architecture": "هيكل المشروع",
+  "project-implementation-sprint": "تنفيذ المشروع على مراحل",
+  "project-testing-debugging": "اختبار وتصحيح المشروع",
+  "project-presentation-rehearsal": "تجهيز العرض التقديمي",
 };
 
 export function lessonLabelAr(lessonId) {

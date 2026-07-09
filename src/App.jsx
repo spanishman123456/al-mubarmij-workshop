@@ -117,6 +117,12 @@ import {
   ProjectIdeationLessonPage,
   ProjectPlanningLessonPage,
 } from "./pages/lessons/Day13LessonPages.jsx";
+import {
+  ProjectArchitectureLessonPage,
+  ProjectImplementationLessonPage,
+  ProjectTestingLessonPage,
+  ProjectPresentationLessonPage,
+} from "./pages/lessons/Day14LessonPages.jsx";
 import TeacherDay01AnswersPage from "./pages/teacher/TeacherDay01AnswersPage.jsx";
 import TeacherDay02AnswersPage from "./pages/teacher/TeacherDay02AnswersPage.jsx";
 import TeacherDay03AnswersPage from "./pages/teacher/TeacherDay03AnswersPage.jsx";
@@ -130,6 +136,7 @@ import TeacherDay10AnswersPage from "./pages/teacher/TeacherDay10AnswersPage.jsx
 import TeacherDay11AnswersPage from "./pages/teacher/TeacherDay11AnswersPage.jsx";
 import TeacherDay12AnswersPage from "./pages/teacher/TeacherDay12AnswersPage.jsx";
 import TeacherDay13AnswersPage from "./pages/teacher/TeacherDay13AnswersPage.jsx";
+import TeacherDay14AnswersPage from "./pages/teacher/TeacherDay14AnswersPage.jsx";
 import TeacherQuizReviewPage from "./pages/teacher/TeacherQuizReviewPage.jsx";
 import { PublishedContentGate } from "./components/auth/PublishedContentGate.jsx";
 
@@ -371,6 +378,10 @@ function AppRoutes() {
         <Route path="/lessons/post-assessment-readiness" element={<ProtectedRoute><PostAssessmentLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/project-ideation" element={<ProtectedRoute><ProjectIdeationLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/project-planning" element={<ProtectedRoute><ProjectPlanningLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/project-architecture" element={<ProtectedRoute><ProjectArchitectureLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/project-implementation-sprint" element={<ProtectedRoute><ProjectImplementationLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/project-testing-debugging" element={<ProtectedRoute><ProjectTestingLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/project-presentation-rehearsal" element={<ProtectedRoute><ProjectPresentationLessonPage /></ProtectedRoute>} />
 
         <Route path="/teacher/day-01-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay01AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-02-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay02AnswersPage /></ProtectedRoute>} />
@@ -385,6 +396,7 @@ function AppRoutes() {
         <Route path="/teacher/day-11-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay11AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-12-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay12AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-13-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay13AnswersPage /></ProtectedRoute>} />
+        <Route path="/teacher/day-14-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay14AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/quiz-review" element={<ProtectedRoute roles={["teacher"]}><TeacherQuizReviewPage /></ProtectedRoute>} />
 
         <Route
