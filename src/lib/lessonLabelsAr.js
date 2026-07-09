@@ -52,6 +52,10 @@ export const LESSON_LABELS_AR = {
   "project-implementation-sprint": "تنفيذ المشروع على مراحل",
   "project-testing-debugging": "اختبار وتصحيح المشروع",
   "project-presentation-rehearsal": "تجهيز العرض التقديمي",
+  "final-project-presentation": "العرض النهائي للمشروع",
+  "peer-feedback-and-refinement": "التغذية الراجعة من الأقران",
+  "final-evaluation": "التقييم الختامي",
+  "program-closure-next-steps": "خاتمة البرنامج والخطوات التالية",
 };
 
 export function lessonLabelAr(lessonId) {

@@ -53,6 +53,7 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/teacher/day-12-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-13-answers", 1, "teacher")).toBe(true);
     expect(isPathPublished("/teacher/day-14-answers", 1, "teacher")).toBe(true);
+    expect(isPathPublished("/teacher/day-15-answers", 1, "teacher")).toBe(true);
   });
 
   it("blocks day 6 lesson routes for students when PUBLISHED_DAYS=5", () => {
@@ -94,6 +95,7 @@ describe("publicationPolicy", () => {
     expect(isLessonIdPublished("regex-automata", 2)).toBe(false);
     expect(isLessonIdPublished("comprehensive-review", 2)).toBe(false);
     expect(isLessonIdPublished("project-architecture", 2)).toBe(false);
+    expect(isLessonIdPublished("final-project-presentation", 2)).toBe(false);
   });
 
   it("blocks day 9 lesson routes for students when PUBLISHED_DAYS=8", () => {
@@ -148,5 +150,14 @@ describe("publicationPolicy", () => {
     expect(isPathPublished("/lessons/project-presentation-rehearsal", 13, "student")).toBe(false);
     expect(isPathPublished("/path/day/day-14", 13, "student")).toBe(false);
     expect(isPathPublished("/worksheets/ws-day-14", 13, "student")).toBe(false);
+  });
+
+  it("blocks day 15 lesson routes for students when PUBLISHED_DAYS=14", () => {
+    expect(isPathPublished("/lessons/final-project-presentation", 14, "student")).toBe(false);
+    expect(isPathPublished("/lessons/peer-feedback-and-refinement", 14, "student")).toBe(false);
+    expect(isPathPublished("/lessons/final-evaluation", 14, "student")).toBe(false);
+    expect(isPathPublished("/lessons/program-closure-next-steps", 14, "student")).toBe(false);
+    expect(isPathPublished("/path/day/day-15", 14, "student")).toBe(false);
+    expect(isPathPublished("/worksheets/ws-day-15", 14, "student")).toBe(false);
   });
 });

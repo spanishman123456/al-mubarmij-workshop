@@ -173,4 +173,19 @@ export const WORKSHEET_MODEL_ANSWERS = {
       { n: 10, modelAr: "صح" },
     ],
   },
+  "ws-day-15": {
+    teacherDayRoute: "/teacher/day-15-answers",
+    tasks: [
+      { n: 1, modelAr: "4" },
+      { n: 2, modelAr: "صح" },
+      { n: 3, modelAr: "صح" },
+      { n: 4, modelAr: "84" },
+      { n: 5, modelAr: "الشرح جيد لكن يحتاج تبطيء في المقدمة (أ)" },
+      { n: 6, modelAr: "صح" },
+      { n: 7, modelAr: "بدون أي متابعة (ج)" },
+      { n: 8, modelAr: "مثل: بايثون أو خوارزميات أو عرض" },
+      { n: 9, modelAr: "مثل: مراجعة أسبوعية أو مشروع جديد" },
+      { n: 10, modelAr: "خطأ" },
+    ],
+  },
 };

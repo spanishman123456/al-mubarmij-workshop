@@ -25,6 +25,7 @@
     "test:e2e:day12": "node scripts/run-playwright-env.mjs --days=12 --policy=open -- e2e/day12-qa.spec.js",
     "test:e2e:day13": "node scripts/run-playwright-env.mjs --days=13 --policy=open -- e2e/day13-qa.spec.js",
     "test:e2e:day14": "node scripts/run-playwright-env.mjs --days=14 --policy=open -- e2e/day14-qa.spec.js",
+    "test:e2e:day15": "node scripts/run-playwright-env.mjs --days=15 --policy=open -- e2e/day15-qa.spec.js",
     "test:e2e:pilot": "node scripts/run-playwright-env.mjs --days=1 -- e2e/pilot-smoke.spec.js",
     "test:e2e:unlock": "node scripts/run-playwright-env.mjs --days=2 --vite-days=1 --policy=sequential -- e2e/day-unlock.spec.js",
     "hash:teacher-password": "node scripts/hash-teacher-password.mjs",

@@ -123,6 +123,12 @@ import {
   ProjectTestingLessonPage,
   ProjectPresentationLessonPage,
 } from "./pages/lessons/Day14LessonPages.jsx";
+import {
+  FinalPresentationLessonPage,
+  PeerFeedbackLessonPage,
+  FinalEvaluationLessonPage,
+  ProgramClosureLessonPage,
+} from "./pages/lessons/Day15LessonPages.jsx";
 import TeacherDay01AnswersPage from "./pages/teacher/TeacherDay01AnswersPage.jsx";
 import TeacherDay02AnswersPage from "./pages/teacher/TeacherDay02AnswersPage.jsx";
 import TeacherDay03AnswersPage from "./pages/teacher/TeacherDay03AnswersPage.jsx";
@@ -137,6 +143,7 @@ import TeacherDay11AnswersPage from "./pages/teacher/TeacherDay11AnswersPage.jsx
 import TeacherDay12AnswersPage from "./pages/teacher/TeacherDay12AnswersPage.jsx";
 import TeacherDay13AnswersPage from "./pages/teacher/TeacherDay13AnswersPage.jsx";
 import TeacherDay14AnswersPage from "./pages/teacher/TeacherDay14AnswersPage.jsx";
+import TeacherDay15AnswersPage from "./pages/teacher/TeacherDay15AnswersPage.jsx";
 import TeacherQuizReviewPage from "./pages/teacher/TeacherQuizReviewPage.jsx";
 import { PublishedContentGate } from "./components/auth/PublishedContentGate.jsx";
 
@@ -382,6 +389,10 @@ function AppRoutes() {
         <Route path="/lessons/project-implementation-sprint" element={<ProtectedRoute><ProjectImplementationLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/project-testing-debugging" element={<ProtectedRoute><ProjectTestingLessonPage /></ProtectedRoute>} />
         <Route path="/lessons/project-presentation-rehearsal" element={<ProtectedRoute><ProjectPresentationLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/final-project-presentation" element={<ProtectedRoute><FinalPresentationLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/peer-feedback-and-refinement" element={<ProtectedRoute><PeerFeedbackLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/final-evaluation" element={<ProtectedRoute><FinalEvaluationLessonPage /></ProtectedRoute>} />
+        <Route path="/lessons/program-closure-next-steps" element={<ProtectedRoute><ProgramClosureLessonPage /></ProtectedRoute>} />
 
         <Route path="/teacher/day-01-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay01AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-02-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay02AnswersPage /></ProtectedRoute>} />
@@ -397,6 +408,7 @@ function AppRoutes() {
         <Route path="/teacher/day-12-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay12AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-13-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay13AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-14-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay14AnswersPage /></ProtectedRoute>} />
+        <Route path="/teacher/day-15-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay15AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/quiz-review" element={<ProtectedRoute roles={["teacher"]}><TeacherQuizReviewPage /></ProtectedRoute>} />
 
         <Route

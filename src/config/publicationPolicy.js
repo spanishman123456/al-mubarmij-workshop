@@ -123,6 +123,13 @@ export const DAY14_LESSON_ROUTES = new Set([
   "/lessons/project-presentation-rehearsal",
 ]);
 
+export const DAY15_LESSON_ROUTES = new Set([
+  "/lessons/final-project-presentation",
+  "/lessons/peer-feedback-and-refinement",
+  "/lessons/final-evaluation",
+  "/lessons/program-closure-next-steps",
+]);
+
 /** @deprecated use DAY4_LESSON_ROUTES */
 const DAY4_PLUS_DRAFT_ROUTES = DAY4_LESSON_ROUTES;
 
@@ -201,6 +208,10 @@ export const LESSON_ID_TO_DAY = {
   "project-implementation-sprint": 14,
   "project-testing-debugging": 14,
   "project-presentation-rehearsal": 14,
+  "final-project-presentation": 15,
+  "peer-feedback-and-refinement": 15,
+  "final-evaluation": 15,
+  "program-closure-next-steps": 15,
 };
 
 const ONBOARDING_PREFIXES = ["/onboarding", "/quizzes/run/quiz-pre"];
@@ -254,6 +265,7 @@ export function routeContentDay(pathname) {
   if (DAY12_LESSON_ROUTES.has(path)) return 12;
   if (DAY13_LESSON_ROUTES.has(path)) return 13;
   if (DAY14_LESSON_ROUTES.has(path)) return 14;
+  if (DAY15_LESSON_ROUTES.has(path)) return 15;
 
   let m = /^\/path\/day\/day-(\d+)$/.exec(path);
   if (m) return Number(m[1]);
