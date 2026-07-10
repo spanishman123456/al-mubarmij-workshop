@@ -362,6 +362,55 @@ export default function PythonLab() {
   }, [user?.role, teacherSnippetsStorageKey]);
 
   useEffect(() => {
+    if (user?.role !== "teacher") return;
+    const source = searchParams.get("source");
+    if (source !== "teacher-snippet-preview") return;
+    try {
+      const raw = localStorage.getItem("teacher-snippet-preview");
+      if (!raw) return;
+      const snippet = JSON.parse(raw);
+      if (!snippet?.code) {
+        setFeedback({
+          headlineAr: "لا يوجد كود للعرض",
+          hintAr: "هذا السجل لا يحتوي نص كود فعلي.",
+          detail: "",
+          line: null,
+        });
+        return;
+      }
+      stopAppSession();
+      setRunMode("console");
+      setCode(String(snippet.code));
+      setOut("");
+      setFeedback({
+        headlineAr: "تم تحميل كود الطالب بنجاح",
+        hintAr: `الطالب: ${snippet.studentNameAr || "—"} | الدرس: ${snippet.lessonId || "—"} | النشاط: ${snippet.activityId || "—"}`,
+        detail: "",
+        line: null,
+      });
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("mode", "console");
+        next.delete("source");
+        return next;
+      });
+    } catch {
+      setFeedback({
+        headlineAr: "تعذر تحميل الكود المحفوظ",
+        hintAr: "حاول مرة أخرى من لوحة المعلم.",
+        detail: "",
+        line: null,
+      });
+    } finally {
+      try {
+        localStorage.removeItem("teacher-snippet-preview");
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [user?.role, searchParams, setSearchParams, stopAppSession]);
+
+  useEffect(() => {
     if (panelFromUrl !== "saved") return;
     const id = setTimeout(() => {
       savedPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });

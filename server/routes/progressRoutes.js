@@ -14,6 +14,7 @@ import {
 import { filterWorksheetProgressForStudent } from "../worksheet/worksheetAccessService.js";
 import { dayNumberFromId } from "../../src/lib/dayUnlockPolicy.js";
 import { listDayUnlockOverrides } from "../repositories/dayUnlockRepository.js";
+import { queryAll } from "../db/query.js";
 
 export function registerProgressRoutes(app, logError) {
   app.get("/api/progress/me", requireAuth, requireRole("student"), (req, res) => {
@@ -67,6 +68,53 @@ export function registerProgressRoutes(app, logError) {
         res.json({ ok: true, studentId, snippets, fetchedAt: new Date().toISOString() });
       } catch (err) {
         logError("progress.teacher.studentSnippets", err);
+        res.status(500).json({ ok: false, error: "failed" });
+      }
+    },
+  );
+
+  app.get("/api/teacher/python-snippets/audit", requireAuth, requireRole("teacher"), (_req, res) => {
+    try {
+      const rows = queryAllStudentProgressRows();
+      const report = buildPythonSnippetsAudit(rows);
+      res.json({ ok: true, report, fetchedAt: new Date().toISOString() });
+    } catch (err) {
+      logError("progress.teacher.snippetAudit", err);
+      res.status(500).json({ ok: false, error: "failed" });
+    }
+  });
+
+  app.delete(
+    "/api/teacher/students/:studentId/python-snippets/:snippetId",
+    requireAuth,
+    requireRole("teacher"),
+    requireProgressAccess,
+    (req, res) => {
+      try {
+        const studentId = req.effectiveStudentId || req.params.studentId;
+        const snippetId = String(req.params.snippetId || "").trim();
+        if (!snippetId) return res.status(400).json({ ok: false, error: "missing_snippet_id" });
+        const row = getStudentProgress(studentId);
+        const progress = row?.progress || {};
+        const before = Array.isArray(progress.pythonSnippets) ? progress.pythonSnippets : [];
+        const after = before.filter((s) => String(s?.id || "") !== snippetId);
+        if (after.length === before.length) {
+          return res.status(404).json({ ok: false, error: "snippet_not_found" });
+        }
+        saveStudentProgress(studentId, {
+          ...progress,
+          pythonSnippets: after,
+          updatedAt: new Date().toISOString(),
+        });
+        res.json({
+          ok: true,
+          studentId,
+          deletedSnippetId: snippetId,
+          totalBefore: before.length,
+          totalAfter: after.length,
+        });
+      } catch (err) {
+        logError("progress.teacher.deleteSnippet", err);
         res.status(500).json({ ok: false, error: "failed" });
       }
     },
@@ -232,6 +280,37 @@ function mergeProgressBlob(server = {}, client = {}) {
   ];
   const dayCompletionTimes = { ...(server.dayCompletionTimes || {}), ...(client.dayCompletionTimes || {}) };
 
+  const mergeSnippetArrays = (serverList = [], clientList = []) => {
+    const byKey = new Map();
+    const toTs = (v) => {
+      const n = Date.parse(v || "");
+      return Number.isFinite(n) ? n : 0;
+    };
+    const keyFor = (s) =>
+      String(s?.id || "").trim() ||
+      `${s?.title || ""}|${s?.lessonId || ""}|${s?.activityId || ""}|${s?.at || ""}|${s?.updatedAt || ""}`;
+    const pickBetter = (a, b) => {
+      if (!a) return b;
+      if (!b) return a;
+      const aCode = String(a.code || "").trim();
+      const bCode = String(b.code || "").trim();
+      if (!aCode && bCode) return b;
+      if (aCode && !bCode) return a;
+      const aTs = Math.max(toTs(a.updatedAt), toTs(a.at));
+      const bTs = Math.max(toTs(b.updatedAt), toTs(b.at));
+      return bTs >= aTs ? { ...a, ...b } : { ...b, ...a };
+    };
+    for (const s of [...(serverList || []), ...(clientList || [])]) {
+      const key = keyFor(s);
+      byKey.set(key, pickBetter(byKey.get(key), s));
+    }
+    return [...byKey.values()].sort((a, b) => {
+      const aTs = Math.max(toTs(a.updatedAt), toTs(a.at));
+      const bTs = Math.max(toTs(b.updatedAt), toTs(b.at));
+      return bTs - aTs;
+    });
+  };
+
   const merged = {
     ...server,
     ...client,
@@ -246,11 +325,92 @@ function mergeProgressBlob(server = {}, client = {}) {
     lessonCompletions,
     preAssessment: pickLatestObject(server.preAssessment, client.preAssessment),
     project: pickLatestObject(server.project, client.project),
-    pythonSnippets: [...(server.pythonSnippets || []), ...(client.pythonSnippets || [])].slice(0, 50),
-    graphicProjects: [...(server.graphicProjects || []), ...(client.graphicProjects || [])].slice(0, 50),
+    pythonSnippets: mergeSnippetArrays(server.pythonSnippets || [], client.pythonSnippets || []),
+    graphicProjects: mergeSnippetArrays(server.graphicProjects || [], client.graphicProjects || []),
     updatedAt: new Date().toISOString(),
   };
 
   delete merged._computedProgress;
   return merged;
+}
+
+function queryAllStudentProgressRows() {
+  const byId = new Map();
+  for (const student of STUDENTS_ROSTER) {
+    byId.set(`stu-${student.nationalId}`, student.nameAr);
+  }
+  const rows = queryAll(`SELECT student_id, progress_json, updated_at FROM student_progress`);
+  return rows.map((row) => {
+    let progress = {};
+    try {
+      progress = JSON.parse(row.progress_json || "{}");
+    } catch {
+      progress = {};
+    }
+    return {
+      studentId: row.student_id || "",
+      studentNameAr: byId.get(row.student_id || "") || "طالب غير معروف",
+      progress,
+      updatedAt: row.updated_at || null,
+    };
+  });
+}
+
+function buildPythonSnippetsAudit(rows = []) {
+  const detail = [];
+  let studentsWithCodes = 0;
+  let totalSnippets = 0;
+  let snippetsWithCodeText = 0;
+  let emptyCodeSnippets = 0;
+  let titleOnlySnippets = 0;
+  let missingStudentLink = 0;
+  let missingActivityOrLesson = 0;
+  let potentialDataCorruption = false;
+
+  for (const row of rows) {
+    const snippets = Array.isArray(row.progress?.pythonSnippets) ? row.progress.pythonSnippets : [];
+    if (snippets.length > 0) studentsWithCodes += 1;
+    let rowWithCode = 0;
+    let rowEmpty = 0;
+    for (const snippet of snippets) {
+      totalSnippets += 1;
+      const code = String(snippet?.code || "");
+      const hasCode = code.trim().length > 0;
+      if (hasCode) {
+        snippetsWithCodeText += 1;
+        rowWithCode += 1;
+      } else {
+        emptyCodeSnippets += 1;
+        rowEmpty += 1;
+        if (String(snippet?.title || "").trim()) titleOnlySnippets += 1;
+      }
+      if (!row.studentId) missingStudentLink += 1;
+      const hasLesson = String(snippet?.lessonId || "").trim().length > 0;
+      const hasActivity = String(snippet?.activityId || "").trim().length > 0;
+      if (!hasLesson || !hasActivity) missingActivityOrLesson += 1;
+    }
+    if (snippets.length > 0) {
+      detail.push({
+        studentId: row.studentId,
+        studentNameAr: row.studentNameAr,
+        totalSnippets: snippets.length,
+        snippetsWithCodeText: rowWithCode,
+        emptyCodeSnippets: rowEmpty,
+        updatedAt: row.updatedAt,
+      });
+    }
+  }
+  if (emptyCodeSnippets > 0 || missingStudentLink > 0) potentialDataCorruption = true;
+  detail.sort((a, b) => b.totalSnippets - a.totalSnippets);
+  return {
+    studentsWithCodes,
+    totalSnippets,
+    snippetsWithCodeText,
+    emptyCodeSnippets,
+    titleOnlySnippets,
+    missingStudentLink,
+    missingActivityOrLesson,
+    potentialDataCorruption,
+    perStudent: detail,
+  };
 }

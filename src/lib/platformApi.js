@@ -100,6 +100,17 @@ export async function fetchTeacherStudentPythonSnippets(studentId) {
   return request(`/api/teacher/students/${encodeURIComponent(studentId)}/python-snippets`);
 }
 
+export async function fetchTeacherPythonSnippetsAudit() {
+  return request("/api/teacher/python-snippets/audit");
+}
+
+export async function deleteTeacherStudentPythonSnippet(studentId, snippetId) {
+  return request(
+    `/api/teacher/students/${encodeURIComponent(studentId)}/python-snippets/${encodeURIComponent(snippetId)}`,
+    { method: "DELETE" },
+  );
+}
+
 export async function recalculateProgressApi(reason = "teacher_recalculate") {
   return request("/api/progress/recalculate", {
     method: "POST",

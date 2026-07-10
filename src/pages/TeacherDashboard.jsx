@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
 import {
   fetchOnboardingAll,
+  fetchTeacherPythonSnippetsAudit,
   fetchTeacherStudentProgress,
   fetchTeacherStudentPythonSnippets,
+  deleteTeacherStudentPythonSnippet,
 } from "../lib/platformApi";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
@@ -30,6 +32,7 @@ function formatDate(iso) {
 }
 
 export default function TeacherDashboard() {
+  const navigate = useNavigate();
   const {
     user,
     allStudentsProgress,
@@ -54,7 +57,10 @@ export default function TeacherDashboard() {
   const [snippetQuery, setSnippetQuery] = useState("");
   const [snippetSort, setSnippetSort] = useState("newest");
   const [snippetPage, setSnippetPage] = useState(1);
-  const [previewSnippetId, setPreviewSnippetId] = useState(null);
+  const [selectedPreviewSnippet, setSelectedPreviewSnippet] = useState(null);
+  const [snippetNotice, setSnippetNotice] = useState("");
+  const [snippetError, setSnippetError] = useState("");
+  const [snippetAudit, setSnippetAudit] = useState(null);
 
   useEffect(() => {
     fetchOnboardingAll()
@@ -105,7 +111,9 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     setSnippetPage(1);
-    setPreviewSnippetId(null);
+    setSelectedPreviewSnippet(null);
+    setSnippetNotice("");
+    setSnippetError("");
   }, [snippetQuery, snippetSort, selectedSnippetStudentId]);
 
   useEffect(() => {
@@ -113,11 +121,17 @@ export default function TeacherDashboard() {
     let cancelled = false;
     (async () => {
       setSnippetsLoading(true);
+      setSnippetError("");
       try {
         const res = await fetchTeacherStudentPythonSnippets(selectedSnippetStudentId);
-        if (!cancelled) setSelectedStudentSnippets(res.snippets || []);
-      } catch {
+        if (!cancelled) setSelectedStudentSnippets((res.snippets || []).map(normalizeSnippetRecord));
+      } catch (err) {
         if (!cancelled) setSelectedStudentSnippets([]);
+        if (!cancelled) {
+          const status = err?.status;
+          if (status === 403) setSnippetError("لا تملك صلاحية عرض هذا الكود.");
+          else setSnippetError("تعذر تحميل الكود المحفوظ. حاول مرة أخرى أو راجع السجل.");
+        }
       } finally {
         if (!cancelled) setSnippetsLoading(false);
       }
@@ -126,6 +140,103 @@ export default function TeacherDashboard() {
       cancelled = true;
     };
   }, [selectedSnippetStudentId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetchTeacherPythonSnippetsAudit();
+        if (!cancelled) setSnippetAudit(res.report || null);
+      } catch {
+        if (!cancelled) setSnippetAudit(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [analyticsSyncStatus.fetchedAt]);
+
+  function normalizeSnippetRecord(snippet, idx = 0) {
+    const code = typeof snippet?.code === "string" ? snippet.code : "";
+    const previewLines = code
+      ? code
+          .split(/\r?\n/)
+          .slice(0, 5)
+          .join("\n")
+      : "";
+    return {
+      ...snippet,
+      _safeId: String(snippet?.id || `snippet-${idx}-${snippet?.at || Date.now()}`),
+      _code: code,
+      _hasCode: code.trim().length > 0,
+      _preview: previewLines,
+    };
+  }
+
+  function openSnippetPreview(snippet) {
+    setSelectedPreviewSnippet(snippet);
+    setSnippetError("");
+    if (snippet?._hasCode) setSnippetNotice("تم تحميل الكود بنجاح.");
+    else setSnippetNotice("هذا السجل موجود لكن لا يحتوي على نص كود.");
+  }
+
+  async function copySnippet(snippet) {
+    if (!snippet?._hasCode) {
+      setSnippetError("تعذر نسخ الكود لأن المحتوى غير متوفر.");
+      return;
+    }
+    try {
+      await navigator.clipboard?.writeText(snippet._code);
+      setSnippetNotice("تم نسخ الكود.");
+      setSnippetError("");
+    } catch {
+      setSnippetError("تعذر نسخ الكود لأن المحتوى غير متوفر.");
+    }
+  }
+
+  function openInEditor(snippet) {
+    if (!snippet?._hasCode) {
+      setSnippetError("هذا السجل موجود لكن لا يحتوي على نص كود.");
+      return;
+    }
+    try {
+      localStorage.setItem(
+        "teacher-snippet-preview",
+        JSON.stringify({
+          title: snippet.title || "كود طالب",
+          code: snippet._code,
+          studentId: selectedSnippetStudent?.student.id || "",
+          studentNameAr: selectedSnippetStudent?.student.nameAr || "",
+          lessonId: snippet.lessonId || "",
+          activityId: snippet.activityId || "",
+          at: snippet.at || null,
+          updatedAt: snippet.updatedAt || null,
+        }),
+      );
+    } catch {
+      /* ignore localStorage failure */
+    }
+    navigate("/python?source=teacher-snippet-preview");
+  }
+
+  async function deleteSnippet(snippet) {
+    if (!selectedSnippetStudent?.student.id) return;
+    if (!snippet?.id) {
+      setSnippetError("هذا السجل لا يملك معرفًا صالحًا للحذف.");
+      return;
+    }
+    const ok = window.confirm(`هل تريد حذف "${snippet.title || "كود محفوظ"}"؟`);
+    if (!ok) return;
+    try {
+      await deleteTeacherStudentPythonSnippet(selectedSnippetStudent.student.id, snippet.id);
+      setSelectedStudentSnippets((prev) => prev.filter((s) => s._safeId !== snippet._safeId));
+      setSelectedPreviewSnippet((prev) => (prev?._safeId === snippet._safeId ? null : prev));
+      setSnippetNotice("تم حذف الكود.");
+      setSnippetError("");
+    } catch (err) {
+      setSnippetError(err?.status === 403 ? "لا تملك صلاحية عرض هذا الكود." : "تعذر حذف الكود المحفوظ.");
+    }
+  }
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -329,6 +440,14 @@ export default function TeacherDashboard() {
             <p className="mb-2 text-sm text-slate-600">
               عدد الأكواد: <LtrValue>{pagedStudentSnippets.totalItems}</LtrValue>
             </p>
+            {snippetAudit ? (
+              <div className="mb-2 rounded-lg border border-cyan-200 bg-cyan-50 p-2 text-xs text-cyan-900">
+                الطلاب الذين لديهم أكواد: <LtrValue>{snippetAudit.studentsWithCodes}</LtrValue> | إجمالي الأكواد:{" "}
+                <LtrValue>{snippetAudit.totalSnippets}</LtrValue> | الأكواد التي تحتوي نصًا:{" "}
+                <LtrValue>{snippetAudit.snippetsWithCodeText}</LtrValue> | الأكواد الفارغة:{" "}
+                <LtrValue>{snippetAudit.emptyCodeSnippets}</LtrValue>
+              </div>
+            ) : null}
             <div className="mb-3 grid gap-2 md:grid-cols-2">
               <input
                 type="text"
@@ -351,11 +470,13 @@ export default function TeacherDashboard() {
               {snippetsLoading ? (
                 <p className="text-sm text-slate-500">جاري تحميل الأكواد...</p>
               ) : null}
+              {snippetError ? <p className="rounded bg-rose-50 px-2 py-1 text-sm text-rose-800">{snippetError}</p> : null}
+              {snippetNotice ? <p className="rounded bg-emerald-50 px-2 py-1 text-sm text-emerald-800">{snippetNotice}</p> : null}
               {!snippetsLoading && pagedStudentSnippets.totalItems === 0 ? (
                 <p className="text-sm text-slate-500">لا توجد أكواد محفوظة لهذا الطالب حالياً.</p>
               ) : null}
               {pagedStudentSnippets.items.map((snippet) => (
-                <div key={snippet.id} className="rounded-md border border-slate-200 bg-white p-2">
+                <div key={snippet._safeId} className="rounded-md border border-slate-200 bg-white p-2">
                   <p className="font-semibold text-slate-900">{snippet.title || "كود محفوظ"}</p>
                   <p className="text-xs text-slate-500">
                     {snippet.updatedAt
@@ -370,31 +491,39 @@ export default function TeacherDashboard() {
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => setPreviewSnippetId(previewSnippetId === snippet.id ? null : snippet.id)}
+                      onClick={() => openSnippetPreview(snippet)}
                       className="rounded-md border border-cyan-300 px-2 py-1 text-xs text-cyan-700"
                     >
                       معاينة
                     </button>
                     <button
                       type="button"
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard?.writeText(snippet.code || "");
-                          window.alert("تم نسخ الكود.");
-                        } catch {
-                          window.alert("تعذر النسخ.");
-                        }
-                      }}
+                      onClick={() => copySnippet(snippet)}
                       className="rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700"
                     >
                       نسخ
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => openInEditor(snippet)}
+                      className="rounded-md border border-emerald-300 px-2 py-1 text-xs text-emerald-700"
+                    >
+                      فتح في المحرر
+                    </button>
                   </div>
-                  {previewSnippetId === snippet.id ? (
-                    <pre dir="ltr" className="mt-2 max-h-24 overflow-auto rounded bg-slate-900 p-2 text-xs text-emerald-200">
-                      {snippet.code || ""}
+                  {snippet._hasCode ? (
+                    <pre
+                      dir="ltr"
+                      className="mt-2 max-h-20 overflow-auto rounded bg-slate-900 p-2 text-left font-mono text-xs text-emerald-200"
+                      style={{ direction: "ltr", textAlign: "left", unicodeBidi: "isolate", whiteSpace: "pre-wrap" }}
+                    >
+                      {snippet._preview}
                     </pre>
-                  ) : null}
+                  ) : (
+                    <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                      محتوى الكود غير متوفر — يحتاج فحص
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -424,6 +553,83 @@ export default function TeacherDashboard() {
           </>
         )}
       </EduCard>
+
+      {selectedPreviewSnippet ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-5 shadow-2xl" dir="rtl">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{selectedPreviewSnippet.title || "كود محفوظ"}</h3>
+                <p className="text-xs text-slate-600">
+                  الطالب: {selectedSnippetStudent?.student.nameAr || "—"} | الدرس:{" "}
+                  {selectedPreviewSnippet.lessonTitle || selectedPreviewSnippet.lessonId || "—"} | النشاط:{" "}
+                  {selectedPreviewSnippet.activityId || "—"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  الحفظ: {selectedPreviewSnippet.at ? formatLoginDateTime(selectedPreviewSnippet.at) : "—"} | آخر تعديل:{" "}
+                  {selectedPreviewSnippet.updatedAt
+                    ? formatLoginDateTime(selectedPreviewSnippet.updatedAt)
+                    : selectedPreviewSnippet.at
+                      ? formatLoginDateTime(selectedPreviewSnippet.at)
+                      : "—"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPreviewSnippet(null)}
+                className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700"
+              >
+                إغلاق
+              </button>
+            </div>
+
+            {selectedPreviewSnippet._hasCode ? (
+              <pre
+                dir="ltr"
+                className="max-h-[50vh] overflow-auto rounded-lg border border-slate-200 bg-slate-950 p-3 text-left font-mono text-sm text-emerald-200"
+                style={{ direction: "ltr", textAlign: "left", unicodeBidi: "isolate", whiteSpace: "pre-wrap" }}
+              >
+                {selectedPreviewSnippet._code}
+              </pre>
+            ) : (
+              <p className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                هذا السجل موجود لكن لا يحتوي على نص كود.
+              </p>
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => openInEditor(selectedPreviewSnippet)}
+                className="rounded-md border border-emerald-300 px-3 py-1 text-xs text-emerald-700"
+              >
+                فتح في المحرر
+              </button>
+              <button
+                type="button"
+                onClick={() => copySnippet(selectedPreviewSnippet)}
+                className="rounded-md border border-violet-300 px-3 py-1 text-xs text-violet-700"
+              >
+                نسخ
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteSnippet(selectedPreviewSnippet)}
+                className="rounded-md border border-rose-300 px-3 py-1 text-xs text-rose-700"
+              >
+                حذف
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPreviewSnippet(null)}
+                className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <PrePostComparisonChart className="mt-8" students={allStudentsProgress} />
 
