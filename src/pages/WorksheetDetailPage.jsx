@@ -4,6 +4,7 @@ import { getWorksheet15ById } from "../data/worksheets15Days";
 import { WORKSHEET_MODEL_ANSWERS } from "../content/teacher/worksheetModelAnswers.js";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
+import { ArabicText } from "../components/BilingualTextBlocks";
 import { registerDraftSaver } from "../lib/draftFlush.js";
 import { isTeacherRole, TEACHER_PREVIEW_BADGE_AR } from "../config/publication";
 import {
@@ -183,7 +184,7 @@ export default function WorksheetDetailPage() {
               {task.pdfRef ? (
                 <span className="mt-1 inline-block text-xs font-medium text-slate-500">مرجع PDF: {task.pdfRef}</span>
               ) : null}
-              <p className="mt-2 leading-relaxed text-slate-800">{task.textAr}</p>
+              <ArabicText text={task.textAr} className="mt-2 text-slate-800" />
               {task.type ? (
                 <span className="mt-1 inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
                   {task.type === "multi_part" ? "أسئلة فرعية" : task.type.replace(/_/g, " ")}
@@ -209,7 +210,7 @@ export default function WorksheetDetailPage() {
               {isTeacher && modelTask ? (
                 <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm print:hidden">
                   <p className="font-bold text-emerald-900">الإجابة النموذجية (للمعلم)</p>
-                  <p className="mt-2 whitespace-pre-wrap text-emerald-800">{modelTask.modelAr}</p>
+                  <ArabicText text={modelTask.modelAr} className="mt-2 whitespace-pre-wrap text-emerald-800" />
                   {modelTask.stepsAr?.length ? (
                     <ol className="mt-2 list-decimal pr-5 text-emerald-700">
                       {modelTask.stepsAr.map((step) => (

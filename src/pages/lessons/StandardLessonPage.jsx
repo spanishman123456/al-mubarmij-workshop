@@ -4,7 +4,7 @@ import { LessonPractice } from "../../components/lesson/LessonPractice";
 import { LessonProgressFooter } from "../../components/lesson/LessonProgressFooter";
 import { usePlatform } from "../../context/PlatformContext";
 import { MixedDirectionText, renderMixedDirectionText } from "../../components/MixedDirectionText";
-import { BilingualPrompt, LtrCodeBlock, LtrInlineToken } from "../../components/BilingualTextBlocks";
+import { ArabicText, BilingualPrompt, LtrCodeBlock, LtrInlineToken } from "../../components/BilingualTextBlocks";
 
 /**
  * قالب درس تفصيلي — يعرض كل أقسام validateLessonContent
@@ -28,7 +28,7 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
       </EduCard>
 
       <EduCard title="لماذا نتعلم هذا؟" className="mt-4">
-        <p className="text-slate-700">{renderMixedDirectionText(L.whyLearn)}</p>
+        <ArabicText text={L.whyLearn} className="text-slate-700" />
       </EduCard>
 
       <EduCard title="المعرفة السابقة" className="mt-4">
@@ -40,7 +40,7 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
       </EduCard>
 
       <EduCard title="المفهوم الأساسي" className="mt-4">
-        <p className="leading-relaxed whitespace-pre-line text-slate-700">{renderMixedDirectionText(L.conceptSimple)}</p>
+        <ArabicText text={L.conceptSimple} className="whitespace-pre-line text-slate-700" />
       </EduCard>
 
       {L.activityGuide ? (
@@ -62,7 +62,7 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
           <h2 className="text-xl font-bold">شرح تفصيلي</h2>
           {L.deepSections.map((s) => (
             <EduCard key={s.id} title={s.titleAr}>
-              <p className="leading-relaxed whitespace-pre-line text-slate-700">{renderMixedDirectionText(s.bodyAr)}</p>
+              <ArabicText text={s.bodyAr} className="whitespace-pre-line text-slate-700" />
             </EduCard>
           ))}
         </section>
@@ -184,12 +184,12 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
 
       {L.challengeAr ? (
         <EduCard title="تحدٍ للمتقدمين" className="mt-4" accent="violet">
-          <p className="text-sm text-slate-700">{renderMixedDirectionText(L.challengeAr)}</p>
+          <ArabicText text={L.challengeAr} className="text-sm text-slate-700" />
         </EduCard>
       ) : null}
 
       <EduCard title="ملخص" className="mt-4">
-        <p className="text-slate-700">{renderMixedDirectionText(L.summary)}</p>
+        <ArabicText text={L.summary} className="text-slate-700" />
         {L.linkedActivity ? (
           <Link to={L.linkedActivity} className="mt-3 inline-block text-sm font-semibold text-violet-700 hover:underline">
             نشاط مرتبط →

@@ -3,6 +3,7 @@ import { useLessonProgress } from "../../lib/hooks/useLessonProgress";
 import { recordLessonAttemptApi } from "../../lib/platformApi";
 import { AFTER_MAX_HINTS_AR } from "../../lib/exerciseFeedbackPolicy.js";
 import { DAY12_CHALLENGES, checkDay12Answer } from "../../lib/algorithms/day12.js";
+import { BilingualPrompt } from "../BilingualTextBlocks";
 
 function GenericDay12Lab({ lessonId, userId, testId, titleAr, introAr, challengeList, hintAr }) {
   const { progress, restored, persist, markComplete } = useLessonProgress({
@@ -92,7 +93,12 @@ function GenericDay12Lab({ lessonId, userId, testId, titleAr, introAr, challenge
         ))}
       </div>
       <div className="mt-4 rounded-lg bg-white p-3 text-sm">
-        <p className="font-semibold text-slate-800">{challenge.promptAr}</p>
+        <BilingualPrompt
+          promptAr={challenge.promptAr}
+          expression={challenge.expression}
+          values={challenge.values}
+          code={challenge.code}
+        />
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <input

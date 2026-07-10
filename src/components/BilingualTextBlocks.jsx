@@ -1,5 +1,11 @@
 import { splitDirectionalParts } from "../lib/bidi/directionalTokens";
 
+const TECH_KEYWORD_RE =
+  /\b(AND|OR|NOT|XOR|NAND|NOR|if|else|elif|for|while|range|print|input|return|True|False|binary|decimal|hex|ASCII|Unicode|UTF-8|RGB)\b/i;
+const ASSIGNMENT_RE = /\b([A-Za-z_]\w*)\s*=\s*([#A-Za-z0-9_.+-]+)\b/g;
+const OPERATOR_RE = /(==|!=|<=|>=|<|>|\+|-|\*|\/|%)/;
+const HEX_COLOR_RE = /#[A-Fa-f0-9]{3,8}\b/;
+
 function normalizeValues(values) {
   if (!Array.isArray(values)) return [];
   return values
@@ -9,6 +15,70 @@ function normalizeValues(values) {
       return { name: entry.name || "", value: entry.value ?? "" };
     })
     .filter(Boolean);
+}
+
+function normalizePromptText(text) {
+  return String(text || "")
+    .replace(/\s+/g, " ")
+    .replace(/\s+([؟?!:;,])/g, "$1")
+    .trim();
+}
+
+function splitToCandidateSegments(text) {
+  return String(text || "")
+    .replace(/\u200f|\u200e/g, "")
+    .split(/[\n]+|(?<=[؟?.!])/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+function isTechnicalSegment(segment) {
+  const arabicCount = (segment.match(/[\u0600-\u06FF]/g) || []).length;
+  const latinCount = (segment.match(/[A-Za-z]/g) || []).length;
+  const digitCount = (segment.match(/[0-9]/g) || []).length;
+  const symbolCount = (segment.match(/[=<>+\-*/%()[\]{}:#]/g) || []).length;
+  const score = latinCount + digitCount + symbolCount;
+  if (HEX_COLOR_RE.test(segment)) return true;
+  if (TECH_KEYWORD_RE.test(segment)) return true;
+  if (OPERATOR_RE.test(segment) && score >= 2) return true;
+  return arabicCount === 0 && score >= 2;
+}
+
+function extractValues(text) {
+  const rows = [];
+  const seen = new Set();
+  for (const m of String(text || "").matchAll(ASSIGNMENT_RE)) {
+    const name = m[1];
+    const value = m[2];
+    const key = `${name}=${value}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push({ name, value });
+  }
+  return rows;
+}
+
+function inferPromptStructure(promptAr) {
+  const segments = splitToCandidateSegments(promptAr);
+  const technicalSegments = segments.filter(isTechnicalSegment);
+  const inferredExpression =
+    technicalSegments.find((segment) => TECH_KEYWORD_RE.test(segment) || OPERATOR_RE.test(segment)) || "";
+  const inferredValues = extractValues(promptAr);
+  let arabicOnlyPrompt = String(promptAr || "");
+  if (inferredExpression) {
+    arabicOnlyPrompt = arabicOnlyPrompt.replace(inferredExpression, "");
+  }
+  if (inferredValues.length) {
+    inferredValues.forEach((row) => {
+      arabicOnlyPrompt = arabicOnlyPrompt.replace(new RegExp(`${row.name}\\s*=\\s*${row.value}`, "g"), "");
+    });
+  }
+  arabicOnlyPrompt = normalizePromptText(arabicOnlyPrompt);
+  return {
+    promptAr: arabicOnlyPrompt || normalizePromptText(promptAr),
+    expression: inferredExpression,
+    values: inferredValues,
+  };
 }
 
 export function LtrInlineToken({ token, className = "" }) {
@@ -51,6 +121,28 @@ export function MathExpression({ expression, className = "" }) {
   return <LtrCodeBlock code={expression} className={className} />;
 }
 
+export function ArabicText({ text, className = "" }) {
+  const nodes =
+    typeof text === "string"
+      ? splitDirectionalParts(text).map((part, idx) =>
+          part.dir === "ltr" ? (
+            <LtrInlineToken key={`ar-ltr-${idx}`} token={part.text} />
+          ) : (
+            <span key={`ar-rtl-${idx}`}>{part.text}</span>
+          ),
+        )
+      : text;
+  return (
+    <p
+      dir="rtl"
+      className={`leading-relaxed text-right ${className}`.trim()}
+      style={{ direction: "rtl", textAlign: "right", unicodeBidi: "isolate" }}
+    >
+      {nodes}
+    </p>
+  );
+}
+
 export function BilingualPrompt({
   promptAr,
   expression,
@@ -60,24 +152,18 @@ export function BilingualPrompt({
   valuesLabel = "القيم المعطاة:",
   className = "",
 }) {
-  const valueRows = normalizeValues(values);
-  const promptNodes =
-    typeof promptAr === "string"
-      ? splitDirectionalParts(promptAr).map((part, idx) =>
-          part.dir === "ltr" ? (
-            <LtrInlineToken key={`prompt-ltr-${idx}`} token={part.text} />
-          ) : (
-            <span key={`prompt-rtl-${idx}`}>{part.text}</span>
-          ),
-        )
-      : promptAr;
+  const inferred = typeof promptAr === "string" ? inferPromptStructure(promptAr) : null;
+  const finalPrompt = normalizePromptText(inferred?.promptAr || promptAr || "");
+  const finalExpression = expression || inferred?.expression || "";
+  const valueRows = normalizeValues(values?.length ? values : inferred?.values || []);
+
   return (
     <div dir="rtl" className={`space-y-2 text-right ${className}`.trim()}>
-      {promptAr ? <p className="leading-relaxed text-slate-900">{promptNodes}</p> : null}
-      {expression ? (
+      {finalPrompt ? <ArabicText text={finalPrompt} className="text-slate-900" /> : null}
+      {finalExpression ? (
         <div className="rounded-lg bg-white/50 p-2">
           <p className="mb-1 text-xs font-bold text-slate-600">{expressionLabel}</p>
-          <LogicExpression expression={expression} />
+          <LogicExpression expression={finalExpression} />
         </div>
       ) : null}
       {code ? (
@@ -105,4 +191,8 @@ export function BilingualPrompt({
       ) : null}
     </div>
   );
+}
+
+export function StructuredPrompt(props) {
+  return <BilingualPrompt {...props} />;
 }

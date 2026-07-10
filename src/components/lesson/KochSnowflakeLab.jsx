@@ -3,6 +3,7 @@ import { useLessonProgress } from "../../lib/hooks/useLessonProgress";
 import { recordLessonAttemptApi } from "../../lib/platformApi";
 import { KOCH_CHALLENGES, checkFractalLabAnswer } from "../../lib/algorithms/fractals.js";
 import { AFTER_MAX_HINTS_AR } from "../../lib/exerciseFeedbackPolicy.js";
+import { BilingualPrompt } from "../BilingualTextBlocks";
 
 const CHALLENGE_LABELS = {
   "koch-seg-1": "عمق 1",
@@ -109,7 +110,12 @@ export function KochSnowflakeLab({ lessonId, userId }) {
       </div>
 
       <div className="mt-4 rounded-lg bg-white p-3 text-sm">
-        <p className="font-semibold text-slate-800">{challenge.promptAr}</p>
+        <BilingualPrompt
+          promptAr={challenge.promptAr}
+          expression={challenge.expression}
+          values={challenge.values}
+          code={challenge.code}
+        />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">

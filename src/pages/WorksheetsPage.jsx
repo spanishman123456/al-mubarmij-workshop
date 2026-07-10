@@ -6,6 +6,7 @@ import { worksheets15Days } from "../data/worksheets15Days";
 import { WEEKS_15 } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
+import { ArabicText } from "../components/BilingualTextBlocks";
 import { isTeacherRole, TEACHER_PREVIEW_BADGE_AR } from "../config/publication";
 import {
   getTeacherWorksheetBadge,
@@ -167,12 +168,12 @@ export default function WorksheetsPage() {
                   طباعة
                 </button>
               </div>
-              <p className="text-slate-700">{ws.introAr}</p>
+              <ArabicText text={ws.introAr} className="text-slate-700" />
               <ol className="mt-6 space-y-6">
                 {ws.tasks.map((task) => (
                   <li key={task.n}>
                     <p className="font-bold text-violet-800">السؤال {task.n}.</p>
-                    <p className="mt-2 text-slate-800">{task.textAr}</p>
+                    <ArabicText text={task.textAr} className="mt-2 text-slate-800" />
                     <div className="mt-4 border-b border-dashed border-slate-300 pb-10" />
                   </li>
                 ))}
