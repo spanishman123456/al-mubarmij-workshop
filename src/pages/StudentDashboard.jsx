@@ -140,6 +140,14 @@ export default function StudentDashboard() {
         <img src="/images/mawhiba/mawhiba-banner.png" alt="موهبة" className="h-16 object-contain" />
       </EduCard>
 
+      {user.isDemo ? (
+        <EduCard className="mb-4" accent="amber">
+          <p className="text-sm font-semibold text-amber-900" data-testid="demo-account-banner">
+            أنت تستخدم حسابًا تجريبيًا لتجربة المنصة. بياناتك قد يتم حذفها أو إعادة ضبطها في أي وقت.
+          </p>
+        </EduCard>
+      ) : null}
+
       <EduCard className="mb-4" accent="cyan">
         <div className="flex flex-wrap gap-4 text-sm text-slate-700">
           <p>
@@ -153,6 +161,10 @@ export default function StudentDashboard() {
           <p>
             <span className="font-bold text-slate-900">الوحدة: </span>
             {user.unitAr ?? "برمجة الحاسب"}
+          </p>
+          <p>
+            <span className="font-bold text-slate-900">نوع الحساب: </span>
+            {user.isDemo ? "طالب تجريبي" : "طالب رسمي"}
           </p>
         </div>
       </EduCard>

@@ -1,4 +1,5 @@
 import { STUDENTS_ROSTER } from "../../src/data/studentsRoster.js";
+import { createDemoStudentProfile, findDemoStudentById } from "../../src/lib/demo/demoStudentProfile.js";
 import { verifyPassword, getTeacherBcryptHash } from "./password.js";
 
 export const GENERIC_AUTH_ERROR = "Invalid credentials";
@@ -27,6 +28,18 @@ export function findStudentByNationalId(nationalId) {
     nameAr: row.nameAr,
   };
 }
+
+export function findStudentById(studentId) {
+  if (!studentId?.startsWith("stu-")) return null;
+  const nid = studentId.slice(4);
+  return findStudentByNationalId(nid);
+}
+
+export function createDemoStudentSessionProfile(seed) {
+  return createDemoStudentProfile(seed);
+}
+
+export { findDemoStudentById };
 
 export function verifyTeacher(nationalId, password) {
   const nid = String(nationalId || "").replace(/\D/g, "");

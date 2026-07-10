@@ -36,6 +36,13 @@ export async function loginStudentApi(nationalId) {
   });
 }
 
+export async function loginDemoStudentApi() {
+  return request("/api/auth/student-demo", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
 export async function loginTeacherApi(nationalId, password) {
   return request("/api/auth/teacher", {
     method: "POST",

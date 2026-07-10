@@ -1,4 +1,13 @@
-import { findStudentByNationalId, verifyTeacher, GENERIC_AUTH_ERROR } from "./users.js";
+import { randomUUID } from "node:crypto";
+import { DEMO_STUDENT_LOGIN_CODE } from "../../src/lib/demo/demoStudentProfile.js";
+import {
+  findStudentByNationalId,
+  findStudentById,
+  findDemoStudentById,
+  createDemoStudentSessionProfile,
+  verifyTeacher,
+  GENERIC_AUTH_ERROR,
+} from "./users.js";
 import {
   createSession,
   deleteSession,
@@ -56,6 +65,35 @@ export function registerAuthRoutes(app, logError) {
     }
   });
 
+  app.post("/api/auth/student-demo", (req, res) => {
+    try {
+      const rate = checkLoginRateLimit(req.ip, "stu:demo");
+      if (!rate.allowed) {
+        logFailedLoginAttempt({ ip: req.ip, reason: "rate_limited_demo" });
+        return res.status(429).json({ ok: false, error: GENERIC_AUTH_ERROR });
+      }
+
+      const demoSeed = randomUUID().replace(/-/g, "").slice(0, 12);
+      const demoStudent = createDemoStudentSessionProfile(demoSeed);
+      clearLoginAttempts(req.ip, "stu:demo");
+      rotateSession(req, res, demoStudent.id, "student");
+      res.json({
+        ok: true,
+        user: {
+          id: demoStudent.id,
+          role: demoStudent.role,
+          nameAr: demoStudent.nameAr,
+          isDemo: true,
+          studentType: "demo",
+          demoAccessCode: DEMO_STUDENT_LOGIN_CODE,
+        },
+      });
+    } catch (err) {
+      logError("auth.studentDemo", err);
+      res.status(500).json({ ok: false, error: "failed" });
+    }
+  });
+
   app.post("/api/auth/teacher", (req, res) => {
     try {
       const { nationalId, password } = req.body || {};
@@ -90,9 +128,17 @@ export function registerAuthRoutes(app, logError) {
 
   app.get("/api/auth/me", (req, res) => {
     if (!req.auth?.userId) return res.status(401).json({ ok: false, error: "Unauthorized" });
+    const userId = req.auth.userId;
+    const profile = findDemoStudentById(userId) || findStudentById(userId);
     res.json({
       ok: true,
-      user: { id: req.auth.userId, role: req.auth.role },
+      user: {
+        id: userId,
+        role: req.auth.role,
+        nameAr: profile?.nameAr || null,
+        isDemo: Boolean(profile?.isDemo),
+        studentType: profile?.studentType || (req.auth.role === "student" ? "official" : null),
+      },
     });
   });
 }

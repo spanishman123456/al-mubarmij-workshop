@@ -40,6 +40,16 @@ export async function loginStudent(baseUrl, nationalId) {
   return { res, body, ...extractAuthCookies(res) };
 }
 
+export async function loginDemoStudent(baseUrl) {
+  const res = await fetch(`${baseUrl}/api/auth/student-demo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  const body = await res.json();
+  return { res, body, ...extractAuthCookies(res) };
+}
+
 export async function loginTeacher(baseUrl, nationalId, password) {
   const res = await fetch(`${baseUrl}/api/auth/teacher`, {
     method: "POST",

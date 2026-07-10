@@ -5,9 +5,10 @@ import { MawhibaBrand, SiteTitle } from "../components/branding/MawhibaBrand";
 import { INACTIVITY_LOGOUT_MESSAGE_AR } from "../lib/inactivityConfig.js";
 
 export default function LoginPage() {
-  const { loginStudentByNationalId, loginTeacher, authReady } = usePlatform();
+  const { loginStudentByNationalId, loginTeacher, loginDemoStudent, authReady } = usePlatform();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const demoQuery = searchParams.get("demo") === "student";
   const inactiveNotice =
     searchParams.get("reason") === "inactivity" ? INACTIVITY_LOGOUT_MESSAGE_AR : "";
   const [tab, setTab] = useState("student");
@@ -43,6 +44,18 @@ export default function LoginPage() {
       return;
     }
     navigate("/teacher", { replace: true });
+  }
+
+  async function submitDemoStudent() {
+    setError("");
+    setLoading(true);
+    const res = await loginDemoStudent();
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.message || "تعذّر الدخول التجريبي.");
+      return;
+    }
+    navigate("/student", { replace: true });
   }
 
   return (
@@ -133,6 +146,32 @@ export default function LoginPage() {
               >
                 {loading ? "جاري التحقق..." : "دخول"}
               </button>
+              {demoQuery ? (
+                <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
+                  <p className="font-bold">أنت على وشك الدخول بحساب طالب تجريبي لتجربة منصة برمجة الحاسب.</p>
+                  <button
+                    type="button"
+                    data-testid="demo-student-start"
+                    onClick={submitDemoStudent}
+                    disabled={loading}
+                    className="mt-3 w-full rounded-xl border border-violet-600 bg-white py-2.5 font-bold text-violet-700 transition hover:bg-violet-100 disabled:opacity-60"
+                  >
+                    ابدأ التجربة
+                  </button>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                data-testid="demo-student-login"
+                onClick={submitDemoStudent}
+                disabled={loading}
+                className="w-full rounded-xl border border-violet-300 bg-violet-50 py-3 text-sm font-bold text-violet-800 transition hover:bg-violet-100 disabled:opacity-60"
+              >
+                {loading ? "جاري تجهيز الحساب التجريبي..." : "تجربة المنصة كطالب تجريبي"}
+              </button>
+              <p className="text-center text-xs text-violet-700">
+                رابط مباشر للتجربة: <a href="/demo" className="font-bold underline">/demo</a>
+              </p>
               <p className="text-center text-xs text-slate-500">
                 يُسمح بالدخول فقط للطلاب المسجلين في النظام الرسمي
               </p>

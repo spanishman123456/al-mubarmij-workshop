@@ -31,7 +31,8 @@ export function OnboardingGate({ children }) {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const needsGate = isStudentSession && GATE_PATHS.some((p) => location.pathname.startsWith(p));
+  const isDemoStudent = Boolean(user?.isDemo);
+  const needsGate = isStudentSession && !isDemoStudent && GATE_PATHS.some((p) => location.pathname.startsWith(p));
 
   useEffect(() => {
     if (!needsGate || !user?.id) {

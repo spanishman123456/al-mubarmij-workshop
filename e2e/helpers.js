@@ -18,6 +18,12 @@ export async function loginStudent(page, nid = STUDENT_NID) {
   await expect(page).toHaveURL(/\/student/);
 }
 
+export async function loginDemoStudent(page) {
+  await page.goto("/login");
+  await page.getByTestId("demo-student-login").click();
+  await expect(page).toHaveURL(/\/student/, { timeout: 12_000 });
+}
+
 async function csrfFromPageCookies(page) {
   const cookies = await page.context().cookies();
   return cookies.find((c) => c.name === "platform_csrf")?.value || "";

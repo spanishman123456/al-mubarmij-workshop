@@ -5,6 +5,7 @@ import {
   rosterStudentToUser,
   getAllRosterStudents,
 } from "../data/studentsRoster";
+import { createDemoStudentProfile } from "../lib/demo/demoStudentProfile";
 import {
   savePlatformState,
   getStudentProgress,
@@ -24,7 +25,7 @@ import {
   mergeRemoteAnalytics,
 } from "../lib/platformAnalytics";
 import { reportLoginEvent, reportActivityPatch, fetchAllAnalytics } from "../lib/analyticsApi";
-import { loginStudentApi, loginTeacherApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi, syncProgressApi, fetchComputedProgressMe, fetchTeacherRosterProgress, completeStudentDayApi, fetchPublicationConfigApi } from "../lib/platformApi";
+import { loginStudentApi, loginTeacherApi, loginDemoStudentApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi, syncProgressApi, fetchComputedProgressMe, fetchTeacherRosterProgress, completeStudentDayApi, fetchPublicationConfigApi } from "../lib/platformApi";
 import { setCachedPublicationConfig } from "../lib/publicationConfigStore.js";
 import {
   loadValidatedPlatformState,
@@ -360,6 +361,41 @@ export function PlatformProvider({ children }) {
       resetActivityTracking();
       refreshMyComputedProgress(student.id, updatedProgress).catch(() => {});
       return { ok: true, user: student };
+    },
+    [persist, refreshMyComputedProgress],
+  );
+
+  const loginDemoStudent = useCallback(
+    async () => {
+      let payload;
+      try {
+        payload = await loginDemoStudentApi();
+      } catch (err) {
+        console.error("[platform] demo auth failed", err);
+        return { ok: false, message: "تعذّر بدء الجلسة التجريبية." };
+      }
+
+      const demoUser = resolveSessionUser(payload?.user?.id) || createDemoStudentProfile(payload?.user?.id);
+      const sessionId = getOrCreateLoginSessionId();
+      let updatedAnalytics = null;
+      let updatedProgress = null;
+
+      persist((prev) => {
+        let next = { ...prev, ...createSessionPatch(demoUser.id) };
+        next = ensureStudentRecords(next, demoUser.id);
+        const current = next.analyticsByStudent[demoUser.id];
+        updatedAnalytics = recordLogin(current, { sessionId });
+        updatedProgress = getStudentProgress(next, demoUser.id);
+        next.analyticsByStudent = {
+          ...next.analyticsByStudent,
+          [demoUser.id]: updatedAnalytics,
+        };
+        return next;
+      });
+
+      resetActivityTracking();
+      refreshMyComputedProgress(demoUser.id, updatedProgress).catch(() => {});
+      return { ok: true, user: demoUser };
     },
     [persist, refreshMyComputedProgress],
   );
@@ -1039,6 +1075,7 @@ export function PlatformProvider({ children }) {
       authReady,
       loginTeacher,
       loginStudentByNationalId,
+      loginDemoStudent,
       logout,
       logoutForInactivity,
       myProgress,
@@ -1079,6 +1116,7 @@ export function PlatformProvider({ children }) {
       authReady,
       loginTeacher,
       loginStudentByNationalId,
+      loginDemoStudent,
       logout,
       logoutForInactivity,
       myProgress,

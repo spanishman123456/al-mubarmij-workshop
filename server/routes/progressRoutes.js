@@ -1,5 +1,6 @@
 import { requireAuth, requireRole, requireProgressAccess } from "../auth/middleware.js";
 import { STUDENTS_ROSTER } from "../../src/data/studentsRoster.js";
+import { isDemoStudentId } from "../../src/lib/demo/demoStudentProfile.js";
 import {
   calculateStudentProgress,
   calculateStudentProgressDetails,
@@ -350,6 +351,7 @@ function queryAllStudentProgressRows() {
     return {
       studentId: row.student_id || "",
       studentNameAr: byId.get(row.student_id || "") || "طالب غير معروف",
+      isDemo: isDemoStudentId(row.student_id || ""),
       progress,
       updatedAt: row.updated_at || null,
     };
@@ -357,6 +359,8 @@ function queryAllStudentProgressRows() {
 }
 
 function buildPythonSnippetsAudit(rows = []) {
+  const officialRows = rows.filter((row) => !row.isDemo);
+  const demoRows = rows.filter((row) => row.isDemo);
   const detail = [];
   let studentsWithCodes = 0;
   let totalSnippets = 0;
@@ -367,7 +371,7 @@ function buildPythonSnippetsAudit(rows = []) {
   let missingActivityOrLesson = 0;
   let potentialDataCorruption = false;
 
-  for (const row of rows) {
+  for (const row of officialRows) {
     const snippets = Array.isArray(row.progress?.pythonSnippets) ? row.progress.pythonSnippets : [];
     if (snippets.length > 0) studentsWithCodes += 1;
     let rowWithCode = 0;
@@ -403,6 +407,10 @@ function buildPythonSnippetsAudit(rows = []) {
   if (emptyCodeSnippets > 0 || missingStudentLink > 0) potentialDataCorruption = true;
   detail.sort((a, b) => b.totalSnippets - a.totalSnippets);
   return {
+    excludedDemoStudents: demoRows.filter((row) => {
+      const snippets = Array.isArray(row.progress?.pythonSnippets) ? row.progress.pythonSnippets : [];
+      return snippets.length > 0;
+    }).length,
     studentsWithCodes,
     totalSnippets,
     snippetsWithCodeText,

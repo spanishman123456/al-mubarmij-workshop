@@ -43,6 +43,11 @@ export function NavBar() {
           <div>
             <p className="font-ar text-base font-bold text-white">برمجة الحاسب</p>
             <p className="text-[10px] text-violet-300">برنامج موهبة الإثرائي — صفوف 6-8</p>
+            {user.isDemo ? (
+              <span className="mt-1 inline-flex rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-200">
+                حساب تجريبي
+              </span>
+            ) : null}
           </div>
         </Link>
 

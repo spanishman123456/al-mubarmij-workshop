@@ -13,6 +13,7 @@ import QuizzesPage from "./pages/QuizzesPage";
 import QuizTakePage from "./pages/QuizTakePage";
 import QuizReviewPage from "./pages/QuizReviewPage";
 import LoginPage from "./pages/LoginPage";
+import DemoStudentEntryPage from "./pages/DemoStudentEntryPage.jsx";
 import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import LearningPathPage from "./pages/LearningPathPage";
@@ -182,6 +183,14 @@ function AppRoutes() {
           element={
             <GuestRoute>
               <LoginPage />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/demo"
+          element={
+            <GuestRoute>
+              <DemoStudentEntryPage />
             </GuestRoute>
           }
         />

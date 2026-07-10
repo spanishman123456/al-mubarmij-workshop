@@ -1,4 +1,5 @@
 import { findTeacherById } from "../data/demoUsers";
+import { findDemoStudentById } from "./demo/demoStudentProfile";
 import { findRosterUserById } from "../data/studentsRoster";
 import { loadPlatformState, savePlatformState } from "./platformStore";
 
@@ -6,7 +7,7 @@ export const SESSION_MAX_MS = 8 * 60 * 60 * 1000; // 8 ساعات
 
 export function resolveSessionUser(userId) {
   if (!userId) return null;
-  return findTeacherById(userId) || findRosterUserById(userId) || null;
+  return findTeacherById(userId) || findRosterUserById(userId) || findDemoStudentById(userId) || null;
 }
 
 export function isSessionExpired(state) {
