@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
 import {
@@ -237,6 +238,20 @@ export default function TeacherDashboard() {
       setSnippetError(err?.status === 403 ? "لا تملك صلاحية عرض هذا الكود." : "تعذر حذف الكود المحفوظ.");
     }
   }
+
+  useEffect(() => {
+    if (!selectedPreviewSnippet) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setSelectedPreviewSnippet(null);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [selectedPreviewSnippet]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -554,82 +569,92 @@ export default function TeacherDashboard() {
         )}
       </EduCard>
 
-      {selectedPreviewSnippet ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-5 shadow-2xl" dir="rtl">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">{selectedPreviewSnippet.title || "كود محفوظ"}</h3>
-                <p className="text-xs text-slate-600">
-                  الطالب: {selectedSnippetStudent?.student.nameAr || "—"} | الدرس:{" "}
-                  {selectedPreviewSnippet.lessonTitle || selectedPreviewSnippet.lessonId || "—"} | النشاط:{" "}
-                  {selectedPreviewSnippet.activityId || "—"}
-                </p>
-                <p className="text-xs text-slate-500">
-                  الحفظ: {selectedPreviewSnippet.at ? formatLoginDateTime(selectedPreviewSnippet.at) : "—"} | آخر تعديل:{" "}
-                  {selectedPreviewSnippet.updatedAt
-                    ? formatLoginDateTime(selectedPreviewSnippet.updatedAt)
-                    : selectedPreviewSnippet.at
-                      ? formatLoginDateTime(selectedPreviewSnippet.at)
-                      : "—"}
-                </p>
+      {selectedPreviewSnippet
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4"
+              onClick={() => setSelectedPreviewSnippet(null)}
+            >
+              <div
+                className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-5 shadow-2xl"
+                dir="rtl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{selectedPreviewSnippet.title || "كود محفوظ"}</h3>
+                    <p className="text-xs text-slate-600">
+                      الطالب: {selectedSnippetStudent?.student.nameAr || "—"} | الدرس:{" "}
+                      {selectedPreviewSnippet.lessonTitle || selectedPreviewSnippet.lessonId || "—"} | النشاط:{" "}
+                      {selectedPreviewSnippet.activityId || "—"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      الحفظ: {selectedPreviewSnippet.at ? formatLoginDateTime(selectedPreviewSnippet.at) : "—"} | آخر تعديل:{" "}
+                      {selectedPreviewSnippet.updatedAt
+                        ? formatLoginDateTime(selectedPreviewSnippet.updatedAt)
+                        : selectedPreviewSnippet.at
+                          ? formatLoginDateTime(selectedPreviewSnippet.at)
+                          : "—"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPreviewSnippet(null)}
+                    className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700"
+                  >
+                    إغلاق
+                  </button>
+                </div>
+
+                {selectedPreviewSnippet._hasCode ? (
+                  <pre
+                    dir="ltr"
+                    className="max-h-[50vh] overflow-auto rounded-lg border border-slate-200 bg-slate-950 p-3 text-left font-mono text-sm text-emerald-200"
+                    style={{ direction: "ltr", textAlign: "left", unicodeBidi: "isolate", whiteSpace: "pre-wrap" }}
+                  >
+                    {selectedPreviewSnippet._code}
+                  </pre>
+                ) : (
+                  <p className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    هذا السجل موجود لكن لا يحتوي على نص كود.
+                  </p>
+                )}
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openInEditor(selectedPreviewSnippet)}
+                    className="rounded-md border border-emerald-300 px-3 py-1 text-xs text-emerald-700"
+                  >
+                    فتح في المحرر
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copySnippet(selectedPreviewSnippet)}
+                    className="rounded-md border border-violet-300 px-3 py-1 text-xs text-violet-700"
+                  >
+                    نسخ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteSnippet(selectedPreviewSnippet)}
+                    className="rounded-md border border-rose-300 px-3 py-1 text-xs text-rose-700"
+                  >
+                    حذف
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPreviewSnippet(null)}
+                    className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700"
+                  >
+                    إغلاق
+                  </button>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedPreviewSnippet(null)}
-                className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700"
-              >
-                إغلاق
-              </button>
-            </div>
-
-            {selectedPreviewSnippet._hasCode ? (
-              <pre
-                dir="ltr"
-                className="max-h-[50vh] overflow-auto rounded-lg border border-slate-200 bg-slate-950 p-3 text-left font-mono text-sm text-emerald-200"
-                style={{ direction: "ltr", textAlign: "left", unicodeBidi: "isolate", whiteSpace: "pre-wrap" }}
-              >
-                {selectedPreviewSnippet._code}
-              </pre>
-            ) : (
-              <p className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                هذا السجل موجود لكن لا يحتوي على نص كود.
-              </p>
-            )}
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => openInEditor(selectedPreviewSnippet)}
-                className="rounded-md border border-emerald-300 px-3 py-1 text-xs text-emerald-700"
-              >
-                فتح في المحرر
-              </button>
-              <button
-                type="button"
-                onClick={() => copySnippet(selectedPreviewSnippet)}
-                className="rounded-md border border-violet-300 px-3 py-1 text-xs text-violet-700"
-              >
-                نسخ
-              </button>
-              <button
-                type="button"
-                onClick={() => deleteSnippet(selectedPreviewSnippet)}
-                className="rounded-md border border-rose-300 px-3 py-1 text-xs text-rose-700"
-              >
-                حذف
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPreviewSnippet(null)}
-                className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700"
-              >
-                إغلاق
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
 
       <PrePostComparisonChart className="mt-8" students={allStudentsProgress} />
 
