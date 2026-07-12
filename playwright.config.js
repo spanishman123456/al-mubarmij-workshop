@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import process from "node:process";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -12,15 +13,16 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "PORT=3001 npm run dev:server",
+      command: "npm run dev:server",
       url: "http://127.0.0.1:3001/api/health",
-      reuseExistingServer: false,
+      reuseExistingServer: !process.env.CI,
       timeout: 120_000,
+      env: { ...process.env, PORT: "3001" },
     },
     {
       command: "npm run dev -- --host 127.0.0.1 --port 4173",
       url: "http://127.0.0.1:4173",
-      reuseExistingServer: false,
+      reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
   ],

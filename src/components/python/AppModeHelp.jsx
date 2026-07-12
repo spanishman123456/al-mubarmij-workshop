@@ -18,7 +18,7 @@ export function AppModeHelp({ onInsertExample, variant = "dark" }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className={title}>أوامر مشروع الواجهة الرسومية (skui)</h3>
         {onInsertExample ? (
-          <button type="button" className={btn} onClick={() => onInsertExample(SKUI_EXAMPLES[0].code)}>
+          <button type="button" className={btn} onClick={() => onInsertExample(SKUI_EXAMPLES[0])}>
             إدراج مثال جاهز
           </button>
         ) : null}
@@ -34,7 +34,7 @@ export function AppModeHelp({ onInsertExample, variant = "dark" }) {
               key={example.id}
               type="button"
               className={btn}
-              onClick={() => onInsertExample(example.code)}
+              onClick={() => onInsertExample(example)}
             >
               {example.titleAr}
             </button>

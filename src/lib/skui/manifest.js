@@ -1,4 +1,4 @@
-export const SKUI_VERSION = "1.0.0";
+export const SKUI_VERSION = "1.1.0";
 export const SKULPT_BUILD = Object.freeze({
   gitHash: "e3c1c1a4e081362d96ba8afc5997be516b437f30",
   date: "2021-03-25T11:36:32.075Z",
@@ -55,6 +55,7 @@ export const SKUI_COMPONENTS = Object.freeze([
   "Chart",
   "Timer",
   "Audio",
+  "Guide",
 ]);
 
 export const SKUI_STYLE_PROPS = Object.freeze([
@@ -71,6 +72,8 @@ export const SKUI_STYLE_PROPS = Object.freeze([
   "variant",
   "size",
   "columns",
+  "depth",
+  "appearance",
 ]);
 
 export const SKUI_COMPONENT_API = Object.freeze(
@@ -99,8 +102,8 @@ export function getSkuiAutocompleteSuggestions(prefix = "") {
 export function getSkuiConstructorProps(component) {
   const common = [...SKUI_STYLE_PROPS, "disabled"];
   const map = {
-    App: ["title", "width", "height", "theme", "direction"],
-    Button: ["text", "variant", "size", "on_click", "disabled"],
+    App: ["title", "width", "height", "theme", "appearance", "direction"],
+    Button: ["text", "variant", "size", "depth", "on_click", "disabled"],
     Input: ["placeholder", "value", "on_input", "on_change", "on_key_press", "disabled"],
     TextArea: ["placeholder", "value", "rows", "on_input", "on_change"],
     Heading: ["text", "level"],
@@ -109,6 +112,7 @@ export function getSkuiConstructorProps(component) {
     Modal: ["title", "open"],
     Canvas: ["width", "height"],
     Timer: ["interval", "running", "on_change"],
+    Guide: ["title", "message", "character", "position", "open"],
   };
   return [...new Set([...(map[component] || []), ...common, ...SKUI_EVENTS])];
 }

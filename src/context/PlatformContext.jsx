@@ -508,9 +508,10 @@ export function PlatformProvider({ children }) {
   );
 
   const saveGraphicProject = useCallback(
-    (title, code, existingId = null) => {
+    (title, code, existingId = null, meta = {}) => {
       if (!user || user.role !== "student") return null;
       let savedId = existingId;
+      const templateId = meta.templateId || null;
       persist((prev) => {
         const current = getStudentProgress(prev, user.id);
         const analytics = recordPythonRun(getStudentAnalytics(prev, user.id));
@@ -519,7 +520,13 @@ export function PlatformProvider({ children }) {
         if (existingId) {
           const idx = list.findIndex((p) => p.id === existingId);
           if (idx >= 0) {
-            list[idx] = { ...list[idx], title: title || list[idx].title, code, updatedAt: now };
+            list[idx] = {
+              ...list[idx],
+              title: title || list[idx].title,
+              code,
+              updatedAt: now,
+              ...(templateId ? { templateId } : {}),
+            };
             savedId = existingId;
           } else {
             savedId = `gpy-${Date.now()}`;
@@ -527,6 +534,7 @@ export function PlatformProvider({ children }) {
               id: savedId,
               title: title || "مشروع رسومي",
               code,
+              templateId,
               status: "draft",
               at: now,
               updatedAt: now,
@@ -541,6 +549,7 @@ export function PlatformProvider({ children }) {
             id: savedId,
             title: title || "مشروع رسومي",
             code,
+            templateId,
             status: "draft",
             at: now,
             updatedAt: now,

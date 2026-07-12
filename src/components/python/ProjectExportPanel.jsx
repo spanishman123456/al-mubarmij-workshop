@@ -7,30 +7,41 @@ import {
   exportPwaZip,
 } from "../../lib/projectExport";
 import { openWebAppPreview } from "../../lib/webAppPreview";
+import { checkProjectReadiness } from "../../lib/projectReadiness";
 
 const EXPORT_ACTIONS = [
   { id: "zip", label: "تصدير الكود", sub: "Source ZIP منظم مع WebApp", fn: exportProjectZip, capKey: "zip" },
   {
     id: "web",
-    label: "فتح WebApp مباشرة",
-    sub: "صفحة مستقلة لتجربة المشروع فورًا",
+    label: "فتح WebApp في تبويب جديد",
+    sub: "معاينة مباشرة دون فك ZIP",
     fn: openWebAppPreview,
     capKey: "webApp",
   },
   {
     id: "webzip",
-    label: "تصدير WebApp ZIP (تنزيل)",
+    label: "تنزيل WebApp ZIP",
     sub: "حزمة مستقلة للاستضافة الثابتة",
     fn: exportWebAppHtml,
     capKey: "webApp",
   },
-  { id: "pwa", label: "تصدير PWA", sub: "تثبيت وعمل دون اتصال", fn: exportPwaZip, capKey: "pwa" },
+  {
+    id: "pwa",
+    label: "تصدير PWA",
+    sub: "قيد التطوير — لم يُثبت التثبيت الفعلي",
+    fn: exportPwaZip,
+    capKey: "pwa",
+    disabled: true,
+    disabledReason: "قيد التطوير — لا تُعرض كميزة مكتملة حتى نجاح اختبار التثبيت.",
+  },
   {
     id: "exe",
     label: "تصدير Windows",
-    sub: "Tauri 2 → EXE وMSI عبر Windows CI",
+    sub: "غير متاح حاليًا — قيد استكمال نظام البناء",
     fn: exportWindowsExeKit,
     capKey: "exe",
+    disabled: true,
+    disabledReason: "تصدير Windows غير متاح حاليًا — قيد استكمال التحقق من التثبيت.",
   },
 ];
 
@@ -49,10 +60,12 @@ export function ProjectExportPanel({
   projectId = null,
   variant = "dark",
   compact = false,
+  lastRunOk = false,
+  lastRunCodeHash = null,
 }) {
   const [busy, setBusy] = useState(null);
   const [toast, setToast] = useState(null);
-  const [settings, setSettings] = useState({
+  const [settings] = useState({
     description: "",
     version: "1.0.0",
     projectType: "application",
@@ -64,6 +77,7 @@ export function ProjectExportPanel({
     signingMode: "educational",
   });
   const [history, setHistory] = useState([]);
+  const [readinessNote, setReadinessNote] = useState(null);
 
   useEffect(() => {
     if (!ownerId) return;
@@ -77,16 +91,18 @@ export function ProjectExportPanel({
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         if (data?.jobs?.length) {
-          setHistory((prev) => [
-            ...data.jobs.map((job) => ({
-              id: job.id,
-              name: job.metadata?.name || title,
-              target: job.target,
-              status: job.status,
-              at: job.createdAt,
-            })),
-            ...prev,
-          ].slice(0, 10));
+          setHistory((prev) =>
+            [
+              ...data.jobs.map((job) => ({
+                id: job.id,
+                name: job.metadata?.name || title,
+                target: job.target,
+                status: job.status,
+                at: job.createdAt,
+              })),
+              ...prev,
+            ].slice(0, 10),
+          );
         }
       })
       .catch(() => {});
@@ -97,21 +113,31 @@ export function ProjectExportPanel({
     [code, mode, templateId, title],
   );
 
+  useEffect(() => {
+    let cancelled = false;
+    checkProjectReadiness({ title, code, mode, lastRunOk, lastRunCodeHash }).then((result) => {
+      if (!cancelled) setReadinessNote(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [title, code, mode, lastRunOk, lastRunCodeHash]);
+
   function showToast(result) {
     setToast(result);
     setTimeout(() => setToast(null), 8000);
   }
 
   async function handleExport(action) {
+    if (action.disabled) {
+      showToast({ ok: false, message: action.disabledReason });
+      return;
+    }
     const cap = caps[action.capKey];
     if (!cap?.ok) {
       showToast({
         ok: false,
-        message:
-          action.id === "exe"
-            ? `${cap?.message || "تعذر إنشاء حزمة EXE."} جرّب تصدير ZIP أو Web App.`
-            : cap?.message || "التصدير غير متاح لهذا المشروع.",
-        note: action.id === "exe" ? "للمشاريع غير المدعومة، ZIP هو البديل الموصى به." : undefined,
+        message: cap?.message || "التصدير غير متاح لهذا المشروع.",
       });
       return;
     }
@@ -125,7 +151,7 @@ export function ProjectExportPanel({
         id: result.job?.id || `${Date.now()}-${action.id}`,
         name: title,
         target: action.id,
-        status: result.ok ? (action.id === "exe" ? "queued" : "completed") : "failed",
+        status: result.ok ? "completed" : "failed",
         at: new Date().toISOString(),
       };
       setHistory((prev) => {
@@ -163,7 +189,7 @@ export function ProjectExportPanel({
   if (compact) {
     return (
       <div className="flex flex-wrap gap-2">
-        {EXPORT_ACTIONS.map((action) => {
+        {EXPORT_ACTIONS.filter((action) => !action.disabled).map((action) => {
           const cap = caps[action.capKey];
           return (
             <button
@@ -192,85 +218,47 @@ export function ProjectExportPanel({
     <div className={boxClass}>
       <h3 className={titleClass}>تصدير المشروع</h3>
       <p className={`mt-1 ${subClass}`}>
-        حوّل مشروعك إلى منتج مستقل يعمل بمحرك Skulpt وskui نفسه.
+        افتح WebApp مباشرة أو نزّل ZIP — نفس محرك Skulpt وskui المستخدم في المعاينة.
       </p>
 
-      <ol className={`mt-3 grid gap-1 text-xs sm:grid-cols-3 ${subClass}`}>
-        <li>1. اختيار المشروع: <strong>{title || "غير مسمى"}</strong></li>
-        <li>2. اختيار الصيغة أدناه</li>
-        <li>3. إعداد بيانات التطبيق</li>
-        <li>4. فحص الجاهزية: <strong>{Object.values(caps).some((cap) => cap?.ok) ? "جاهز" : "يحتاج تصحيحًا"}</strong></li>
-        <li>5. إنشاء الحزمة</li>
-        <li>6. التنزيل أو متابعة Windows</li>
-      </ol>
-
-      <details className={`mt-3 rounded-lg border p-3 ${isDark ? "border-white/10 bg-black/20" : "border-slate-200 bg-white"}`}>
-        <summary className="cursor-pointer text-xs font-bold">إعداد اسم وأيقونة التطبيق</summary>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <input
-            value={settings.description}
-            onChange={(event) => setSettings((prev) => ({ ...prev, description: event.target.value }))}
-            placeholder="وصف التطبيق"
-            className="rounded border border-white/20 bg-black/20 px-2 py-1.5 text-xs"
-          />
-          <input
-            dir="ltr"
-            value={settings.version}
-            onChange={(event) => setSettings((prev) => ({ ...prev, version: event.target.value }))}
-            placeholder="1.0.0"
-            className="rounded border border-white/20 bg-black/20 px-2 py-1.5 text-xs"
-          />
-          <select
-            value={settings.authorVisibility}
-            onChange={(event) => setSettings((prev) => ({ ...prev, authorVisibility: event.target.value }))}
-            className="rounded border border-white/20 bg-black/20 px-2 py-1.5 text-xs"
-          >
-            <option value="hidden">عدم إظهار اسم المطور</option>
-            <option value="alias">استخدام اسم مستعار</option>
-            <option value="name">إظهار اسمي</option>
-          </select>
-          <select
-            value={settings.direction}
-            onChange={(event) => setSettings((prev) => ({ ...prev, direction: event.target.value }))}
-            className="rounded border border-white/20 bg-black/20 px-2 py-1.5 text-xs"
-          >
-            <option value="rtl">العربية — RTL</option>
-            <option value="ltr">English — LTR</option>
-          </select>
-          <select
-            value={settings.signingMode}
-            onChange={(event) => setSettings((prev) => ({ ...prev, signingMode: event.target.value }))}
-            className="rounded border border-white/20 bg-black/20 px-2 py-1.5 text-xs"
-          >
-            <option value="educational">Windows تعليمي — غير موقّع</option>
-            <option value="official">Windows رسمي — يتطلب توقيع Authenticode</option>
-          </select>
+      {readinessNote ? (
+        <div className={`mt-3 rounded-lg border p-2 text-xs ${isDark ? "border-white/10 bg-black/20 text-slate-300" : "border-slate-200 bg-white text-slate-700"}`}>
+          <p>{readinessNote.statuses.preview}</p>
+          <p>{readinessNote.statuses.webApp}</p>
+          <p>{readinessNote.statuses.pwa}</p>
+          <p>{readinessNote.statuses.windows}</p>
         </div>
-      </details>
+      ) : null}
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {EXPORT_ACTIONS.map((action) => {
           const cap = caps[action.capKey];
+          const blocked = action.disabled || !cap?.ok;
           return (
             <button
               key={action.id}
               type="button"
-              disabled={!cap?.ok || busy === action.id}
+              disabled={blocked || busy === action.id}
               onClick={() => handleExport(action)}
               className={`${btnBase} text-right`}
+              data-testid={`export-action-${action.id}`}
             >
               <span className="block">{busy === action.id ? "جاري التصدير…" : action.label}</span>
-              <span className={`mt-0.5 block font-normal ${subClass}`}>{cap?.ok ? action.sub : cap?.message}</span>
+              <span className={`mt-0.5 block font-normal ${subClass}`}>
+                {action.disabled ? action.disabledReason : cap?.ok ? action.sub : cap?.message}
+              </span>
             </button>
           );
         })}
       </div>
 
       <div className={`mt-3 rounded-lg p-2 text-xs ${isDark ? "bg-black/30 text-slate-400" : "bg-white text-slate-500"}`}>
-        <p><strong>الجوال:</strong> استخدم PWA للتثبيت والعمل دون اتصال.</p>
-        <p className="mt-1"><strong>Windows:</strong> تطبيق ويب تعليمي مغلف بـTauri 2، وليس تحويلًا إلى CPython.</p>
-        <p className="mt-1"><strong>التوقيع:</strong> الوضع الرسمي يفشل بأمان إذا لم تكن شهادة Authenticode مهيأة؛ الوضع التعليمي ينتج حزمة موسومة بوضوح كغير موقّعة.</p>
-        <p className="mt-1 opacity-90">لا يُنفذ كود الطالب على خادم البناء، ولا تتضمن الحزم أسرار المنصة.</p>
+        <p>
+          <strong>WebApp:</strong> خياران منفصلان — فتح تبويب جديد أو تنزيل ZIP.
+        </p>
+        <p className="mt-1">
+          <strong>PWA / Windows:</strong> معروضان كقيد التطوير حتى يكتمل التحقق الفعلي من التثبيت والتشغيل.
+        </p>
       </div>
 
       {toast ? (
@@ -296,8 +284,12 @@ export function ProjectExportPanel({
           <ul className="mt-2 space-y-1">
             {history.map((item) => (
               <li key={item.id} className="flex flex-wrap justify-between gap-2 border-b border-white/10 py-1">
-                <span>{item.name} — {item.target}</span>
-                <span>{item.status} — {new Date(item.at).toLocaleString("ar-SA")}</span>
+                <span>
+                  {item.name} — {item.target}
+                </span>
+                <span>
+                  {item.status} — {new Date(item.at).toLocaleString("ar-SA")}
+                </span>
               </li>
             ))}
           </ul>

@@ -290,17 +290,18 @@ function buildGenericConsolePlan(exerciseId) {
 
 /** @param {typeof GRAPHIC_APP_PROJECTS[0]} project */
 function buildGenericAppPlan(project) {
-  const sol = project.starter;
   return {
     ideaAr: project.edu?.description ?? project.titleAr,
-    commandsAr: ["skui", "App", "def", "on_click"],
+    commandsAr: ["skui", "App", "Button", "on_click", "app.run"],
     stepsOverviewAr: (project.edu?.usageSteps ?? []).slice(0, 4),
     expectedOutputAr: "تطبيق تفاعلي في المعاينة",
+    // الحل الكامل للمعلم فقط عبر API — لا يُضمَّن في حزمة الطالب
+    fullSolution: null,
     steps: [
       {
         titleAr: "الخطوة 1 — الاستيراد",
-        instructionAr: "ابدأ باستيراد مكتبة skui باسم ui.",
-        initialCode: `# استورد مكتبة الواجهة\nimport skui as ______`,
+        instructionAr: `ابدأ مشروع «${project.titleAr}» باستيراد مكتبة skui باسم ui.`,
+        initialCode: project.starter || `# استورد مكتبة الواجهة\nimport skui as ______`,
         appendCode: "",
         hints: [
           "أول سطر: import skui as ui",
@@ -312,26 +313,28 @@ function buildGenericAppPlan(project) {
         runnable: false,
       },
       {
-        titleAr: "الخطوة 2 — الدوال",
-        instructionAr: "أنشئ App ثم اكتب def للدالة التفاعلية.",
-        appendCode: `\napp = ui.App(title="${project.titleAr}")\nmessage = ui.Text("جاهز")\ndef ______():\n    message.set_text("تم التنفيذ")`,
+        titleAr: "الخطوة 2 — إنشاء التطبيق",
+        instructionAr: "أنشئ App بعنوان المشروع ثم أضف عنصر نص أو تنبيه.",
+        appendCode: `\napp = ui.App(title="${project.titleAr}", theme="modern", appearance="dark")\nmessage = ui.Alert(text="جاهز للبناء", variant="info")`,
         hints: [
-          "أنشئ التطبيق عبر ui.App.",
-          "def اسم_الدالة(): ثم مسافة بادئة.",
-          "حدّث النص بواسطة message.set_text.",
+          "أنشئ التطبيق عبر ui.App(title=...)",
+          "أضف ui.Alert أو ui.Text",
+          "احفظ المرجع في متغير مثل message",
         ],
         check: (code) =>
-          runChecks(code, [{ check: (c) => /\bdef\s+\w+/.test(c), messageAr: "اكتب def" }]),
+          runChecks(code, [
+            { check: (c) => /ui\.App\s*\(/.test(c), messageAr: "أنشئ ui.App" },
+          ]),
         runnable: false,
       },
       {
-        titleAr: "الخطوة 3 — الواجهة",
-        instructionAr: "أضف Button واربط on_click ثم شغّل app.run().",
-        appendCode: `\nbutton = ui.Button(text="تشغيل", on_click=______)\napp.add(button)\napp.add(message)\napp.run()`,
+        titleAr: "الخطوة 3 — زر وتشغيل",
+        instructionAr: "أضف Button مع on_click ثم app.add وapp.run().",
+        appendCode: `\ndef on_action():\n    message.set_text("تم التنفيذ")\n\nbutton = ui.Button(text="تشغيل", variant="primary", depth="raised", on_click=on_action)\napp.add(button)\napp.add(message)\napp.run()`,
         hints: [
-          "ui.Button(text=\"تشغيل\", on_click=اسم_الدالة)",
-          "أضف المكونات بواسطة app.add.",
-          "app.run() في النهاية.",
+          "ui.Button(text=\"...\", on_click=اسم_الدالة)",
+          "أضف المكونات بواسطة app.add",
+          "app.run() في النهاية",
         ],
         check: (code) =>
           runChecks(code, [
@@ -340,7 +343,6 @@ function buildGenericAppPlan(project) {
         runnable: true,
       },
     ],
-    fullSolution: sol,
   };
 }
 
