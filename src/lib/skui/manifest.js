@@ -74,6 +74,7 @@ export const SKUI_STYLE_PROPS = Object.freeze([
   "columns",
   "depth",
   "appearance",
+  "scene",
 ]);
 
 export const SKUI_COMPONENT_API = Object.freeze(

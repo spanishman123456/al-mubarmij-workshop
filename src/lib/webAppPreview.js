@@ -13,6 +13,7 @@ export function saveWebAppPreview(payload, storage = globalThis.localStorage) {
     JSON.stringify({
       title: String(payload.title || "مشروع skui").slice(0, 120),
       code: String(payload.code || ""),
+      templateId: payload.templateId ? String(payload.templateId) : null,
       createdAt: Date.now(),
     }),
   );
