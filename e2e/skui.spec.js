@@ -71,7 +71,7 @@ test("student opens the current project as a direct WebApp preview", async ({ pa
   await page.getByRole("button", { name: "إدراج مثال جاهز" }).click();
 
   const popupPromise = page.waitForEvent("popup");
-  await page.getByRole("button", { name: "فتح WebApp مباشرة", exact: true }).click();
+  await page.getByRole("button", { name: /^فتح WebApp مباشرة/ }).click();
   const previewPage = await popupPromise;
   await expect(previewPage.getByText("معاينة WebApp مباشرة")).toBeVisible();
   const frame = previewPage.frameLocator('[data-testid="skui-preview-frame"]');
