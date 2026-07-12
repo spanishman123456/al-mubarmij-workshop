@@ -1,6 +1,12 @@
 name: Build SKUI Windows export
 
 on:
+  push:
+    branches:
+      - cursor/skui-export-platform-edf1
+    paths:
+      - ".github/workflows/skui-windows-export.yml"
+      - "desktop/skui-tauri-template/**"
   workflow_dispatch:
     inputs:
       product_name:
@@ -67,6 +73,11 @@ jobs:
           INPUT_BUILD_TOKEN: ${{ inputs.build_token }}
         run: |
           $ErrorActionPreference = "Stop"
+          if ([string]::IsNullOrWhiteSpace($env:INPUT_PRODUCT_NAME)) { $env:INPUT_PRODUCT_NAME = "SKUI Project" }
+          if ([string]::IsNullOrWhiteSpace($env:INPUT_VERSION)) { $env:INPUT_VERSION = "1.0.0" }
+          if ([string]::IsNullOrWhiteSpace($env:INPUT_IDENTIFIER)) { $env:INPUT_IDENTIFIER = "org.mubarmij.skui.project" }
+          if ([string]::IsNullOrWhiteSpace($env:INPUT_DIST_PATH)) { $env:INPUT_DIST_PATH = "desktop/skui-tauri-template/dist" }
+          "PRODUCT_VERSION=$env:INPUT_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           if (-not [string]::IsNullOrWhiteSpace($env:INPUT_BUILD_TOKEN)) {
             Write-Output "::add-mask::$env:INPUT_BUILD_TOKEN"
           }
@@ -207,7 +218,7 @@ jobs:
       - name: Upload Windows installers and checksums
         uses: actions/upload-artifact@v4
         with:
-          name: skui-windows-${{ inputs.version }}
+          name: skui-windows-${{ env.PRODUCT_VERSION }}
           path: windows-artifacts/*
           if-no-files-found: error
           retention-days: 14
