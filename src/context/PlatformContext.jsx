@@ -78,13 +78,11 @@ function scheduleActivitySync(studentId, analytics) {
 
 export function PlatformProvider({ children }) {
   const [state, setState] = useState(() => loadValidatedPlatformState());
-  const [authReady, setAuthReady] = useState(false);
+  const [authReady] = useState(true);
   const [remoteAnalyticsByStudent, setRemoteAnalyticsByStudent] = useState({});
   const [analyticsSyncStatus, setAnalyticsSyncStatus] = useState({ loading: false, error: null, fetchedAt: null });
 
   useEffect(() => {
-    setAuthReady(true);
-
     function onPageShow(event) {
       if (!event.persisted) return;
       const fresh = loadValidatedPlatformState();
@@ -733,7 +731,7 @@ export function PlatformProvider({ children }) {
   useEffect(() => {
     const userNow = state.sessionUserId ? resolveSessionUser(state.sessionUserId) : null;
     if (userNow?.role === "teacher") {
-      refreshTeacherAnalytics();
+      void Promise.resolve().then(refreshTeacherAnalytics);
     }
   }, [state.sessionUserId, refreshTeacherAnalytics]);
 
@@ -813,6 +811,8 @@ export function PlatformProvider({ children }) {
   return <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>;
 }
 
+// This established context module intentionally exports its provider and hook together.
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePlatform() {
   const ctx = useContext(PlatformContext);
   if (!ctx) throw new Error("usePlatform outside PlatformProvider");

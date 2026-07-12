@@ -20,6 +20,11 @@ The vendored `skulpt.min.js` reports upstream build hash
 and its standard library; a CDN dependency would break the offline and
 `connect-src 'none'` guarantees.
 
+Vendored file SHA-256 values:
+
+- `skulpt.min.js`: `1a319d8eedf314dba5af2444313e3cf2ac072a335df0f5100277e8f49b64eae9`
+- `skulpt-stdlib.js`: `e3ecccbc17c6164d19ed3c5561aaaeb752c38c8efa2d88b62b5fb7a7e1b086a7`
+
 The Web/PWA and Tauri packages share this browser runtime. PWA adds a manifest
 and service worker. Tauri adds an NSIS or MSI shell; it does not turn the
 project into native Python.

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import fs from "node:fs/promises";
 import http from "node:http";
+import { Buffer } from "node:buffer";
 import { unzipSync } from "fflate";
 
 async function unlockFreeRun(page) {
