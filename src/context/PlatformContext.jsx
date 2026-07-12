@@ -18,6 +18,7 @@ import {
   recordPageView,
   recordSimRun,
   recordPythonRun,
+  recordGuiEvent,
   recordActivityStart,
   recordActivityComplete,
   defaultAnalytics,
@@ -68,6 +69,7 @@ function scheduleActivitySync(studentId, analytics) {
       dailyLog: analytics.dailyLog,
       pagesVisited: analytics.pagesVisited,
       pythonRuns: analytics.pythonRuns,
+      guiEvents: analytics.guiEvents,
       activitiesCompleted: analytics.activitiesCompleted,
       simRuns: analytics.simRuns,
     });
@@ -76,13 +78,11 @@ function scheduleActivitySync(studentId, analytics) {
 
 export function PlatformProvider({ children }) {
   const [state, setState] = useState(() => loadValidatedPlatformState());
-  const [authReady, setAuthReady] = useState(false);
+  const [authReady] = useState(true);
   const [remoteAnalyticsByStudent, setRemoteAnalyticsByStudent] = useState({});
   const [analyticsSyncStatus, setAnalyticsSyncStatus] = useState({ loading: false, error: null, fetchedAt: null });
 
   useEffect(() => {
-    setAuthReady(true);
-
     function onPageShow(event) {
       if (!event.persisted) return;
       const fresh = loadValidatedPlatformState();
@@ -260,6 +260,22 @@ export function PlatformProvider({ children }) {
           ...prev.analyticsByStudent,
           [uid]: recordPythonRun(current),
         },
+      };
+    });
+  }, [persist]);
+
+  const trackGuiEvent = useCallback((eventName) => {
+    persist((prev) => {
+      const uid = prev.sessionUserId;
+      if (!uid) return prev;
+      const resolved = resolveSessionUser(uid);
+      if (!resolved || resolved.role !== "student") return prev;
+      const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
+      const updated = recordGuiEvent(current, eventName);
+      scheduleActivitySync(uid, updated);
+      return {
+        ...prev,
+        analyticsByStudent: { ...prev.analyticsByStudent, [uid]: updated },
       };
     });
   }, [persist]);
@@ -588,6 +604,33 @@ export function PlatformProvider({ children }) {
     [persist, user],
   );
 
+  const deleteGraphicProject = useCallback(
+    (projectId) => {
+      if (!user || user.role !== "student") return false;
+      let removed = false;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const list = (current.graphicProjects || []).filter((project) => {
+          if (project.id === projectId) {
+            removed = true;
+            return false;
+          }
+          return true;
+        });
+        if (!removed) return prev;
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: { ...current, graphicProjects: list, updatedAt: new Date().toISOString() },
+          },
+        };
+      });
+      return removed;
+    },
+    [persist, user],
+  );
+
   const teacherUpdateGraphicProject = useCallback(
     (studentId, projectId, patch) => {
       persist((prev) => {
@@ -688,7 +731,7 @@ export function PlatformProvider({ children }) {
   useEffect(() => {
     const userNow = state.sessionUserId ? resolveSessionUser(state.sessionUserId) : null;
     if (userNow?.role === "teacher") {
-      refreshTeacherAnalytics();
+      void Promise.resolve().then(refreshTeacherAnalytics);
     }
   }, [state.sessionUserId, refreshTeacherAnalytics]);
 
@@ -712,6 +755,7 @@ export function PlatformProvider({ children }) {
       savePythonSnippet,
       saveGraphicProject,
       submitGraphicProject,
+      deleteGraphicProject,
       saveProject,
       teacherUpdateStudent,
       teacherUpdateGraphicProject,
@@ -720,6 +764,7 @@ export function PlatformProvider({ children }) {
       trackPageView,
       trackSimRun,
       trackPythonRun,
+      trackGuiEvent,
       sessionUserId,
       isStudentSession,
       refreshTeacherAnalytics,
@@ -745,6 +790,7 @@ export function PlatformProvider({ children }) {
       savePythonSnippet,
       saveGraphicProject,
       submitGraphicProject,
+      deleteGraphicProject,
       saveProject,
       teacherUpdateStudent,
       teacherUpdateGraphicProject,
@@ -753,6 +799,7 @@ export function PlatformProvider({ children }) {
       trackPageView,
       trackSimRun,
       trackPythonRun,
+      trackGuiEvent,
       sessionUserId,
       isStudentSession,
       refreshTeacherAnalytics,
@@ -764,6 +811,8 @@ export function PlatformProvider({ children }) {
   return <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>;
 }
 
+// This established context module intentionally exports its provider and hook together.
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePlatform() {
   const ctx = useContext(PlatformContext);
   if (!ctx) throw new Error("usePlatform outside PlatformProvider");

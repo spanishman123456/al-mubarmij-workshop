@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PageShell } from "../components/layout/PageShell";
 import { LabPanel } from "../components/layout/LabPanel";
 import { usePlatform } from "../context/PlatformContext";
@@ -26,18 +26,16 @@ const SECTIONS = [
 ];
 
 export default function SimulationsPage() {
-  const [active, setActive] = useState("number-converter");
+  const [active, setActive] = useState(() => {
+    const hash = typeof window === "undefined" ? "" : window.location.hash.replace("#", "");
+    return hash && SECTIONS.some((section) => section.id === hash) ? hash : "number-converter";
+  });
   const { trackSimRun } = usePlatform();
-
-  useEffect(() => {
-    const hash = window.location.hash.replace("#", "");
-    if (hash && SECTIONS.some((s) => s.id === hash)) setActive(hash);
-  }, []);
 
   function select(id) {
     setActive(id);
     trackSimRun(id);
-    window.location.hash = id;
+    window.history.replaceState(null, "", `#${id}`);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 

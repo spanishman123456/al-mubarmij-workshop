@@ -11,6 +11,8 @@ const OP_OPTIONS = ["AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR"];
  * @param {number} [initialVarCount]
  * @param {{ minVarCount?: number, maxVarCount?: number }} [opts]
  */
+// This module intentionally co-locates its reusable hook with the matching editor component.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useLogicExpressionBuilder(initialVarCount = 2, opts = {}) {
   const minVarCount = opts.minVarCount ?? 1;
   const maxVarCount = opts.maxVarCount ?? 5;

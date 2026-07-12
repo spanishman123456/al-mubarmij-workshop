@@ -95,6 +95,7 @@ export function defaultAnalytics() {
     activitiesCompleted: 0,
     simRuns: {},
     pythonRuns: 0,
+    guiEvents: {},
     drillAttempts: {},
     dailyLog: {},
     teacherNotes: "",
@@ -173,6 +174,33 @@ export function recordPythonRun(analytics) {
   return {
     ...analytics,
     pythonRuns: (analytics.pythonRuns || 0) + 1,
+    lastActivityAt: new Date().toISOString(),
+  };
+}
+
+export function recordGuiEvent(analytics, eventName) {
+  const allowed = new Set([
+    "gui_project_started",
+    "gui_project_run",
+    "gui_project_saved",
+    "gui_component_created",
+    "gui_project_completed",
+    "project_export_started",
+    "project_validation_completed",
+    "webapp_export_completed",
+    "pwa_export_completed",
+    "windows_build_queued",
+    "windows_build_completed",
+    "project_export_downloaded",
+    "project_export_failed",
+  ]);
+  if (!allowed.has(eventName)) return analytics;
+  return {
+    ...analytics,
+    guiEvents: {
+      ...(analytics.guiEvents || {}),
+      [eventName]: (analytics.guiEvents?.[eventName] || 0) + 1,
+    },
     lastActivityAt: new Date().toISOString(),
   };
 }

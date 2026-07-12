@@ -6,11 +6,6 @@ import { usePlatform } from "../context/PlatformContext";
 import { PageShell } from "../components/layout/PageShell";
 import { getQuizQuestionCount } from "../lib/quizEngine";
 
-function unitTitle(unitId) {
-  if (!unitId) return "جميع الوحدات";
-  return curriculumUnits.find((u) => u.id === unitId)?.titleAr ?? unitId;
-}
-
 export default function QuizzesPage() {
   const { myProgress } = usePlatform();
   const scores = myProgress?.quizScores ?? {};

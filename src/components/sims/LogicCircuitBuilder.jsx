@@ -66,8 +66,8 @@ export function LogicCircuitBuilder() {
   const saved = loadSavedCircuit();
   const [nodes, setNodes] = useState(saved?.nodes ?? PRESETS.and.nodes);
   const [wires, setWires] = useState(saved?.wires ?? PRESETS.and.wires);
-  const [history, setHistory] = useState([]);
-  const [future, setFuture] = useState([]);
+  const [, setHistory] = useState([]);
+  const [, setFuture] = useState([]);
   const [dragging, setDragging] = useState(null);
   const [wireFrom, setWireFrom] = useState(null);
   const [wirePreview, setWirePreview] = useState(null);

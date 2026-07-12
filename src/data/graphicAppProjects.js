@@ -1,6 +1,7 @@
 /**
  * قوالب مشاريع رسومية — مرتبطة بمنهج برمجة الحاسب
  */
+import { GRAPHIC_SKUI_STARTERS } from "./graphicSkuiStarters.js";
 
 export const GRAPHIC_APP_PROJECTS = [
   {
@@ -544,6 +545,12 @@ appkit.set("status", "حالة الرسم: جاهز — اضغط «ارسم ال
 appkit.build()`,
   },
 ];
+
+// appkit remains a runtime compatibility adapter only; every lesson/template
+// presented to students uses the official skui API.
+for (const project of GRAPHIC_APP_PROJECTS) {
+  if (GRAPHIC_SKUI_STARTERS[project.id]) project.starter = GRAPHIC_SKUI_STARTERS[project.id];
+}
 
 export function getGraphicProject(id) {
   return GRAPHIC_APP_PROJECTS.find((p) => p.id === id) ?? null;
