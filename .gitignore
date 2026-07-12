@@ -16,6 +16,8 @@ test-results/
 playwright-report/
 desktop/skui-tauri-template/src-tauri/target/
 data/
+!src/data/
+!src/data/graphicSkuiStarters.js
 server/data/analytics.json
 scripts/microbit-hex-workspace/
 scripts/makecode-compile-workspace/
