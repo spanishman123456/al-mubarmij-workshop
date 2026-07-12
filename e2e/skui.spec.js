@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import { Buffer } from "node:buffer";
 import { unzipSync } from "fflate";
+import { SKUI_EXAMPLES } from "../src/data/skuiExamples.js";
 
 async function unlockFreeRun(page) {
   const check = page.getByRole("button", { name: /تحقق من الحل/ });
@@ -75,6 +76,22 @@ test("skui autocomplete and unsupported component feedback are educational", asy
   await editor.fill("import skui as ui\nui.UnknownWidget()");
   await page.getByRole("button", { name: "تشغيل المشروع" }).click();
   await expect(page.getByRole("paragraph").filter({ hasText: "المكوّن UnknownWidget غير مدعوم" })).toBeVisible();
+});
+
+test("every published skui example executes in the isolated runtime", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
+  await page.getByRole("button", { name: "دخول", exact: true }).click();
+  await page.goto("/python?mode=app&app=app-number-convert");
+  await unlockFreeRun(page);
+
+  const editor = page.getByTestId("python-code-editor");
+  const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  for (const example of SKUI_EXAMPLES) {
+    await editor.fill(example.code);
+    await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+    await expect(frame.locator(".sk-App"), `example ${example.id}`).toBeAttached({ timeout: 20_000 });
+  }
 });
 
 test("every declared first-release component renders in the sandbox", async ({ page }) => {
