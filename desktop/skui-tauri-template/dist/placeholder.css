@@ -1,0 +1,23 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+body {
+  display: grid;
+  min-height: 100vh;
+  margin: 0;
+  place-items: center;
+}
+
+main {
+  max-width: 36rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+code {
+  color: #67e8f9;
+}
