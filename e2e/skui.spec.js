@@ -54,7 +54,9 @@ test("student runs an isolated skui app and updates state", async ({ page }) => 
 
   const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
   await expect(frame.getByText("مرحبًا بك")).toBeVisible({ timeout: 20_000 });
-  await frame.getByPlaceholder("اكتب اسمك").fill("طالب");
+  const studentName = frame.getByPlaceholder("اكتب اسمك");
+  await studentName.pressSequentially("طالب");
+  await expect(studentName).toHaveValue("طالب");
   await frame.getByRole("button", { name: "تشغيل" }).click();
   await expect(frame.getByText("مرحبًا طالب")).toBeVisible();
 
@@ -228,7 +230,9 @@ test("exported WebApp and PWA bundles run with local runtime and offline cache",
     await page.goto(hosted.url);
     const exported = page.frameLocator("#preview");
     await expect(exported.getByText("مرحبًا بك")).toBeVisible({ timeout: 20_000 });
-    await exported.getByPlaceholder("اكتب اسمك").fill("خارجي");
+    const exportedName = exported.getByPlaceholder("اكتب اسمك");
+    await exportedName.pressSequentially("خارجي");
+    await expect(exportedName).toHaveValue("خارجي");
     await exported.getByRole("button", { name: "تشغيل" }).click();
     await expect(exported.getByText("مرحبًا خارجي")).toBeVisible();
     await page.evaluate(() => navigator.serviceWorker.ready);
