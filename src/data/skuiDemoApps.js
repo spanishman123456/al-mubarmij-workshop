@@ -11,7 +11,7 @@ secret = [0]
 attempts = [0]
 state = ["idle"]
 
-app = ui.App(title="لعبة تخمين الرقم", theme="modern", appearance="dark", width="440px")
+app = ui.App(scene="guess", title="لعبة تخمين الرقم", theme="modern", appearance="dark", width="440px")
 guide = ui.Guide(
     title="مرحبًا بك!",
     message="خمّن رقمًا بين 1 و 20. لديك 7 محاولات. ابدأ الجولة ثم أدخل تخمينك.",
@@ -85,7 +85,7 @@ app.run()`,
 
   "app-calculator": `import skui as ui
 
-app = ui.App(title="آلة حاسبة حديثة", theme="modern", appearance="dark", width="420px", direction="ltr")
+app = ui.App(scene="calculator", title="آلة حاسبة حديثة", theme="modern", appearance="dark", width="420px", direction="ltr")
 guide = ui.Guide(title="مرحبًا بك في الآلة الحاسبة", message="استخدم الأزرار للحساب. C للمسح و⌫ للحذف.", character="assistant")
 panel = ui.Card(padding="1rem", border_radius="1.5rem", background="#0b1224")
 history = ui.Text("احسب بسرعة")
@@ -201,7 +201,7 @@ app.run()`,
 
   "app-registration": `import skui as ui
 
-app = ui.App(title="نموذج التسجيل", theme="modern", appearance="dark", width="440px")
+app = ui.App(scene="registration", title="نموذج التسجيل", theme="modern", appearance="dark", width="440px")
 guide = ui.Guide(title="أهلًا بك", message="أدخل بياناتك بدقة. البريد يجب أن يحتوي @ وكلمة المرور 6 أحرف على الأقل.", character="assistant")
 card = ui.Card(padding="1.25rem", border_radius="1.4rem")
 name = ui.Input(placeholder="الاسم الكامل")
@@ -236,7 +236,7 @@ app.run()`,
 
   "app-todo": `import skui as ui
 
-app = ui.App(title="قائمة المهام", theme="modern", appearance="dark", width="480px")
+app = ui.App(scene="todo", title="قائمة المهام", theme="modern", appearance="dark", width="480px")
 guide = ui.Guide(title="نظّم يومك", message="أضف مهمة، أكملها، أو احذفها. استخدم الفلاتر للعرض.", character="assistant")
 texts = []
 done_flags = []
@@ -330,7 +330,7 @@ questions = [
 index = [0]
 score = [0]
 
-app = ui.App(title="اختبار قصير", theme="modern", appearance="dark", width="460px")
+app = ui.App(scene="quiz", title="اختبار قصير", theme="modern", appearance="dark", width="460px")
 guide = ui.Guide(title="اختبر نفسك", message="أجب عن الأسئلة ثم شاهد نتيجتك النهائية.", character="assistant")
 progress = ui.Progress(value=0, max=len(questions))
 question = ui.Text("1) " + questions[0]["q"])
@@ -389,7 +389,7 @@ app.run()`,
 remaining = [30]
 running = [False]
 
-app = ui.App(title="مؤقت التركيز", theme="modern", appearance="dark", width="400px")
+app = ui.App(scene="timer", title="مؤقت التركيز", theme="modern", appearance="dark", width="400px")
 guide = ui.Guide(title="ركّز الآن", message="اضغط تشغيل لبدء العدّ التنازلي من 30 ثانية.", character="assistant")
 display = ui.Text("30")
 bar = ui.Progress(value=30, max=30)
@@ -445,7 +445,7 @@ app.run()`,
 
   "app-dashboard": `import skui as ui
 
-app = ui.App(title="لوحة بيانات", theme="modern", appearance="dark", width="560px")
+app = ui.App(scene="dashboard", title="لوحة بيانات", theme="modern", appearance="dark", width="560px")
 guide = ui.Guide(title="لوحة المتابعة", message="راجع المؤشرات والمخطط. اضغط تحديث لتغيير البيانات.", character="assistant")
 grid = ui.Grid(columns=3, gap="0.75rem")
 c1 = ui.Card(padding="0.9rem")
@@ -480,7 +480,7 @@ app.run()`,
 
   "app-colors": `import skui as ui
 
-app = ui.App(title="استوديو الألوان", theme="modern", appearance="dark", width="460px")
+app = ui.App(scene="colors", title="استوديو الألوان", theme="modern", appearance="dark", width="460px")
 guide = ui.Guide(title="اصنع لونك", message="حرّك منزلقات RGB وشاهد المعاينة وقيمة HEX فورًا.", character="assistant")
 preview = ui.Card(padding="2rem", border_radius="1.2rem", background="#7c3aed")
 hex_text = ui.Text("#7C3AED")
@@ -520,7 +520,7 @@ app.run()`,
 
   "app-canvas-demo": `import skui as ui
 
-app = ui.App(title="لعبة Canvas", theme="modern", appearance="dark", width="520px")
+app = ui.App(scene="canvas", title="لعبة Canvas", theme="modern", appearance="dark", width="520px")
 guide = ui.Guide(title="حرّك الشكل", message="اضغط تحريك لجمع النقاط. أعد التشغيل لجولة جديدة.", character="assistant")
 canvas = ui.Canvas(width=420, height=240)
 score = [0]
@@ -563,7 +563,7 @@ app.run()`,
   "app-linear-search": `import skui as ui
 
 numbers = [4, 8, 15, 16, 23, 42]
-app = ui.App(title="البحث الخطي", theme="modern", appearance="dark", width="460px")
+app = ui.App(scene="search", title="البحث الخطي", theme="modern", appearance="dark", width="460px")
 guide = ui.Guide(title="خوارزمية البحث", message="أدخل قيمة ليُفحص كل عنصر بالترتيب حتى يُوجد أو تنتهي القائمة.", character="assistant")
 target = ui.Input(placeholder="العدد المطلوب")
 steps = ui.List(items=[])
@@ -599,7 +599,7 @@ app.run()`,
 
   "app-caesar": `import skui as ui
 
-app = ui.App(title="تشفير قيصر", theme="modern", appearance="dark", width="480px")
+app = ui.App(scene="caesar", title="تشفير قيصر", theme="modern", appearance="dark", width="480px")
 guide = ui.Guide(title="شفرة قيصر", message="اكتب نصًا إنجليزيًا واضبط الإزاحة ثم شفّر أو افك التشفير.", character="assistant")
 plain = ui.Input(placeholder="نص إنجليزي")
 shift = ui.Slider(value=3, min=1, max=25)
@@ -641,7 +641,7 @@ score = [0]
 a = [2]
 b = [3]
 
-app = ui.App(title="لعبة تعليمية", theme="modern", appearance="dark", width="440px")
+app = ui.App(scene="edugame", title="لعبة تعليمية", theme="modern", appearance="dark", width="440px")
 guide = ui.Guide(title="تحدَّ نفسك", message="أجب عن أسئلة الضرب واجمع النقاط.", character="assistant")
 question = ui.Text("كم يساوي 2 × 3؟")
 answer = ui.Input(placeholder="إجابتك")
@@ -683,7 +683,7 @@ app.run()`,
 
   "app-number-convert": `import skui as ui
 
-app = ui.App(title="محول أنظمة العد", theme="modern", appearance="dark", width="440px")
+app = ui.App(scene="convert", title="محول أنظمة العد", theme="modern", appearance="dark", width="440px")
 guide = ui.Guide(title="عشري ↔ ثنائي", message="أدخل عددًا عشريًا موجبًا ثم حوّله إلى ثنائي.", character="assistant")
 number = ui.Input(placeholder="عدد عشري")
 result = ui.Alert(text="أدخل عددًا ثم اضغط تحويل", variant="info")

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SkuiPreviewFrame } from "../components/python/SkuiPreviewFrame";
+import { SKUI_DEMO_APPS } from "../data/skuiDemoApps";
 import { PythonAppSession } from "../lib/skulptAppRun";
 import { loadWebAppPreview } from "../lib/webAppPreview";
 
@@ -12,8 +13,28 @@ export default function WebAppPreviewPage() {
   const [loading, setLoading] = useState(Boolean(project));
   const sessionRef = useRef(null);
 
+  const resolveCode = useCallback(() => {
+    if (!project) return "";
+    const stored = String(project.code || "").trim();
+    if (stored && /app\.run\s*\(/.test(stored)) return stored;
+    if (project.templateId && SKUI_DEMO_APPS[project.templateId]) {
+      return SKUI_DEMO_APPS[project.templateId];
+    }
+    return stored;
+  }, [project]);
+
   const run = useCallback(async () => {
     if (!project) return;
+    const code = resolveCode();
+    if (!code.trim()) {
+      setFeedback({
+        headlineAr: "لا يوجد كود للتشغيل.",
+        hintAr: "ارجع للمشروع واضغط «فتح WebApp» مرة أخرى بعد تشغيل المعاينة.",
+        detail: "",
+      });
+      setLoading(false);
+      return;
+    }
     sessionRef.current?.destroy();
     setLoading(true);
     setFeedback(null);
@@ -25,12 +46,14 @@ export default function WebAppPreviewPage() {
     };
     sessionRef.current = session;
     try {
-      const result = await session.load(project.code);
-      setUi(result.ui);
-      if (!result.ui?.nodes || !Object.keys(result.ui.nodes).length) {
+      const result = await session.load(code);
+      const snapshot = result.ui;
+      setUi(snapshot);
+      const nodeCount = Object.keys(snapshot?.nodes || {}).length;
+      if (!nodeCount) {
         setFeedback({
-          headlineAr: "الكود اشتغل لكن لا توجد واجهة للعرض.",
-          hintAr: "تأكد أن المشروع ينشئ ui.App ويضيف مكوّنات ثم يستدعي app.run().",
+          headlineAr: "تعذر بناء واجهة التطبيق.",
+          hintAr: "تأكد من app.add(...) و app.run() ثم أعد فتح WebApp من تبويب التصدير.",
           detail: "",
         });
       }
@@ -39,7 +62,7 @@ export default function WebAppPreviewPage() {
     } finally {
       setLoading(false);
     }
-  }, [project]);
+  }, [project, resolveCode]);
 
   useEffect(() => {
     queueMicrotask(run);

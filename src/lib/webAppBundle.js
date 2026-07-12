@@ -63,6 +63,7 @@ export function buildStandaloneAppJs() {
     }else if(message.type==="snapshot"){
       frame.contentWindow.postMessage({type:"render",ui:message.ui},"*");
     }else if(message.type==="run-complete"){
+      if(message.ui){frame.contentWindow.postMessage({type:"render",ui:message.ui},"*")}
       setStatus("يعمل محليًا بواسطة Skulpt وskui",false);
     }else if(message.type==="error"){
       setStatus((message.feedback&&message.feedback.headlineAr)||"تعذر تشغيل المشروع.",true);
