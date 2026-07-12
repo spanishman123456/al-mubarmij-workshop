@@ -123,6 +123,24 @@ test("published e2e fixtures execute in the isolated runtime", async ({ page }) 
   }
 });
 
+test("calculator keeps working through a multi-step expression", async ({ page }) => {
+  await loginStudent(page);
+  await openAppLab(page, "app-calculator");
+  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+  const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(frame.getByText("احسب بسرعة")).toBeVisible({ timeout: 20_000 });
+  await page.waitForTimeout(7000);
+  await frame.getByRole("button", { name: "7", exact: true }).click();
+  await frame.getByRole("button", { name: "+", exact: true }).click();
+  await expect(frame.getByText("اختر الرقم الثاني")).toBeVisible();
+  await page.waitForTimeout(2000);
+  await frame.getByRole("button", { name: "8", exact: true }).click();
+  await frame.getByRole("button", { name: "=", exact: true }).click();
+  await expect(frame.getByPlaceholder("0")).toHaveValue("15.0");
+  await expect(page.getByText("TimeLimitError")).toHaveCount(0);
+  await expect(page.getByText("حدث خطأ داخل دالة on_click")).toHaveCount(0);
+});
+
 test("click handlers still work after the initial run timer budget elapses", async ({ page }) => {
   await loginStudent(page);
   await openAppLab(page, "app-guess-number");

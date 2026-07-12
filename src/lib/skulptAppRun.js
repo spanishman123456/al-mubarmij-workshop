@@ -73,7 +73,7 @@ export class PythonAppSession {
       const { resolve, timer } = this.pending;
       clearTimeout(timer);
       this.pending = null;
-      if (message.type === "run-complete" && message.ui) {
+      if ((message.type === "run-complete" || message.type === "event-complete") && message.ui) {
         this.ui = message.ui;
         if (typeof this.onSnapshot === "function") this.onSnapshot(message.ui);
       }

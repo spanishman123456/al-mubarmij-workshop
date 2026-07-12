@@ -352,7 +352,13 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
     });
     return { version: "${SKUI_VERSION}", appId: state.appId, roots: state.roots.slice(), nodes: nodes };
   }
-  function emit() { self.postMessage({ type: "snapshot", ui: snapshot() }); }
+  function emit() {
+    if (self.__skuiDeferSnapshot) {
+      self.__skuiSnapshotDirty = true;
+      return;
+    }
+    self.postMessage({ type: "snapshot", ui: snapshot() });
+  }
   mod.create = new Sk.builtin.func(function(kindValue, propsValue) {
     var kind = str(kindValue);
     if (!COMPONENTS.includes(kind)) fail("المكوّن " + kind + " غير مدعوم في مكتبة skui.");
