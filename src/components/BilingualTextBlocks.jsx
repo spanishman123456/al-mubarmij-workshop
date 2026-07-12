@@ -1,4 +1,5 @@
 import { splitDirectionalParts } from "../lib/bidi/directionalTokens";
+import { normalizeExecutablePythonCode } from "../lib/text/codeNormalization";
 
 const TECH_KEYWORD_RE =
   /\b(AND|OR|NOT|XOR|NAND|NOR|if|else|elif|for|while|range|print|input|return|True|False|binary|decimal|hex|ASCII|Unicode|UTF-8|RGB)\b/i;
@@ -95,13 +96,21 @@ export function LtrInlineToken({ token, className = "" }) {
 
 export function LtrCodeBlock({ code, className = "" }) {
   if (!code) return null;
+  const normalizedCode = normalizeExecutablePythonCode(String(code));
   return (
     <pre
       dir="ltr"
       className={`overflow-x-auto rounded-lg border border-white/15 bg-slate-950/90 p-3 text-left font-mono text-sm text-emerald-200 ${className}`.trim()}
-      style={{ unicodeBidi: "isolate", direction: "ltr", textAlign: "left" }}
+      style={{
+        unicodeBidi: "isolate",
+        direction: "ltr",
+        textAlign: "left",
+        whiteSpace: "pre",
+        tabSize: 4,
+        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      }}
     >
-      {String(code)}
+      {normalizedCode}
     </pre>
   );
 }

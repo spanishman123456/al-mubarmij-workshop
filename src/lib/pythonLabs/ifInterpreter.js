@@ -73,7 +73,7 @@ export function runSimpleIf(code) {
   if (n != null) outputs.push(n % 2 === 0 ? "زوجي" : "فردي");
 
   if (!outputs.length && lines.some((l) => l.includes("print"))) {
-    errors.push("لم أتعرف على المتغيرات");
+    errors.push("تعذر تحليل الكود الحالي في هذا النشاط. قد يكون الكود صحيحًا لكن صيغة التتبع غير مدعومة بالكامل.");
   }
 
   return { outputs, errors };

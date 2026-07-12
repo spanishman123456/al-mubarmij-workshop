@@ -48,7 +48,7 @@ export function MultiDimGridLab({ lessonId, userId }) {
   }
 
   function checkAccess() {
-    const ok = selected === grid[0][1];
+    const ok = row === 0 && col === 1;
     if (userId) {
       recordLessonAttemptApi(userId, {
         lessonId,
@@ -69,6 +69,9 @@ export function MultiDimGridLab({ lessonId, userId }) {
       <p className="font-bold text-indigo-900">مصفوفة ثنائية الأبعاد — اختر صفاً وعموداً</p>
       <p className="mt-1 text-xs text-slate-600">
         الصف {row + 1} من {rows} · العمود {col + 1} من {cols} · القيمة: <strong dir="ltr">{selected}</strong>
+      </p>
+      <p className="mt-2 rounded-lg bg-white/70 p-2 font-mono text-xs text-slate-700" dir="ltr">
+        selected: m[{row}][{col}] = {String(selected)}
       </p>
 
       <div className="mt-4 overflow-x-auto">
@@ -136,7 +139,9 @@ export function MultiDimGridLab({ lessonId, userId }) {
         </button>
       </div>
       {progress?.lastCheck ? (
-        <p className="mt-2 text-sm font-semibold">{progress.lastCheck === "correct" ? "✓ صحيح" : "جرّب m[0][1]"}</p>
+        <p className="mt-2 text-sm font-semibold">
+          {progress.lastCheck === "correct" ? "✓ صحيح: تم اختيار m[0][1] بدقة" : "غير صحيح: راجع ترتيب row ثم col"}
+        </p>
       ) : null}
     </div>
   );

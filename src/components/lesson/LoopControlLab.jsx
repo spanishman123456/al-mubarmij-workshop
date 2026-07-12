@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { runSimpleIf } from "../../lib/pythonLabs/ifInterpreter";
+import { runLoopControlTrace } from "../../lib/pythonLabs/loopControlInterpreter";
 import { useLessonProgress } from "../../lib/hooks/useLessonProgress";
 import { recordLessonAttemptApi } from "../../lib/platformApi";
+import { normalizeExecutablePythonCode } from "../../lib/text/codeNormalization";
 
 const PRESETS = {
-  break: "for i in range(1, 6):\n    if i == 3:\n        break\n    print(i)",
+  break: "for i in range(10):\n    if i == 5:\n        break\n    print(i)",
   continue: "for i in range(5):\n    if i == 2:\n        continue\n    print(i)",
   pass: "for i in range(3):\n    if i == 1:\n        pass\n    print(i)",
   else: "for i in range(3):\n    print(i)\nelse:\n    print('done')",
@@ -43,16 +44,19 @@ export function LoopControlLab({ lessonId, userId, preset = "continue" }) {
   }
 
   function run() {
-    const res = runSimpleIf(code);
+    const normalizedCode = normalizeExecutablePythonCode(code);
+    if (normalizedCode !== code) setCode(normalizedCode);
+
+    const res = runLoopControlTrace(normalizedCode);
     setResult(res);
-    const outputStr = res.outputs.join(",");
+    const outputStr = (res.outputs || []).join(",");
     const expected = {
-      break: "1,2",
+      break: "0,1,2,3,4",
       continue: "0,1,3,4",
       pass: "0,1,2",
       else: "0,1,2,done",
     }[mode];
-    const ok = res.errors.length === 0 && outputStr === expected;
+    const ok = (res.errors || []).length === 0 && outputStr === expected;
     if (userId) {
       recordLessonAttemptApi(userId, {
         lessonId,
@@ -94,16 +98,32 @@ export function LoopControlLab({ lessonId, userId, preset = "continue" }) {
       </button>
       {result ? (
         <div className="mt-3 rounded-lg bg-slate-800 p-3 text-sm">
-          {result.errors.map((e) => (
+          {result.errors?.map((e) => (
             <p key={e} className="text-red-300">
               {e}
             </p>
           ))}
-          {result.outputs.map((o) => (
-            <p key={o} className="font-mono text-emerald-300" dir="ltr">
-              {">"} {o}
+          {result.parserIssue ? (
+            <p className="mt-2 text-amber-200">
+              حدث خطأ في أداة التتبع، وليس في الكود المكتوب. راجع صيغة الحلقة أو جرّب تشغيل الكود في مختبر بايثون.
             </p>
-          ))}
+          ) : null}
+          <div className="mt-2 rounded border border-slate-700 bg-slate-950/70 p-2">
+            <p className="mb-1 text-xs font-bold text-slate-300">المخرجات:</p>
+            {(result.outputs || []).map((o, idx) => (
+              <p key={`${o}-${idx}`} className="font-mono text-emerald-300" dir="ltr" data-testid="loop-output-line">
+                {o}
+              </p>
+            ))}
+          </div>
+          <div className="mt-2 rounded border border-slate-700 bg-slate-950/70 p-2">
+            <p className="mb-1 text-xs font-bold text-slate-300">مسار التنفيذ:</p>
+            {(result.trace || []).map((step, idx) => (
+              <p key={`trace-${idx}`} className="text-slate-200" data-testid="loop-trace-line">
+                {step}
+              </p>
+            ))}
+          </div>
           {progress?.lastOk != null ? (
             <p className="mt-2 text-white">{progress.lastOk ? "✓ مطابق للمثال" : "✗ راجع مسار التنفيذ"}</p>
           ) : null}
