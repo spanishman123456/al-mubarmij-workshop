@@ -15,6 +15,7 @@ import {
   ExportStoreError,
   MAX_ARTIFACT_BYTES,
 } from "./exportJobsStore.js";
+import { getSkuiTeacherSolution } from "./teacher/skuiSolutions.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3001;
@@ -121,6 +122,24 @@ async function dispatchWindowsWorkflow(created, metadata = {}) {
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, at: new Date().toISOString() });
+});
+
+/** حلول skui للمعلم فقط — لا تُضمَّن في حزمة الطالب */
+app.get("/api/teacher/skui-projects/:id/solution", (req, res) => {
+  const role = String(req.get("x-user-role") || "").toLowerCase();
+  if (role !== "teacher") {
+    return res.status(403).json({ ok: false, error: "الحل النموذجي متاح للمعلم فقط." });
+  }
+  const solution = getSkuiTeacherSolution(req.params.id);
+  if (!solution) {
+    return res.status(404).json({ ok: false, error: "لا يوجد حل لهذا المشروع." });
+  }
+  res.json({
+    ok: true,
+    id: solution.id,
+    code: solution.code,
+    note: "حل نموذجي للمعلم — لا يُحفظ كمحاولة طالب.",
+  });
 });
 
 // This app has no user authentication. These random bearer values are capabilities:

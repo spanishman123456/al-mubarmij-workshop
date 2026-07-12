@@ -6,6 +6,8 @@ export const APPKIT_COMMANDS = [
   { sig: 'ui.Heading(text="عنوان", level=1)', desc: "عنوان من المستوى 1 إلى 6" },
   { sig: 'ui.Input(placeholder="اكتب")', desc: "حقل إدخال تُقرأ قيمته عبر value()" },
   { sig: 'ui.Button(text="تشغيل", on_click=دالة)', desc: "زر مرتبط بدالة Python" },
+  { sig: 'ui.Guide(title="مرحبًا", message="شرح قصير")', desc: "شخصية إرشادية قابلة للإخفاء" },
+  { sig: 'ui.Button(text="7", variant="calculator-key", depth="raised")', desc: "زر بعمق ثلاثي الأبعاد" },
   { sig: "widget.set_text(value)", desc: "تحديث النص مباشرة" },
   { sig: "widget.set_value(value)", desc: "تحديث قيمة المكوّن" },
   { sig: "app.add(widget)", desc: "إضافة مكوّن إلى التطبيق" },

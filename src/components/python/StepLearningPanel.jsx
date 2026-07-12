@@ -12,6 +12,7 @@ import { MIN_ATTEMPTS_BEFORE_SOLUTION } from "../../lib/stepLearningEngine.js";
  *   onCheck: () => void,
  *   onRevealSolution: () => void,
  *   onClearCheck: () => void,
+ *   allowRevealSolution?: boolean,
  * }} props
  */
 export function StepLearningPanel({
@@ -25,6 +26,7 @@ export function StepLearningPanel({
   onCheck,
   onRevealSolution,
   onClearCheck,
+  allowRevealSolution = true,
 }) {
   if (!plan) return null;
 
@@ -32,7 +34,8 @@ export function StepLearningPanel({
   const total = plan.steps.length;
   const progress = Math.round(((stepIndex + (checkResult?.ok ? 1 : 0)) / total) * 100);
   const hintsShown = step?.hints?.slice(0, hintLevel) ?? [];
-  const canRevealSolution = checkAttempts >= MIN_ATTEMPTS_BEFORE_SOLUTION || solutionRevealed;
+  const canRevealSolution =
+    allowRevealSolution && plan.fullSolution && (checkAttempts >= MIN_ATTEMPTS_BEFORE_SOLUTION || solutionRevealed);
 
   return (
     <div className="step-learning-panel mt-4 space-y-4 rounded-2xl border border-violet-500/35 bg-violet-950/30 p-4" dir="rtl">
@@ -95,7 +98,8 @@ export function StepLearningPanel({
         >
           ✓ تحقق من الحل
         </button>
-        {canRevealSolution ? (
+        {allowRevealSolution && plan.fullSolution ? (
+          canRevealSolution ? (
           <button
             type="button"
             onClick={onRevealSolution}
@@ -103,9 +107,14 @@ export function StepLearningPanel({
           >
             {solutionRevealed ? "الحل ظاهر" : "عرض الحل الكامل"}
           </button>
-        ) : (
+          ) : (
           <span className="self-center text-xs text-slate-500">
             الحل الكامل بعد {MIN_ATTEMPTS_BEFORE_SOLUTION - checkAttempts} محاولات أخرى
+          </span>
+          )
+        ) : (
+          <span className="self-center text-xs text-slate-500">
+            ابنِ المشروع خطوة بخطوة — الحل النموذجي متاح للمعلم فقط.
           </span>
         )}
       </div>
