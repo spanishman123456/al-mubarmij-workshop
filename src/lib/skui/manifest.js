@@ -10,7 +10,7 @@ export const SKUI_LIMITS = Object.freeze({
   maxCanvasOperations: 5000,
   maxTimers: 20,
   runTimeoutMs: 10000,
-  eventTimeoutMs: 5000,
+  eventTimeoutMs: 8000,
   maxTextLength: 20000,
 });
 

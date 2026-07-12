@@ -30,11 +30,27 @@ function lineFromError(err) {
   return match ? Number(match[1]) : null;
 }
 
+function serializeUi(state) {
+  var nodes = {};
+  Object.keys(state.nodes).forEach(function(id) {
+    var node = state.nodes[id];
+    nodes[id] = { id: id, type: node.type, props: Object.assign({}, node.props), children: node.children.slice() };
+  });
+  return { version: "1.1.0", appId: state.appId, roots: state.roots.slice(), nodes: nodes };
+}
+
 function resetExecBudget(timeoutMs) {
   // Skulpt measures elapsed time from Sk.execStart once per worker session.
   // Without resetting it, every on_click after the initial run looks "timed out".
   Sk.execStart = Date.now();
+  Sk.lastYield = Date.now();
   Sk.execLimit = timeoutMs;
+  Sk.configure({
+    output: function(text) { output.push(String(text)); },
+    read: readFile,
+    __future__: Sk.python3,
+    execLimit: timeoutMs
+  });
 }
 
 function friendlyError(err, eventName) {
@@ -78,12 +94,7 @@ async function runCode(code) {
     }, LIMITS.runTimeoutMs);
     running = true;
     var state = self.__skuiState || { nodes: {}, appId: null, roots: [] };
-    var nodes = {};
-    Object.keys(state.nodes).forEach(function(id) {
-      var node = state.nodes[id];
-      nodes[id] = { id: id, type: node.type, props: Object.assign({}, node.props), children: node.children.slice() };
-    });
-    var ui = { version: "1.1.0", appId: state.appId, roots: state.roots.slice(), nodes: nodes };
+    var ui = serializeUi(state);
     Sk.execLimit = Number.POSITIVE_INFINITY;
     self.postMessage({ type: "run-complete", console: output.join(""), ui: ui });
   } catch (err) {
@@ -120,6 +131,8 @@ async function dispatchEvent(message) {
     return;
   }
   output = [];
+  self.__skuiDeferSnapshot = true;
+  self.__skuiSnapshotDirty = false;
   resetExecBudget(LIMITS.eventTimeoutMs);
   try {
     await Sk.misceval.asyncToPromise(function() {
@@ -143,10 +156,15 @@ async function dispatchEvent(message) {
       return Sk.misceval.callsimOrSuspend(handler);
     }, LIMITS.eventTimeoutMs);
     Sk.execLimit = Number.POSITIVE_INFINITY;
-    self.postMessage({ type: "event-complete", console: output.join("") });
+    var ui = serializeUi(state);
+    self.postMessage({ type: "snapshot", ui: ui });
+    self.postMessage({ type: "event-complete", console: output.join(""), ui: ui });
   } catch (err) {
     self.postMessage({ type: "error", feedback: friendlyError(err, message.event) });
     self.postMessage({ type: "event-complete", console: output.join("") });
+  } finally {
+    self.__skuiDeferSnapshot = false;
+    self.__skuiSnapshotDirty = false;
   }
 }
 
