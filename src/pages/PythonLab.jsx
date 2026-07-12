@@ -327,14 +327,6 @@ export default function PythonLab() {
   }
 
   async function runApp() {
-    if (stepPlan && !isStepRunnable(stepPlan, stepIndex) && !solutionRevealed) {
-      setFeedback({
-        headlineAr: "أكمل الخطوات أولاً",
-        hintAr: "أكمل بناء المشروع خطوة بخطوة ثم شغّله.",
-        detail: "",
-      });
-      return;
-    }
     stopAppSession();
     setBusy(true);
     setFeedback(null);

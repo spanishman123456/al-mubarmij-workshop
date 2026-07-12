@@ -256,7 +256,7 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
   var COMPONENTS = ${COMPONENTS_JSON};
   var EVENTS = ${EVENTS_JSON};
   var LIMITS = ${LIMITS_JSON};
-  var allowedStyle = ["width","height","padding","margin","align","justify","gap","background","text_color","border_radius","variant","size"];
+  var allowedStyle = ["width","height","padding","margin","align","justify","gap","background","text_color","border_radius","variant","size","columns"];
   var state = self.__skuiState;
   var mod = {};
   function none() { return Sk.builtin.none.none$; }
@@ -285,6 +285,9 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
         props[key] = safeColor(value);
       } else if (["width","height","padding","margin","gap","border_radius"].includes(key)) {
         props[key] = safeSize(value);
+      } else if (key === "columns") {
+        var columns = Math.round(Number(value));
+        if (columns >= 1 && columns <= 6) props.columns = columns;
       } else if (allowedStyle.includes(key) || ["title","text","placeholder","value","disabled","theme","direction","level","rows","checked","group","options","min","max","step","alt","open","operations","headers","items","tabs","panels","interval","running","data","labels","autoplay","controls"].includes(key)) {
         if (typeof value === "string") props[key] = value.slice(0, LIMITS.maxTextLength);
         else if (Array.isArray(value)) props[key] = value.slice(0, 500);

@@ -1,14 +1,16 @@
 # تقرير اختبارات التصدير
 
-آخر بوابات الإصدار — 12 يوليو 2026، revision
-`1e867c92d2d2944fcdb5b28b0110e85d961fdbbf`:
+آخر بوابات الويب — 12 يوليو 2026، revision
+`8e06ecad97c4d8213ed6be3f0b257e004127e31b`:
 
 - ESLint: ناجح.
-- Vitest: 48/48 ناجحة. يغطي manifests وService Worker وmetadata وSHA-256
-  وإزالة الأسرار وبنية Source/WebApp/PWA ZIP ودورة export jobs.
+- Vitest: 50/50 ناجحة. يغطي manifests وService Worker وmetadata وSHA-256
+  وإزالة الأسرار وبنية Source/WebApp/PWA ZIP ودورة export jobs ومراجع المعاينة
+  المباشرة محدودة العمر.
 - Vite production build: ناجح. تحذير حجم chunk فقط، دون خطأ بناء.
-- Playwright: 7/7 ناجحة. يغطي iframe المعزول، المكونات والأحداث، جميع الأمثلة
-  المنشورة، WebApp، PWA دون اتصال، وفصل capability tokens.
+- Playwright: 9/9 ناجحة. يغطي iframe المعزول، التشغيل دون قفل الخطوات،
+  الكتابة العادية، الآلة الحاسبة الاحترافية، فتح WebApp مباشرة في صفحة مستقلة،
+  حزمة WebApp، PWA دون اتصال، وفصل capability tokens.
 - Windows Actions run `29194752367`: ناجح على `windows-latest`. أنشأ ورفع:
   - `SKUI Project_1.0.0_x64-setup.exe` — SHA-256
     `5fe9e48a81da5ecf752748d518c8eea7df9851280702c3a7c19514fcada71a09`.

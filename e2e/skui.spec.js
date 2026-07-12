@@ -48,18 +48,38 @@ test("student runs an isolated skui app and updates state", async ({ page }) => 
 
   await page.goto("/python?mode=app&app=app-number-convert");
   await expect(page.getByRole("heading", { name: "مختبر بايثون" })).toBeVisible();
-  await unlockFreeRun(page);
   await page.getByRole("button", { name: "إدراج مثال جاهز" }).click();
   await page.getByRole("button", { name: "تشغيل المشروع" }).click();
 
   const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
   await expect(frame.getByText("مرحبًا بك")).toBeVisible({ timeout: 20_000 });
-  await frame.getByPlaceholder("اكتب اسمك").fill("طالب");
+  const studentName = frame.getByPlaceholder("اكتب اسمك");
+  await studentName.pressSequentially("طالب");
+  await expect(studentName).toHaveValue("طالب");
   await frame.getByRole("button", { name: "تشغيل" }).click();
   await expect(frame.getByText("مرحبًا طالب")).toBeVisible();
 
   const sandbox = await page.locator('[data-testid="skui-preview-frame"]').getAttribute("sandbox");
   expect(sandbox).toBe("allow-scripts");
+});
+
+test("student opens the current project as a direct WebApp preview", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
+  await page.getByRole("button", { name: "دخول", exact: true }).click();
+  await page.goto("/python?mode=app&app=app-number-convert");
+  await page.getByRole("button", { name: "إدراج مثال جاهز" }).click();
+
+  const popupPromise = page.waitForEvent("popup");
+  await page.getByRole("button", { name: /^فتح WebApp مباشرة/ }).click();
+  const previewPage = await popupPromise;
+  await expect(previewPage.getByText("معاينة WebApp مباشرة")).toBeVisible();
+  const frame = previewPage.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(frame.getByText("مرحبًا بك")).toBeVisible({ timeout: 20_000 });
+  const name = frame.getByPlaceholder("اكتب اسمك");
+  await name.pressSequentially("مباشر");
+  await frame.getByRole("button", { name: "تشغيل" }).click();
+  await expect(frame.getByText("مرحبًا مباشر")).toBeVisible();
 });
 
 test("skui autocomplete and unsupported component feedback are educational", async ({ page }) => {
@@ -92,6 +112,24 @@ test("every published skui example executes in the isolated runtime", async ({ p
     await page.getByRole("button", { name: "تشغيل المشروع" }).click();
     await expect(frame.locator(".sk-App"), `example ${example.id}`).toBeAttached({ timeout: 20_000 });
   }
+});
+
+test("professional calculator keypad accepts input and computes a result", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
+  await page.getByRole("button", { name: "دخول", exact: true }).click();
+  await page.goto("/python?mode=app&app=app-number-convert");
+
+  await page.getByRole("button", { name: "آلة حاسبة", exact: true }).click();
+  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+  const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(frame.getByText("احسب بسرعة")).toBeVisible({ timeout: 20_000 });
+  await frame.getByRole("button", { name: "7", exact: true }).click();
+  await frame.getByRole("button", { name: "+", exact: true }).click();
+  await frame.getByRole("button", { name: "5", exact: true }).click();
+  await frame.getByRole("button", { name: "=", exact: true }).click();
+  await expect(frame.getByPlaceholder("0")).toHaveValue(/^12(?:\.0)?$/);
+  await expect(frame.getByText("تم الحساب بنجاح")).toBeVisible();
 });
 
 test("every declared first-release component renders in the sandbox", async ({ page }) => {
@@ -228,7 +266,9 @@ test("exported WebApp and PWA bundles run with local runtime and offline cache",
     await page.goto(hosted.url);
     const exported = page.frameLocator("#preview");
     await expect(exported.getByText("مرحبًا بك")).toBeVisible({ timeout: 20_000 });
-    await exported.getByPlaceholder("اكتب اسمك").fill("خارجي");
+    const exportedName = exported.getByPlaceholder("اكتب اسمك");
+    await exportedName.pressSequentially("خارجي");
+    await expect(exportedName).toHaveValue("خارجي");
     await exported.getByRole("button", { name: "تشغيل" }).click();
     await expect(exported.getByText("مرحبًا خارجي")).toBeVisible();
     await page.evaluate(() => navigator.serviceWorker.ready);
