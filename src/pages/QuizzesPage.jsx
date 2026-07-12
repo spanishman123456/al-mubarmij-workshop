@@ -7,11 +7,6 @@ import { PageShell } from "../components/layout/PageShell";
 import { getQuizQuestionCount } from "../lib/quizEngine";
 import { getPublishedDaysCount, isCurriculumDayPublished, isTeacherRole, resolvePublishedDaysForRole } from "../config/publication";
 
-function unitTitle(unitId) {
-  if (!unitId) return "جميع الوحدات";
-  return curriculumUnits.find((u) => u.id === unitId)?.titleAr ?? unitId;
-}
-
 export default function QuizzesPage() {
   const { myProgress, user } = usePlatform();
   const scores = myProgress?.quizScores ?? {};

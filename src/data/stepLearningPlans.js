@@ -293,32 +293,32 @@ function buildGenericAppPlan(project) {
   const sol = project.starter;
   return {
     ideaAr: project.edu?.description ?? project.titleAr,
-    commandsAr: ["appkit", "if", "def"],
+    commandsAr: ["skui", "App", "def", "on_click"],
     stepsOverviewAr: (project.edu?.usageSteps ?? []).slice(0, 4),
     expectedOutputAr: "تطبيق تفاعلي في المعاينة",
     steps: [
       {
         titleAr: "الخطوة 1 — الاستيراد",
-        instructionAr: "ابدأ بكتابة import appkit (وأي import آخر تحتاجه).",
-        initialCode: `# اكتب import appkit\nimport ______`,
+        instructionAr: "ابدأ باستيراد مكتبة skui باسم ui.",
+        initialCode: `# استورد مكتبة الواجهة\nimport skui as ______`,
         appendCode: "",
         hints: [
-          "أول سطر: import appkit",
+          "أول سطر: import skui as ui",
           "إن احتجت random: import random",
-          "import appkit",
+          "import skui as ui",
         ],
         check: (code) =>
-          runChecks(code, [{ check: (c) => /import\s+appkit/.test(c), messageAr: "import appkit" }]),
+          runChecks(code, [{ check: (c) => /import\s+skui\s+as\s+ui/.test(c), messageAr: "import skui as ui" }]),
         runnable: false,
       },
       {
         titleAr: "الخطوة 2 — الدوال",
-        instructionAr: "اكتب def للدوال الرئيسية (on_start أو ما يشبهها).",
-        appendCode: `\n# اكتب def start_game(): أو def on_start():\ndef ______:\n    pass`,
+        instructionAr: "أنشئ App ثم اكتب def للدالة التفاعلية.",
+        appendCode: `\napp = ui.App(title="${project.titleAr}")\nmessage = ui.Text("جاهز")\ndef ______():\n    message.set_text("تم التنفيذ")`,
         hints: [
+          "أنشئ التطبيق عبر ui.App.",
           "def اسم_الدالة(): ثم مسافة بادئة.",
-          "ضع pass مؤقتاً ثم أكمل المنطق.",
-          "def on_start():\\n    pass",
+          "حدّث النص بواسطة message.set_text.",
         ],
         check: (code) =>
           runChecks(code, [{ check: (c) => /\bdef\s+\w+/.test(c), messageAr: "اكتب def" }]),
@@ -326,16 +326,16 @@ function buildGenericAppPlan(project) {
       },
       {
         titleAr: "الخطوة 3 — الواجهة",
-        instructionAr: "أضف appkit.button أو appkit.input ثم appkit.build().",
-        appendCode: `\nappkit.button("btn", "زر", ______)\nappkit.build()`,
+        instructionAr: "أضف Button واربط on_click ثم شغّل app.run().",
+        appendCode: `\nbutton = ui.Button(text="تشغيل", on_click=______)\napp.add(button)\napp.add(message)\napp.run()`,
         hints: [
-          "appkit.button(\"id\", \"نص\", الدالة)",
-          "appkit.build() في آخر السطر.",
-          "appkit.build()",
+          "ui.Button(text=\"تشغيل\", on_click=اسم_الدالة)",
+          "أضف المكونات بواسطة app.add.",
+          "app.run() في النهاية.",
         ],
         check: (code) =>
           runChecks(code, [
-            { check: (c) => /appkit\.build\s*\(\s*\)/.test(c), messageAr: "appkit.build()" },
+            { check: (c) => /app\.run\s*\(\s*\)/.test(c), messageAr: "app.run()" },
           ]),
         runnable: true,
       },
@@ -360,7 +360,5 @@ export function getStepPlan(mode, resourceId) {
 
 // خطط مخصصة إضافية للمشاريع الرسومية
 for (const p of GRAPHIC_APP_PROJECTS) {
-  if (!APP_STEP_PLANS[p.id]) {
-    APP_STEP_PLANS[p.id] = buildGenericAppPlan(p);
-  }
+  APP_STEP_PLANS[p.id] = buildGenericAppPlan(p);
 }
