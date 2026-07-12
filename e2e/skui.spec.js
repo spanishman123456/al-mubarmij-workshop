@@ -82,20 +82,22 @@ test("student runs an isolated skui app and updates state", async ({ page }) => 
 
 test("student opens the current project as a direct WebApp preview", async ({ page }) => {
   await loginStudent(page);
-  await openAppLab(page);
-  await runCode(page, E2E_WELCOME_APP);
-  await page.getByTestId("app-tab-export").click();
+  await openAppLab(page, "app-guess-number");
+  await page.getByTestId("app-tab-code").click();
+  await expect(page.getByTestId("python-code-editor")).toContainText("scene=");
+  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+  const labFrame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(labFrame.getByText("تخمين الرقم السري")).toBeVisible({ timeout: 20_000 });
 
+  await page.getByTestId("app-tab-export").click();
   const popupPromise = page.waitForEvent("popup");
   await page.getByRole("button", { name: /فتح WebApp في تبويب جديد/ }).click();
   const previewPage = await popupPromise;
   await expect(previewPage.getByText("معاينة WebApp مباشرة")).toBeVisible();
   const frame = previewPage.frameLocator('[data-testid="skui-preview-frame"]');
-  await expect(frame.getByText("مرحبًا بك")).toBeVisible({ timeout: 20_000 });
-  const name = frame.getByPlaceholder("اكتب اسمك");
-  await name.pressSequentially("مباشر");
-  await frame.getByRole("button", { name: "تشغيل" }).click();
-  await expect(frame.getByText("مرحبًا مباشر")).toBeVisible();
+  await expect(frame.getByText("تخمين الرقم السري")).toBeVisible({ timeout: 20_000 });
+  await expect(previewPage.getByText("لا توجد واجهة للعرض")).toHaveCount(0);
+  await expect(previewPage.getByText("تعذر بناء واجهة التطبيق")).toHaveCount(0);
 });
 
 test("skui autocomplete and unsupported component feedback are educational", async ({ page }) => {

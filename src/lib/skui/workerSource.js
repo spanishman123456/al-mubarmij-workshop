@@ -69,7 +69,14 @@ async function runCode(code) {
       return Sk.importMainWithBody("<stdin>", false, String(code || ""), true);
     }, LIMITS.runTimeoutMs);
     running = true;
-    self.postMessage({ type: "run-complete", console: output.join("") });
+    var state = self.__skuiState || { nodes: {}, appId: null, roots: [] };
+    var nodes = {};
+    Object.keys(state.nodes).forEach(function(id) {
+      var node = state.nodes[id];
+      nodes[id] = { id: id, type: node.type, props: Object.assign({}, node.props), children: node.children.slice() };
+    });
+    var ui = { version: "1.1.0", appId: state.appId, roots: state.roots.slice(), nodes: nodes };
+    self.postMessage({ type: "run-complete", console: output.join(""), ui: ui });
   } catch (err) {
     running = false;
     self.postMessage({ type: "error", feedback: friendlyError(err, null) });
