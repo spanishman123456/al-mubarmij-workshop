@@ -48,7 +48,6 @@ test("student runs an isolated skui app and updates state", async ({ page }) => 
 
   await page.goto("/python?mode=app&app=app-number-convert");
   await expect(page.getByRole("heading", { name: "مختبر بايثون" })).toBeVisible();
-  await unlockFreeRun(page);
   await page.getByRole("button", { name: "إدراج مثال جاهز" }).click();
   await page.getByRole("button", { name: "تشغيل المشروع" }).click();
 
