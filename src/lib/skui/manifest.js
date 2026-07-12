@@ -70,6 +70,7 @@ export const SKUI_STYLE_PROPS = Object.freeze([
   "border_radius",
   "variant",
   "size",
+  "columns",
 ]);
 
 export const SKUI_COMPONENT_API = Object.freeze(
@@ -104,6 +105,7 @@ export function getSkuiConstructorProps(component) {
     TextArea: ["placeholder", "value", "rows", "on_input", "on_change"],
     Heading: ["text", "level"],
     Select: ["options", "value", "on_select", "on_change"],
+    Grid: ["columns", "gap"],
     Modal: ["title", "open"],
     Canvas: ["width", "height"],
     Timer: ["interval", "running", "on_change"],

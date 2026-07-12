@@ -27,6 +27,7 @@ describe("skui API manifest", () => {
   it("offers component and constructor autocomplete", () => {
     expect(getSkuiAutocompleteSuggestions("Bu").map((item) => item.label)).toEqual(["Button"]);
     expect(getSkuiConstructorProps("Button")).toEqual(expect.arrayContaining(["text", "variant", "on_click", "disabled"]));
+    expect(getSkuiConstructorProps("Grid")).toEqual(expect.arrayContaining(["columns", "gap"]));
   });
 
   it("accepts a supported project", () => {

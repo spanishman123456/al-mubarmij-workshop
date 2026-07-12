@@ -6,17 +6,75 @@ export const SKUI_EXAMPLES = [
     id: "calculator",
     titleAr: "آلة حاسبة",
     code: `import skui as ui
-app = ui.App(title="آلة حاسبة")
-a = ui.Input(placeholder="العدد الأول")
-b = ui.Input(placeholder="العدد الثاني")
-result = ui.Alert(text="النتيجة")
+app = ui.App(title="آلة حاسبة حديثة", width="480px")
+panel = ui.Card(padding="1.25rem", border_radius="1.5rem")
+panel.add(ui.Badge(text="SKUI CALCULATOR"))
+panel.add(ui.Heading(text="احسب بسرعة", level=1))
+history = ui.Text("أدخل عملية حسابية")
+display = ui.Input(placeholder="0", value="", size="lg", direction="ltr")
+result = ui.Alert(text="النتيجة ستظهر هنا")
+
+def append_symbol(symbol):
+    display.set_value(display.value() + symbol)
+
+def make_press(symbol):
+    def press():
+        append_symbol(symbol)
+    return press
+
+def clear():
+    display.set_value("")
+    history.set_text("تم مسح الشاشة")
+    result.set_text("النتيجة ستظهر هنا")
+
+def backspace():
+    display.set_value(display.value()[:-1])
+
 def calculate():
-    result.set_text(str(float(a.value()) + float(b.value())))
-app.add(ui.Heading(text="الجمع"))
-app.add(a)
-app.add(b)
-app.add(ui.Button(text="احسب", on_click=calculate))
-app.add(result)
+    expression = display.value()
+    for operator in ["+", "-", "×", "÷"]:
+        if operator in expression:
+            parts = expression.split(operator)
+            if len(parts) != 2 or parts[0] == "" or parts[1] == "":
+                break
+            first = float(parts[0])
+            second = float(parts[1])
+            if operator == "+":
+                answer = first + second
+            elif operator == "-":
+                answer = first - second
+            elif operator == "×":
+                answer = first * second
+            else:
+                if second == 0:
+                    result.set_text("لا يمكن القسمة على صفر")
+                    return
+                answer = first / second
+            history.set_text(expression + " =")
+            display.set_value(str(answer))
+            result.set_text("تم الحساب بنجاح")
+            return
+    result.set_text("أدخل عملية مثل 7+5")
+
+panel.add(history)
+panel.add(display)
+keypad = ui.Grid(columns=4, gap="0.65rem")
+keys = ["C", "⌫", "÷", "×", "7", "8", "9", "-", "4", "5", "6", "+", "1", "2", "3", "=", "0", "00", "."]
+for key in keys:
+    if key == "C":
+        button = ui.Button(text=key, variant="danger", on_click=clear)
+    elif key == "⌫":
+        button = ui.Button(text=key, variant="secondary", on_click=backspace)
+    elif key == "=":
+        button = ui.Button(text=key, variant="success", on_click=calculate)
+    elif key in ["÷", "×", "-", "+"]:
+        button = ui.Button(text=key, variant="operator", on_click=make_press(key))
+    else:
+        button = ui.Button(text=key, variant="ghost", on_click=make_press(key))
+    keypad.add(button)
+panel.add(keypad)
+panel.add(result)
+app.add(panel)
 app.run()`,
   },
   {
