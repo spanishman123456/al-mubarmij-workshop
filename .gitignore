@@ -12,6 +12,7 @@ dist
 dist-ssr
 test-results/
 playwright-report/
+desktop/skui-tauri-template/src-tauri/target/
 data/
 server/data/analytics.json
 scripts/microbit-hex-workspace/
