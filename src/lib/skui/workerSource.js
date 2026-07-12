@@ -92,14 +92,6 @@ async function dispatchEvent(message) {
   }
   var handler = state.handlers[message.id + ":" + message.event];
   if (!handler) {
-    if (typeof self.postMessage === "function") {
-      var nodes = {};
-      Object.keys(state.nodes).forEach(function(id) {
-        var item = state.nodes[id];
-        nodes[id] = { id: id, type: item.type, props: Object.assign({}, item.props), children: item.children.slice() };
-      });
-      self.postMessage({ type: "snapshot", ui: { version: "1.0.0", appId: state.appId, roots: state.roots.slice(), nodes: nodes } });
-    }
     self.postMessage({ type: "event-complete", console: "" });
     return;
   }

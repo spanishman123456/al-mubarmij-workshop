@@ -21,6 +21,7 @@ import DayLessonPage from "./pages/DayLessonPage";
 import SimulationsPage from "./pages/SimulationsPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import WorksheetDetailPage from "./pages/WorksheetDetailPage";
+import WebAppPreviewPage from "./pages/WebAppPreviewPage";
 import { ActivityTracker, StudentInactivityManager } from "./hooks/useActivityTracker";
 import { OnboardingGate, OnboardingHub } from "./pages/onboarding/OnboardingPages.jsx";
 import BingoPage from "./pages/onboarding/BingoPage.jsx";
@@ -163,10 +164,11 @@ function QuizTakeRedirect() {
 function AppRoutes() {
   const { user, authReady } = usePlatform();
   const location = useLocation();
+  const isStandalonePreview = location.pathname === "/webapp-preview";
 
   return (
     <div className="min-h-screen font-ar">
-      {authReady && user ? (
+      {authReady && user && !isStandalonePreview ? (
         <>
           <ActivityTracker />
           <StudentInactivityManager />
@@ -445,6 +447,8 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/webapp-preview" element={<WebAppPreviewPage />} />
 
         <Route
           path="/curriculum"

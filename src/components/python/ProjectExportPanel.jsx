@@ -6,9 +6,25 @@ import {
   exportWebAppHtml,
   exportPwaZip,
 } from "../../lib/projectExport";
+import { openWebAppPreview } from "../../lib/webAppPreview";
 
 const EXPORT_ACTIONS = [
   { id: "zip", label: "تصدير الكود", sub: "Source ZIP منظم مع WebApp", fn: exportProjectZip, capKey: "zip" },
+  {
+    id: "web",
+    label: "فتح WebApp مباشرة",
+    sub: "صفحة مستقلة لتجربة المشروع فورًا",
+    fn: openWebAppPreview,
+    capKey: "webApp",
+  },
+  {
+    id: "webzip",
+    label: "تصدير WebApp ZIP (تنزيل)",
+    sub: "حزمة مستقلة للاستضافة الثابتة",
+    fn: exportWebAppHtml,
+    capKey: "webApp",
+  },
+  { id: "pwa", label: "تصدير PWA", sub: "تثبيت وعمل دون اتصال", fn: exportPwaZip, capKey: "pwa" },
   {
     id: "exe",
     label: "تصدير Windows",
@@ -16,8 +32,6 @@ const EXPORT_ACTIONS = [
     fn: exportWindowsExeKit,
     capKey: "exe",
   },
-  { id: "web", label: "تصدير WebApp ZIP", sub: "حزمة مستقلة للاستضافة الثابتة", fn: exportWebAppHtml, capKey: "webApp" },
-  { id: "pwa", label: "تصدير PWA", sub: "تثبيت وعمل دون اتصال", fn: exportPwaZip, capKey: "pwa" },
 ];
 
 function exportPayload(props, settings) {
