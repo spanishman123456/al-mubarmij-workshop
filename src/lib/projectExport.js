@@ -293,7 +293,11 @@ export async function exportWindowsExeKit(payload) {
       ownerId: payload.ownerId || "local-user",
       projectId: payload.projectId || safeExportSlug(payload.title, payload.templateId),
       target: "windows",
-      metadata: { name: payload.title, version: payload.version || "1.0.0" },
+      metadata: {
+        name: payload.title,
+        version: payload.version || "1.0.0",
+        signingMode: payload.signingMode === "official" ? "official" : "educational",
+      },
       sourceBase64: bytesToBase64(source.bytes),
       sourceChecksum: source.checksum,
     }),
@@ -304,7 +308,9 @@ export async function exportWindowsExeKit(payload) {
   }
   return {
     ok: true,
-    message: "أُرسلت مهمة Tauri إلى قائمة بناء Windows.",
+    message: payload.signingMode === "official"
+      ? "أُرسلت مهمة Windows الرسمية؛ لن تنجح دون توقيع Authenticode صالح."
+      : "أُرسلت مهمة Windows التعليمية غير الموقّعة.",
     note: `Build ID: ${data.job?.id || data.id}`,
     job: data.job || data,
   };

@@ -44,6 +44,11 @@ on:
         required: false
         default: ""
         type: string
+      require_signing:
+        description: Fail unless both installers receive a valid Authenticode signature
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -146,15 +151,22 @@ jobs:
 
       - name: Sign and verify Windows installers when configured
         shell: pwsh
+        env:
+          INPUT_REQUIRE_SIGNING: ${{ inputs.require_signing }}
         run: |
           $ErrorActionPreference = "Stop"
+          $requiresSigning = $env:INPUT_REQUIRE_SIGNING -eq "true"
           $hasCertificate = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_BASE64)
           $hasPassword = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_PASSWORD)
           if ($hasCertificate -ne $hasPassword) {
             throw "Configure both WINDOWS_CERTIFICATE_BASE64 and WINDOWS_CERTIFICATE_PASSWORD, or neither."
           }
           if (-not $hasCertificate) {
+            if ($requiresSigning) {
+              throw "Official Windows export requires Authenticode secrets, but they are not configured."
+            }
             Write-Host "Authenticode signing not configured; installers remain unsigned."
+            "WINDOWS_SIGNING_STATUS=unsigned-educational" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
             exit 0
           }
 
@@ -188,6 +200,7 @@ jobs:
               $signature = Get-AuthenticodeSignature $installer.FullName
               if ($signature.Status -ne "Valid") { throw "Authenticode status is $($signature.Status): $($installer.Name)" }
             }
+            "WINDOWS_SIGNING_STATUS=signed-official" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           } finally {
             Remove-Item $certificatePath -Force -ErrorAction SilentlyContinue
           }
@@ -214,6 +227,10 @@ jobs:
               "$($hash.Hash.ToLowerInvariant())  $($_.Name)"
             } |
             Set-Content (Join-Path $output "SHA256SUMS.txt") -Encoding ascii
+          @(
+            "build_sha=$env:GITHUB_SHA"
+            "signing_status=$env:WINDOWS_SIGNING_STATUS"
+          ) | Set-Content (Join-Path $output "BUILD-INFO.txt") -Encoding ascii
 
       - name: Upload Windows installers and checksums
         uses: actions/upload-artifact@v4

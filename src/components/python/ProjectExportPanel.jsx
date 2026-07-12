@@ -47,6 +47,7 @@ export function ProjectExportPanel({
     orientation: "any",
     authorVisibility: "hidden",
     themeColor: "#7c3aed",
+    signingMode: "educational",
   });
   const [history, setHistory] = useState([]);
 
@@ -222,6 +223,14 @@ export function ProjectExportPanel({
             <option value="rtl">العربية — RTL</option>
             <option value="ltr">English — LTR</option>
           </select>
+          <select
+            value={settings.signingMode}
+            onChange={(event) => setSettings((prev) => ({ ...prev, signingMode: event.target.value }))}
+            className="rounded border border-white/20 bg-black/20 px-2 py-1.5 text-xs"
+          >
+            <option value="educational">Windows تعليمي — غير موقّع</option>
+            <option value="official">Windows رسمي — يتطلب توقيع Authenticode</option>
+          </select>
         </div>
       </details>
 
@@ -246,6 +255,7 @@ export function ProjectExportPanel({
       <div className={`mt-3 rounded-lg p-2 text-xs ${isDark ? "bg-black/30 text-slate-400" : "bg-white text-slate-500"}`}>
         <p><strong>الجوال:</strong> استخدم PWA للتثبيت والعمل دون اتصال.</p>
         <p className="mt-1"><strong>Windows:</strong> تطبيق ويب تعليمي مغلف بـTauri 2، وليس تحويلًا إلى CPython.</p>
+        <p className="mt-1"><strong>التوقيع:</strong> الوضع الرسمي يفشل بأمان إذا لم تكن شهادة Authenticode مهيأة؛ الوضع التعليمي ينتج حزمة موسومة بوضوح كغير موقّعة.</p>
         <p className="mt-1 opacity-90">لا يُنفذ كود الطالب على خادم البناء، ولا تتضمن الحزم أسرار المنصة.</p>
       </div>
 

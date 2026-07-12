@@ -108,6 +108,7 @@ async function dispatchWindowsWorkflow(created, metadata = {}) {
           version: /^\d+\.\d+\.\d+$/.test(metadata.version || "") ? metadata.version : "1.0.0",
           identifier: `org.mubarmij.skui.${created.job.id.replace(/-/g, "").slice(0, 20)}`,
           dist_path: "desktop/skui-tauri-template/dist",
+          require_signing: metadata.signingMode === "official",
         },
       }),
     },
