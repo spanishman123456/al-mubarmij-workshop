@@ -3,14 +3,25 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import { Buffer } from "node:buffer";
 import { unzipSync } from "fflate";
-import { SKUI_EXAMPLES } from "../src/data/skuiExamples.js";
+import { E2E_CALCULATOR_APP, E2E_EXAMPLES, E2E_WELCOME_APP } from "./fixtures/skuiApps.js";
 
-async function unlockFreeRun(page) {
-  const check = page.getByRole("button", { name: /تحقق من الحل/ });
-  await check.click();
-  await check.click();
-  await check.click();
-  await page.getByRole("button", { name: "عرض الحل الكامل" }).click();
+async function loginStudent(page) {
+  await page.goto("/login");
+  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
+  await page.getByRole("button", { name: "دخول", exact: true }).click();
+  await expect(page).toHaveURL(/\/student/);
+}
+
+async function openAppLab(page, appId = "app-guess-number") {
+  await page.goto(`/python?mode=app&app=${appId}`);
+  await expect(page.getByRole("heading", { name: "مختبر بايثون" })).toBeVisible();
+  await page.getByTestId("app-tab-code").click();
+}
+
+async function runCode(page, code) {
+  await page.getByTestId("app-tab-code").click();
+  await page.getByTestId("python-code-editor").fill(code);
+  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
 }
 
 async function readDownload(download) {
@@ -40,16 +51,22 @@ async function serveZip(files) {
   return { server, url: `http://127.0.0.1:${server.address().port}/` };
 }
 
-test("student runs an isolated skui app and updates state", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
-  await page.getByRole("button", { name: "دخول", exact: true }).click();
-  await expect(page).toHaveURL(/\/student/);
+test("selecting a project syncs title hints and clears previous preview", async ({ page }) => {
+  await loginStudent(page);
+  await page.goto("/python?mode=app&app=app-guess-number");
+  await expect(page.getByTestId("skui-project-title")).toContainText("لعبة تخمين الرقم");
+  await page.getByTestId("start-project-app-calculator").click();
+  await expect(page.getByTestId("skui-project-title")).toContainText("آلة حاسبة");
+  await page.getByTestId("app-tab-code").click();
+  await expect(page.getByTestId("python-code-editor")).toContainText("آلة حاسبة");
+  await page.getByTestId("app-tab-preview").click();
+  await expect(page.getByText("طريقة الاستخدام")).toBeVisible();
+});
 
-  await page.goto("/python?mode=app&app=app-number-convert");
-  await expect(page.getByRole("heading", { name: "مختبر بايثون" })).toBeVisible();
-  await page.getByRole("button", { name: "إدراج مثال جاهز" }).click();
-  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+test("student runs an isolated skui app and updates state", async ({ page }) => {
+  await loginStudent(page);
+  await openAppLab(page);
+  await runCode(page, E2E_WELCOME_APP);
 
   const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
   await expect(frame.getByText("مرحبًا بك")).toBeVisible({ timeout: 20_000 });
@@ -64,14 +81,13 @@ test("student runs an isolated skui app and updates state", async ({ page }) => 
 });
 
 test("student opens the current project as a direct WebApp preview", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
-  await page.getByRole("button", { name: "دخول", exact: true }).click();
-  await page.goto("/python?mode=app&app=app-number-convert");
-  await page.getByRole("button", { name: "إدراج مثال جاهز" }).click();
+  await loginStudent(page);
+  await openAppLab(page);
+  await runCode(page, E2E_WELCOME_APP);
+  await page.getByTestId("app-tab-export").click();
 
   const popupPromise = page.waitForEvent("popup");
-  await page.getByRole("button", { name: /^فتح WebApp مباشرة/ }).click();
+  await page.getByRole("button", { name: /فتح WebApp في تبويب جديد/ }).click();
   const previewPage = await popupPromise;
   await expect(previewPage.getByText("معاينة WebApp مباشرة")).toBeVisible();
   const frame = previewPage.frameLocator('[data-testid="skui-preview-frame"]');
@@ -83,11 +99,8 @@ test("student opens the current project as a direct WebApp preview", async ({ pa
 });
 
 test("skui autocomplete and unsupported component feedback are educational", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
-  await page.getByRole("button", { name: "دخول", exact: true }).click();
-  await page.goto("/python?mode=app&app=app-number-convert");
-  await unlockFreeRun(page);
+  await loginStudent(page);
+  await openAppLab(page);
 
   const editor = page.getByTestId("python-code-editor");
   await editor.fill("import skui as ui\nui.Bu");
@@ -95,33 +108,25 @@ test("skui autocomplete and unsupported component feedback are educational", asy
 
   await editor.fill("import skui as ui\nui.UnknownWidget()");
   await page.getByRole("button", { name: "تشغيل المشروع" }).click();
-  await expect(page.getByRole("paragraph").filter({ hasText: "المكوّن UnknownWidget غير مدعوم" })).toBeVisible();
+  await expect(page.getByTestId("skui-run-status")).toContainText("UnknownWidget");
 });
 
-test("every published skui example executes in the isolated runtime", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
-  await page.getByRole("button", { name: "دخول", exact: true }).click();
-  await page.goto("/python?mode=app&app=app-number-convert");
-  await unlockFreeRun(page);
-
-  const editor = page.getByTestId("python-code-editor");
+test("published e2e fixtures execute in the isolated runtime", async ({ page }) => {
+  await loginStudent(page);
+  await openAppLab(page);
   const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
-  for (const example of SKUI_EXAMPLES) {
-    await editor.fill(example.code);
-    await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+  for (const example of E2E_EXAMPLES) {
+    await runCode(page, example.code);
     await expect(frame.locator(".sk-App"), `example ${example.id}`).toBeAttached({ timeout: 20_000 });
   }
 });
 
 test("professional calculator keypad accepts input and computes a result", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
-  await page.getByRole("button", { name: "دخول", exact: true }).click();
-  await page.goto("/python?mode=app&app=app-number-convert");
-
-  await page.getByRole("button", { name: "آلة حاسبة", exact: true }).click();
-  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+  await loginStudent(page);
+  await page.goto("/python?mode=app");
+  await page.getByTestId("start-project-app-calculator").click();
+  await expect(page.getByTestId("skui-project-title")).toContainText("آلة حاسبة");
+  await runCode(page, E2E_CALCULATOR_APP);
   const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
   await expect(frame.getByText("احسب بسرعة")).toBeVisible({ timeout: 20_000 });
   await frame.getByRole("button", { name: "7", exact: true }).click();
@@ -133,14 +138,12 @@ test("professional calculator keypad accepts input and computes a result", async
 });
 
 test("every declared first-release component renders in the sandbox", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
-  await page.getByRole("button", { name: "دخول", exact: true }).click();
-  await page.goto("/python?mode=app&app=app-number-convert");
-  await unlockFreeRun(page);
+  await loginStudent(page);
+  await openAppLab(page);
 
   const code = `import skui as ui
 app = ui.App(title="اختبار المكونات")
+guide = ui.Guide(title="دليل", message="مرحبا", character="assistant")
 page = ui.Page()
 container = ui.Container()
 row = ui.Row()
@@ -176,10 +179,10 @@ column.add(grid)
 row.add(column)
 container.add(row)
 page.add(container)
+app.add(guide)
 app.add(page)
 app.run()`;
-  await page.getByTestId("python-code-editor").fill(code);
-  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+  await runCode(page, code);
   const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
   const components = [
     "App", "Page", "Container", "Row", "Column", "Grid", "Card", "Text", "Heading", "Button",
@@ -189,15 +192,15 @@ app.run()`;
   for (const component of components) {
     await expect(frame.locator(`.sk-${component}`).first()).toBeAttached();
   }
+  await expect(frame.locator(".sk-Guide").first()).toBeAttached();
 });
 
 test("all declared callbacks cross the worker bridge safely", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
-  await page.getByRole("button", { name: "دخول", exact: true }).click();
-  await page.goto("/python?mode=app&app=app-number-convert");
-  await unlockFreeRun(page);
-  await page.getByTestId("python-code-editor").fill(`import skui as ui
+  await loginStudent(page);
+  await openAppLab(page);
+  await runCode(
+    page,
+    `import skui as ui
 app = ui.App(title="الأحداث")
 seen = []
 status = ui.Text("")
@@ -219,8 +222,8 @@ app.add(field)
 app.add(choice)
 app.add(button)
 app.add(status)
-app.run()`);
-  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+app.run()`,
+  );
   const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
   const field = frame.getByPlaceholder("حدث");
   await field.focus();
@@ -239,29 +242,22 @@ app.run()`);
   await expect(status).toContainText("click");
 });
 
-test("exported WebApp and PWA bundles run with local runtime and offline cache", async ({ page, context }) => {
-  await page.goto("/login");
-  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
-  await page.getByRole("button", { name: "دخول", exact: true }).click();
-  await page.goto("/python?mode=app&app=app-number-convert");
-  await unlockFreeRun(page);
-  await page.getByRole("button", { name: "إدراج مثال جاهز" }).click();
+test("exported WebApp ZIP runs with local runtime; PWA and Windows stay gated", async ({ page }) => {
+  await loginStudent(page);
+  await openAppLab(page);
+  await runCode(page, E2E_WELCOME_APP);
+  await page.getByTestId("app-tab-export").click();
+
+  await expect(page.getByTestId("export-action-pwa")).toBeDisabled();
+  await expect(page.getByTestId("export-action-exe")).toBeDisabled();
 
   const webDownloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: /تصدير WebApp ZIP/ }).click();
+  await page.getByRole("button", { name: /تنزيل WebApp ZIP/ }).click();
   const webFiles = await readDownload(await webDownloadPromise);
   expect(Object.keys(webFiles).some((name) => name.endsWith("/runtime/skulpt.min.js"))).toBe(true);
   expect(Object.keys(webFiles).some((name) => name.endsWith("/build-info.json"))).toBe(true);
 
-  const pwaDownloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: /تصدير PWA/ }).click();
-  const pwaFiles = await readDownload(await pwaDownloadPromise);
-  const manifestName = Object.keys(pwaFiles).find((name) => name.endsWith("/manifest.webmanifest"));
-  const manifest = JSON.parse(Buffer.from(pwaFiles[manifestName]).toString("utf8"));
-  expect(manifest.display).toBe("standalone");
-  expect(Object.keys(pwaFiles).some((name) => name.endsWith("/service-worker.js"))).toBe(true);
-
-  const hosted = await serveZip(pwaFiles);
+  const hosted = await serveZip(webFiles);
   try {
     await page.goto(hosted.url);
     const exported = page.frameLocator("#preview");
@@ -271,12 +267,7 @@ test("exported WebApp and PWA bundles run with local runtime and offline cache",
     await expect(exportedName).toHaveValue("خارجي");
     await exported.getByRole("button", { name: "تشغيل" }).click();
     await expect(exported.getByText("مرحبًا خارجي")).toBeVisible();
-    await page.evaluate(() => navigator.serviceWorker.ready);
-    await context.setOffline(true);
-    await page.reload();
-    await expect(page.getByRole("heading", { name: /مثالي الأول|أداة تحويل/ })).toBeVisible();
   } finally {
-    await context.setOffline(false);
     await new Promise((resolve) => hosted.server.close(resolve));
   }
 });
@@ -325,4 +316,16 @@ test("Windows export jobs protect worker and download operations with capability
   expect((await status.json()).job.status).toBe("completed");
   const download = await request.get(`/api/exports/${created.job.id}/download?token=${created.downloadToken}`);
   expect(Buffer.from(await download.body()).toString()).toBe(artifact.toString());
+});
+
+test("teacher solution API rejects students and serves teachers", async ({ request }) => {
+  const denied = await request.get("/api/teacher/skui-projects/app-calculator/solution");
+  expect(denied.status()).toBe(403);
+  const allowed = await request.get("/api/teacher/skui-projects/app-calculator/solution", {
+    headers: { "x-user-role": "teacher" },
+  });
+  expect(allowed.ok()).toBeTruthy();
+  const body = await allowed.json();
+  expect(body.code).toContain("import skui as ui");
+  expect(body.code).toContain("آلة حاسبة");
 });

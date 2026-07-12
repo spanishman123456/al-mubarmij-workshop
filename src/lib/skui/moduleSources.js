@@ -64,14 +64,45 @@ class Widget:
         _bridge.set_prop(self._id, "data", list(data))
         return self
 
+    def set_background(self, color):
+        _bridge.set_prop(self._id, "background", color)
+        return self
+
 
 class App(Widget):
-    def __init__(self, title="", width=520, height=380, theme="auto", direction="auto", **props):
-        props.update({"title": title, "width": width, "height": height, "theme": theme, "direction": direction})
+    def __init__(self, title="", width=520, height=380, theme="auto", appearance="dark", direction="auto", **props):
+        resolved_theme = theme
+        if appearance in ("dark", "light"):
+            resolved_theme = appearance if theme in ("auto", "", None) or theme == "modern" else theme
+        props.update({
+            "title": title,
+            "width": width,
+            "height": height,
+            "theme": resolved_theme if resolved_theme else "dark",
+            "appearance": appearance,
+            "direction": direction,
+        })
         Widget.__init__(self, "App", [], props)
 
     def run(self):
         _bridge.run(self._id)
+        return self
+
+
+class Guide(Widget):
+    def __init__(self, title="مرحبًا", message="", character="assistant", position="top", open=True, **props):
+        props.update({
+            "title": title,
+            "message": message,
+            "character": character,
+            "position": position,
+            "open": bool(open),
+            "text": title,
+        })
+        Widget.__init__(self, "Guide", [], props)
+
+    def hide(self):
+        self.set_open(False)
         return self
 
 
@@ -90,10 +121,10 @@ class Heading(Widget):
 
 
 class Button(Widget):
-    def __init__(self, text=None, **props):
+    def __init__(self, text=None, variant="primary", depth="flat", **props):
         if text is None:
             raise ValueError("يتطلب Button الخاصية text.")
-        props["text"] = text
+        props.update({"text": text, "variant": variant, "depth": depth})
         Widget.__init__(self, "Button", [], props)
 
 
@@ -256,7 +287,7 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
   var COMPONENTS = ${COMPONENTS_JSON};
   var EVENTS = ${EVENTS_JSON};
   var LIMITS = ${LIMITS_JSON};
-  var allowedStyle = ["width","height","padding","margin","align","justify","gap","background","text_color","border_radius","variant","size","columns"];
+  var allowedStyle = ["width","height","padding","margin","align","justify","gap","background","text_color","border_radius","variant","size","columns","depth","appearance"];
   var state = self.__skuiState;
   var mod = {};
   function none() { return Sk.builtin.none.none$; }
@@ -288,7 +319,7 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
       } else if (key === "columns") {
         var columns = Math.round(Number(value));
         if (columns >= 1 && columns <= 6) props.columns = columns;
-      } else if (allowedStyle.includes(key) || ["title","text","placeholder","value","disabled","theme","direction","level","rows","checked","group","options","min","max","step","alt","open","operations","headers","items","tabs","panels","interval","running","data","labels","autoplay","controls"].includes(key)) {
+      } else if (allowedStyle.includes(key) || ["title","text","message","character","position","placeholder","value","disabled","theme","appearance","direction","level","rows","checked","group","options","min","max","step","alt","open","operations","headers","items","tabs","panels","interval","running","data","labels","autoplay","controls"].includes(key)) {
         if (typeof value === "string") props[key] = value.slice(0, LIMITS.maxTextLength);
         else if (Array.isArray(value)) props[key] = value.slice(0, 500);
         else if (value == null || ["number","boolean"].includes(typeof value)) props[key] = value;
