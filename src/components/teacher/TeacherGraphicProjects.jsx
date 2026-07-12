@@ -46,12 +46,12 @@ function TeacherProjectRunner({ code }) {
     }
   }
 
-  async function onButton(btnId) {
+  async function onButton(btnId, currentValues = values) {
     if (!sessionRef.current) return;
     setBusy(true);
     setFeedback(null);
     try {
-      const result = await sessionRef.current.click(btnId, values);
+      const result = await sessionRef.current.click(btnId, currentValues);
       setUi(result.ui);
       setValues(result.ui.values || {});
       if (result.console) setConsoleOut((prev) => prev + result.console);
@@ -62,10 +62,10 @@ function TeacherProjectRunner({ code }) {
     }
   }
 
-  async function onEvent(id, eventName, value) {
+  async function onEvent(id, eventName, value, currentValues) {
     if (!sessionRef.current || eventName === "on_click") return;
     try {
-      const result = await sessionRef.current.event(id, eventName, value);
+      const result = await sessionRef.current.event(id, eventName, value, currentValues);
       setUi(result.ui);
       if (result.console) setConsoleOut((prev) => prev + result.console);
     } catch (e) {

@@ -81,6 +81,11 @@ async function dispatchEvent(message) {
   var state = self.__skuiState;
   var node = state.nodes[message.id];
   if (!node) return;
+  if (message.values && typeof message.values === "object") {
+    Object.keys(message.values).forEach(function(id) {
+      if (state.nodes[id]) state.nodes[id].props.value = message.values[id];
+    });
+  }
   if (Object.prototype.hasOwnProperty.call(message, "value")) {
     node.props.value = message.value;
     if (node.type === "Checkbox") node.props.checked = Boolean(message.value);
@@ -95,6 +100,7 @@ async function dispatchEvent(message) {
       });
       self.postMessage({ type: "snapshot", ui: { version: "1.0.0", appId: state.appId, roots: state.roots.slice(), nodes: nodes } });
     }
+    self.postMessage({ type: "event-complete", console: "" });
     return;
   }
   output = [];

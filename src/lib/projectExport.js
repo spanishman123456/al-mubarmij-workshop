@@ -167,6 +167,8 @@ export async function createExportBundle({
   templateId = null,
   buildId = crypto.randomUUID(),
   now = new Date().toISOString(),
+  runtimeFiles = null,
+  iconFiles = null,
 }) {
   const safeSlug = safeExportSlug(title, templateId);
   const validation = validateExportProject(code, { title, target, assets });
@@ -195,7 +197,7 @@ export async function createExportBundle({
   const files = {};
   const root = `${safeSlug}/`;
   const web = target === "source" ? `${root}webapp/` : root;
-  const { runtime, stdlib } = await fetchRuntime();
+  const { runtime, stdlib } = runtimeFiles || (await fetchRuntime());
   files[`${web}index.html`] = strToU8(
     buildWebAppHtml({
       title: meta.name,
@@ -225,8 +227,8 @@ export async function createExportBundle({
     );
     files[`${web}service-worker.js`] = strToU8(buildServiceWorker({ cacheVersion: version }));
     files[`${web}offline.html`] = strToU8(buildOfflineHtml(meta.name));
-    files[`${web}icons/icon-192.png`] = buildPlaceholderIcon(192);
-    files[`${web}icons/icon-512.png`] = buildPlaceholderIcon(512);
+    files[`${web}icons/icon-192.png`] = iconFiles?.icon192 || buildPlaceholderIcon(192);
+    files[`${web}icons/icon-512.png`] = iconFiles?.icon512 || buildPlaceholderIcon(512);
   }
   if (target === "source") {
     files[`${root}main.py`] = strToU8(String(code || ""));
@@ -291,7 +293,7 @@ export async function exportWindowsExeKit(payload) {
       ownerId: payload.ownerId || "local-user",
       projectId: payload.projectId || safeExportSlug(payload.title, payload.templateId),
       target: "windows",
-      name: payload.title,
+      metadata: { name: payload.title, version: payload.version || "1.0.0" },
       sourceBase64: bytesToBase64(source.bytes),
       sourceChecksum: source.checksum,
     }),

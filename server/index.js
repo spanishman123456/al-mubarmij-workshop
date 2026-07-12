@@ -80,6 +80,44 @@ function sendExportError(res, error) {
   throw error;
 }
 
+async function dispatchWindowsWorkflow(created, metadata = {}) {
+  const token = process.env.GITHUB_WORKFLOW_TOKEN;
+  const repository = process.env.GITHUB_REPOSITORY;
+  const apiBase = process.env.EXPORT_PUBLIC_BASE_URL || process.env.APP_URL;
+  if (!token || !repository || !apiBase) return { dispatched: false, reason: "not-configured" };
+  if (!/^https:\/\//i.test(apiBase)) {
+    throw new ExportStoreError("BUILD_CONFIG", "EXPORT_PUBLIC_BASE_URL must use HTTPS", 500);
+  }
+  const response = await fetch(
+    `https://api.github.com/repos/${repository}/actions/workflows/skui-windows-export.yml/dispatches`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ref: process.env.GITHUB_EXPORT_REF || "main",
+        inputs: {
+          build_id: created.job.id,
+          api_base: apiBase.replace(/\/+$/, ""),
+          build_token: created.buildToken,
+          product_name: String(metadata.name || "SKUI Project").slice(0, 80),
+          version: /^\d+\.\d+\.\d+$/.test(metadata.version || "") ? metadata.version : "1.0.0",
+          identifier: `org.mubarmij.skui.${created.job.id.replace(/-/g, "").slice(0, 20)}`,
+          dist_path: "desktop/skui-tauri-template/dist",
+        },
+      }),
+    },
+  );
+  if (!response.ok) {
+    throw new ExportStoreError("BUILD_DISPATCH_FAILED", `GitHub Actions dispatch failed (${response.status})`, 502);
+  }
+  return { dispatched: true };
+}
+
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, at: new Date().toISOString() });
 });
@@ -87,10 +125,24 @@ app.get("/api/health", (_req, res) => {
 // This app has no user authentication. These random bearer values are capabilities:
 // possession grants only the operation named by the token. Deployments must deliver
 // build tokens to trusted workers and must not log or embed any token in URLs.
-app.post("/api/exports", (req, res) => {
+app.post("/api/exports", async (req, res) => {
   try {
-    const created = exportJobsStore.createJob(parseCreateExport(req.body));
-    res.status(201).json({ ok: true, ...created });
+    const parsed = parseCreateExport(req.body);
+    const created = exportJobsStore.createJob(parsed);
+    let dispatch = { dispatched: false, reason: "not-windows" };
+    if (parsed.target === "windows") {
+      try {
+        dispatch = await dispatchWindowsWorkflow(created, parsed.metadata);
+      } catch (error) {
+        exportJobsStore.failJob(created.job.id, created.buildToken, error.message);
+        throw error;
+      }
+    }
+    const publicCreated =
+      process.env.NODE_ENV === "production"
+        ? { job: created.job, ownerToken: created.ownerToken, downloadToken: created.downloadToken }
+        : created;
+    res.status(201).json({ ok: true, ...publicCreated, dispatch });
   } catch (error) {
     try {
       sendExportError(res, error);

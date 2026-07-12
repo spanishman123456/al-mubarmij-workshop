@@ -23,6 +23,21 @@ on:
         required: true
         default: desktop/skui-tauri-template/dist
         type: string
+      build_id:
+        description: Server export job ID (empty for repository smoke build)
+        required: false
+        default: ""
+        type: string
+      api_base:
+        description: HTTPS platform base URL for the build worker
+        required: false
+        default: ""
+        type: string
+      build_token:
+        description: Single-use build capability supplied by the platform
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -47,8 +62,14 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
           INPUT_IDENTIFIER: ${{ inputs.identifier }}
           INPUT_DIST_PATH: ${{ inputs.dist_path }}
+          INPUT_BUILD_ID: ${{ inputs.build_id }}
+          INPUT_API_BASE: ${{ inputs.api_base }}
+          INPUT_BUILD_TOKEN: ${{ inputs.build_token }}
         run: |
           $ErrorActionPreference = "Stop"
+          if (-not [string]::IsNullOrWhiteSpace($env:INPUT_BUILD_TOKEN)) {
+            Write-Output "::add-mask::$env:INPUT_BUILD_TOKEN"
+          }
           if ($env:INPUT_VERSION -notmatch '^\d+\.\d+\.\d+([+-][0-9A-Za-z.-]+)?$') {
             throw "version must be SemVer (for example 1.2.3)"
           }
@@ -57,9 +78,24 @@ jobs:
           }
 
           $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE)
-          $source = [IO.Path]::GetFullPath((Join-Path $workspace $env:INPUT_DIST_PATH))
-          if (-not $source.StartsWith($workspace + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
-            throw "dist_path must remain inside the checked-out repository"
+          if (-not [string]::IsNullOrWhiteSpace($env:INPUT_BUILD_ID)) {
+            if ($env:INPUT_API_BASE -notmatch '^https://') { throw "api_base must use HTTPS" }
+            if ([string]::IsNullOrWhiteSpace($env:INPUT_BUILD_TOKEN)) { throw "build_token is required with build_id" }
+            $sourceZip = Join-Path $env:RUNNER_TEMP "skui-source.zip"
+            $expanded = Join-Path $env:RUNNER_TEMP "skui-source"
+            Invoke-WebRequest `
+              -Uri "$($env:INPUT_API_BASE.TrimEnd('/'))/api/exports/$env:INPUT_BUILD_ID/source" `
+              -Headers @{ "x-export-build-token" = $env:INPUT_BUILD_TOKEN } `
+              -OutFile $sourceZip
+            Expand-Archive -Path $sourceZip -DestinationPath $expanded -Force
+            $index = Get-ChildItem $expanded -Filter index.html -File -Recurse | Select-Object -First 1
+            if (-not $index) { throw "Downloaded WebApp bundle does not contain index.html" }
+            $source = $index.Directory.FullName
+          } else {
+            $source = [IO.Path]::GetFullPath((Join-Path $workspace $env:INPUT_DIST_PATH))
+            if (-not $source.StartsWith($workspace + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+              throw "dist_path must remain inside the checked-out repository"
+            }
           }
           if (-not (Test-Path (Join-Path $source "index.html") -PathType Leaf)) {
             throw "dist_path must contain index.html"
@@ -138,6 +174,8 @@ jobs:
               if ($LASTEXITCODE -ne 0) { throw "Signing failed: $($installer.Name)" }
               & $signTool.FullName verify /pa /all $installer.FullName
               if ($LASTEXITCODE -ne 0) { throw "Signature verification failed: $($installer.Name)" }
+              $signature = Get-AuthenticodeSignature $installer.FullName
+              if ($signature.Status -ne "Valid") { throw "Authenticode status is $($signature.Status): $($installer.Name)" }
             }
           } finally {
             Remove-Item $certificatePath -Force -ErrorAction SilentlyContinue
@@ -173,3 +211,47 @@ jobs:
           path: windows-artifacts/*
           if-no-files-found: error
           retention-days: 14
+
+      - name: Return installers to platform job
+        if: ${{ inputs.build_id != '' }}
+        shell: pwsh
+        env:
+          INPUT_BUILD_ID: ${{ inputs.build_id }}
+          INPUT_API_BASE: ${{ inputs.api_base }}
+          INPUT_BUILD_TOKEN: ${{ inputs.build_token }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          Write-Output "::add-mask::$env:INPUT_BUILD_TOKEN"
+          $archive = Join-Path $env:RUNNER_TEMP "skui-windows-installers.zip"
+          Compress-Archive -Path "$env:GITHUB_WORKSPACE/windows-artifacts/*" -DestinationPath $archive -Force
+          Invoke-WebRequest `
+            -Method Put `
+            -Uri "$($env:INPUT_API_BASE.TrimEnd('/'))/api/exports/$env:INPUT_BUILD_ID/result" `
+            -Headers @{
+              "x-export-build-token" = $env:INPUT_BUILD_TOKEN
+              "x-export-filename" = "skui-windows-installers.zip"
+              "x-export-content-type" = "application/zip"
+            } `
+            -ContentType "application/octet-stream" `
+            -InFile $archive
+
+      - name: Report failed build to platform
+        if: ${{ failure() && inputs.build_id != '' }}
+        shell: pwsh
+        env:
+          INPUT_BUILD_ID: ${{ inputs.build_id }}
+          INPUT_API_BASE: ${{ inputs.api_base }}
+          INPUT_BUILD_TOKEN: ${{ inputs.build_token }}
+        run: |
+          Write-Output "::add-mask::$env:INPUT_BUILD_TOKEN"
+          $body = @{ status = "failed"; error = "Windows Tauri build failed. Review the GitHub Actions log." } | ConvertTo-Json
+          try {
+            Invoke-RestMethod `
+              -Method Post `
+              -Uri "$($env:INPUT_API_BASE.TrimEnd('/'))/api/exports/$env:INPUT_BUILD_ID/result" `
+              -Headers @{ "x-export-build-token" = $env:INPUT_BUILD_TOKEN } `
+              -ContentType "application/json" `
+              -Body $body
+          } catch {
+            Write-Warning "Could not report build failure: $($_.Exception.Message)"
+          }

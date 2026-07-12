@@ -73,7 +73,7 @@ export function buildStandaloneAppJs() {
     if(event.source!==frame.contentWindow)return;
     var message=event.data||{};
     if(message.source==="skui-preview"&&message.type==="event"){
-      worker.postMessage({type:"event",id:message.id,event:message.event,value:message.value});
+      worker.postMessage({type:"event",id:message.id,event:message.event,value:message.value,values:message.values});
     }
   });
   frame.addEventListener("load",function(){
@@ -83,6 +83,9 @@ export function buildStandaloneAppJs() {
       stdlibUrl:new URL("./runtime/skulpt-stdlib.js",location.href).href
     });
   },{once:true});
+  if("serviceWorker" in navigator&&document.querySelector('link[rel="manifest"]')){
+    navigator.serviceWorker.register("./service-worker.js").catch(function(){});
+  }
   addEventListener("beforeunload",function(){worker.terminate();URL.revokeObjectURL(workerUrl)});
 })();`;
 }

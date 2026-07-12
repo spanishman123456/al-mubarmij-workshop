@@ -11,7 +11,7 @@ export const DEFAULT_EXPORTS_DIR = path.join(__dirname, "data", "exports");
 export const DEFAULT_JOB_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const DEFAULT_DOWNLOAD_TTL_MS = 24 * 60 * 60 * 1000;
 export const MAX_SOURCE_BYTES = 12 * 1024 * 1024;
-export const MAX_ARTIFACT_BYTES = 25 * 1024 * 1024;
+export const MAX_ARTIFACT_BYTES = 150 * 1024 * 1024;
 
 export class ExportStoreError extends Error {
   constructor(code, message, status = 400) {

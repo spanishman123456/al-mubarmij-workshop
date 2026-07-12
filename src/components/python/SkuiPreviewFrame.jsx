@@ -15,8 +15,8 @@ input,textarea,select{width:100%;border:1px solid #ffffff2f;border-radius:.65rem
 <body><main id="root" class="root"><div class="empty">اضغط «تشغيل» لعرض التطبيق</div></main>
 <script>
 "use strict";
-var currentUi=null,timers=[];
-function send(id,event,value){parent.postMessage({source:"skui-preview",type:"event",id:id,event:event,value:value},"*")}
+var currentUi=null,timers=[],currentValues={};
+function send(id,event,value){parent.postMessage({source:"skui-preview",type:"event",id:id,event:event,value:value,values:Object.assign({},currentValues)},"*")}
 function clearTimers(){timers.forEach(clearInterval);timers=[]}
 function text(value){return value==null?"":String(value)}
 function safeStyle(el,p){
@@ -29,12 +29,15 @@ function safeStyle(el,p){
 }
 function bindCommon(el,node){
  var p=node.props||{},id=node.id;
- ["focus","blur"].forEach(function(ev){el.addEventListener(ev,function(){send(id,"on_"+ev,p.value)})});
- el.addEventListener("keydown",function(e){if(e.key==="Enter")send(id,"on_key_press",e.key)});
+ ["focus","blur"].forEach(function(ev){el.addEventListener(ev,function(){send(id,"on_"+ev,currentValues[id]!==undefined?currentValues[id]:p.value)})});
+ el.addEventListener("keydown",function(e){send(id,"on_key_press",e.key);if(e.key==="Enter")send(id,"on_submit",currentValues[id]!==undefined?currentValues[id]:p.value)});
  safeStyle(el,p);if(p.disabled)el.disabled=true;
 }
 function canvasNode(node){
- var p=node.props||{},cv=document.createElement("canvas");cv.className="sk-Canvas";cv.width=Math.min(1600,Number(p.width)||480);cv.height=Math.min(1000,Number(p.height)||280);
+ var p=node.props||{},cv=document.createElement("canvas");cv.className="sk-Canvas";cv.tabIndex=0;cv.width=Math.min(1600,Number(p.width)||480);cv.height=Math.min(1000,Number(p.height)||280);
+ function point(e){var r=cv.getBoundingClientRect();return{x:Math.round((e.clientX-r.left)*cv.width/r.width),y:Math.round((e.clientY-r.top)*cv.height/r.height)}}
+ cv.addEventListener("pointerdown",function(e){send(node.id,"on_click",point(e))});
+ var lastMove=0;cv.addEventListener("pointermove",function(e){if(Date.now()-lastMove>50){lastMove=Date.now();send(node.id,"on_input",point(e))}});
  requestAnimationFrame(function(){var c=cv.getContext("2d");c.fillStyle="#fff";c.fillRect(0,0,cv.width,cv.height);(p.operations||[]).forEach(function(op){if(op.op==="rect"){c.fillStyle=op.color||"#7c3aed";c.fillRect(op.x,op.y,op.width,op.height)}else if(op.op==="text"){c.fillStyle=op.color||"#111827";c.font=(op.size||16)+"px sans-serif";c.fillText(text(op.text),op.x,op.y)}})});
  return cv;
 }
@@ -43,10 +46,10 @@ function make(node){
  if(node.type==="Heading"){var level=Math.max(1,Math.min(6,Number(p.level)||1));el=document.createElement("h"+level);el.textContent=text(p.text)}
  else if(node.type==="Text"){el=document.createElement("p");el.textContent=text(p.text)}
  else if(node.type==="Button"){el=document.createElement("button");el.textContent=text(p.text);if(p.variant==="secondary")el.className="secondary";if(p.variant==="danger")el.className="danger";el.addEventListener("click",function(){send(node.id,"on_click",p.value)})}
- else if(node.type==="Input"||node.type==="TextArea"){el=document.createElement(node.type==="TextArea"?"textarea":"input");el.placeholder=text(p.placeholder);el.value=text(p.value);if(node.type==="TextArea")el.rows=Math.max(1,Math.min(20,Number(p.rows)||4));el.addEventListener("input",function(){send(node.id,"on_input",el.value)});el.addEventListener("change",function(){send(node.id,"on_change",el.value)})}
- else if(node.type==="Checkbox"||node.type==="Radio"){el=document.createElement("label");el.className="field";var i=document.createElement("input");i.type=node.type.toLowerCase();i.checked=Boolean(p.checked||p.value===true);if(node.type==="Radio")i.name=text(p.group);i.addEventListener("change",function(){send(node.id,"on_change",node.type==="Checkbox"?i.checked:p.value)});var s=document.createElement("span");s.textContent=text(p.text);el.append(i,s)}
- else if(node.type==="Select"){el=document.createElement("select");(p.options||[]).forEach(function(item){var o=document.createElement("option");if(item&&typeof item==="object"){o.value=text(item.value);o.textContent=text(item.label||item.value)}else{o.value=text(item);o.textContent=text(item)}if(o.value===text(p.value))o.selected=true;el.appendChild(o)});el.addEventListener("change",function(){send(node.id,"on_select",el.value);send(node.id,"on_change",el.value)})}
- else if(node.type==="Slider"){el=document.createElement("input");el.type="range";el.min=Number(p.min)||0;el.max=Number(p.max)||100;el.step=Number(p.step)||1;el.value=Number(p.value)||0;el.addEventListener("input",function(){send(node.id,"on_input",Number(el.value))});el.addEventListener("change",function(){send(node.id,"on_change",Number(el.value))})}
+ else if(node.type==="Input"||node.type==="TextArea"){el=document.createElement(node.type==="TextArea"?"textarea":"input");el.placeholder=text(p.placeholder);el.value=text(p.value);currentValues[node.id]=el.value;if(node.type==="TextArea")el.rows=Math.max(1,Math.min(20,Number(p.rows)||4));el.addEventListener("input",function(){currentValues[node.id]=el.value;send(node.id,"on_input",el.value)});el.addEventListener("change",function(){currentValues[node.id]=el.value;send(node.id,"on_change",el.value)})}
+ else if(node.type==="Checkbox"||node.type==="Radio"){el=document.createElement("label");el.className="field";var i=document.createElement("input");i.type=node.type.toLowerCase();i.checked=Boolean(p.checked||p.value===true);currentValues[node.id]=i.checked;if(node.type==="Radio")i.name=text(p.group);i.addEventListener("change",function(){currentValues[node.id]=node.type==="Checkbox"?i.checked:p.value;send(node.id,"on_change",currentValues[node.id])});var s=document.createElement("span");s.textContent=text(p.text);el.append(i,s)}
+ else if(node.type==="Select"){el=document.createElement("select");(p.options||[]).forEach(function(item){var o=document.createElement("option");if(item&&typeof item==="object"){o.value=text(item.value);o.textContent=text(item.label||item.value)}else{o.value=text(item);o.textContent=text(item)}if(o.value===text(p.value))o.selected=true;el.appendChild(o)});currentValues[node.id]=el.value;el.addEventListener("change",function(){currentValues[node.id]=el.value;send(node.id,"on_select",el.value);send(node.id,"on_change",el.value)})}
+ else if(node.type==="Slider"){el=document.createElement("input");el.type="range";el.min=Number(p.min)||0;el.max=Number(p.max)||100;el.step=Number(p.step)||1;el.value=Number(p.value)||0;currentValues[node.id]=Number(el.value);el.addEventListener("input",function(){currentValues[node.id]=Number(el.value);send(node.id,"on_input",Number(el.value))});el.addEventListener("change",function(){currentValues[node.id]=Number(el.value);send(node.id,"on_change",Number(el.value))})}
  else if(node.type==="Progress"){el=document.createElement("progress");el.className="sk-Progress";el.max=Number(p.max)||100;el.value=Number(p.value)||0}
  else if(node.type==="Image"){el=document.createElement("img");el.className="sk-Image";el.src=text(p.src);el.alt=text(p.alt)}
  else if(node.type==="Canvas"){el=canvasNode(node)}
@@ -54,6 +57,7 @@ function make(node){
  else if(node.type==="Table"){el=document.createElement("table");el.className="sk-Table";var rows=p.items||p.rows||[];(p.headers||[]).length&&rows.unshift(p.headers);rows.forEach(function(row,ri){var tr=document.createElement("tr");(Array.isArray(row)?row:[row]).forEach(function(cell){var td=document.createElement(ri===0&&p.headers?"th":"td");td.textContent=text(cell);tr.appendChild(td)});el.appendChild(tr)})}
  else if(node.type==="Accordion"){el=document.createElement("div");el.className="sk-Accordion";var d=document.createElement("details");d.open=Boolean(p.open);var summary=document.createElement("summary");summary.textContent=text(p.title||p.text||"التفاصيل");d.appendChild(summary);el.appendChild(d);node.childrenTarget=d}
  else if(node.type==="Modal"){el=document.createElement("section");el.className="sk-Modal";el.hidden=p.open===false}
+ else if(node.type==="Tabs"){el=document.createElement("section");var tabs=p.tabs||[],panels=p.panels||[];var nav=document.createElement("div"),panel=document.createElement("p");nav.className="sk-Row";tabs.forEach(function(label,index){var b=document.createElement("button");b.type="button";b.textContent=text(label);b.addEventListener("click",function(){panel.textContent=text(panels[index]||label);send(node.id,"on_select",index)});nav.appendChild(b)});panel.textContent=text(panels[0]||tabs[0]||"");el.append(nav,panel)}
  else if(node.type==="Chart"){el=document.createElement("div");el.className="sk-Chart";var cv=document.createElement("canvas");cv.width=480;cv.height=240;el.appendChild(cv);requestAnimationFrame(function(){var c=cv.getContext("2d"),data=p.data||[],max=Math.max.apply(null,data.concat([1]));c.fillStyle="#fff";c.fillRect(0,0,480,240);data.forEach(function(v,i){var w=420/Math.max(data.length,1);c.fillStyle="#7c3aed";c.fillRect(30+i*w,210-(Number(v)/max)*180,w*.65,(Number(v)/max)*180)})})}
  else if(node.type==="Timer"){el=document.createElement("div");el.className="timer";var count=Number(p.value)||0;el.textContent=count;var interval=Math.max(100,Math.min(60000,Number(p.interval)||1000));if(p.running!==false){var tid=setInterval(function(){count+=1;el.textContent=count;send(node.id,"on_change",count)},interval);timers.push(tid)}}
  else if(node.type==="Audio"){el=document.createElement("audio");el.src=text(p.src);el.controls=p.controls!==false;el.autoplay=Boolean(p.autoplay)}
@@ -63,7 +67,7 @@ function make(node){
 function append(id,parent,seen){
  if(seen.has(id)||!currentUi.nodes[id])return;seen.add(id);var node=currentUi.nodes[id],el=make(node);parent.appendChild(el);var target=node.childrenTarget||el;(node.children||[]).forEach(function(child){append(child,target,seen)})
 }
-function render(ui){clearTimers();currentUi=ui;var root=document.getElementById("root");root.replaceChildren();if(!ui||!ui.nodes){root.innerHTML='<div class="empty">اضغط «تشغيل» لعرض التطبيق</div>';return}var ids=ui.appId?[ui.appId]:ui.roots||[];var seen=new Set();ids.forEach(function(id){append(id,root,seen)});if(!seen.size)root.innerHTML='<div class="empty">لا توجد مكونات للعرض</div>';var app=ui.appId&&ui.nodes[ui.appId];if(app){document.documentElement.dir=app.props.direction==="ltr"?"ltr":"rtl";document.title=text(app.props.title||"skui")}}
+function render(ui){clearTimers();currentValues={};currentUi=ui;var root=document.getElementById("root");root.replaceChildren();if(!ui||!ui.nodes){root.innerHTML='<div class="empty">اضغط «تشغيل» لعرض التطبيق</div>';return}var ids=ui.appId?[ui.appId]:ui.roots||[];var seen=new Set();ids.forEach(function(id){append(id,root,seen)});if(!seen.size)root.innerHTML='<div class="empty">لا توجد مكونات للعرض</div>';var app=ui.appId&&ui.nodes[ui.appId];if(app){document.documentElement.dir=app.props.direction==="ltr"?"ltr":"rtl";document.title=text(app.props.title||"skui");var light=app.props.theme==="light"||(app.props.theme==="auto"&&matchMedia("(prefers-color-scheme:light)").matches);document.documentElement.style.colorScheme=light?"light":"dark";document.body.style.background=light?"#f8fafc":"linear-gradient(150deg,#0f172a,#1e1b4b)";document.body.style.color=light?"#0f172a":"#f8fafc"}}
 addEventListener("message",function(e){if(e.source!==parent)return;var m=e.data||{};if(m.type==="render")render(m.ui);if(m.type==="clear")render(null)});
 </script></body></html>`;
 
@@ -76,7 +80,7 @@ export function SkuiPreviewFrame({ ui, loading, onEvent, title = "معاينة �
       if (event.source !== frameRef.current?.contentWindow) return;
       const message = event.data || {};
       if (message.source === "skui-preview" && message.type === "event") {
-        onEvent?.(message.id, message.event, message.value);
+        onEvent?.(message.id, message.event, message.value, message.values);
       }
     };
     window.addEventListener("message", handler);

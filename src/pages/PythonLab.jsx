@@ -359,12 +359,12 @@ export default function PythonLab() {
     }
   }
 
-  async function onAppButton(btnId) {
+  async function onAppButton(btnId, currentValues = appValues) {
     if (!sessionRef.current) return;
     setBusy(true);
     setFeedback(null);
     try {
-      const result = await sessionRef.current.click(btnId, appValues);
+      const result = await sessionRef.current.click(btnId, currentValues);
       setAppUi(result.ui);
       setAppValues(result.ui.values || {});
       if (result.console) setAppConsole((prev) => prev + result.console);
@@ -375,12 +375,12 @@ export default function PythonLab() {
     }
   }
 
-  async function onAppEvent(id, eventName, value) {
+  async function onAppEvent(id, eventName, value, currentValues) {
     if (!sessionRef.current || eventName === "on_click") return;
     setAppValues((prev) => ({ ...prev, [id]: value }));
     setFeedback(null);
     try {
-      const result = await sessionRef.current.event(id, eventName, value);
+      const result = await sessionRef.current.event(id, eventName, value, currentValues);
       setAppUi(result.ui);
       if (result.console) setAppConsole((prev) => prev + result.console);
     } catch (e) {

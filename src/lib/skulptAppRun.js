@@ -17,6 +17,7 @@ export class PythonAppSession {
     this.console = "";
     this.alive = false;
     this.pending = null;
+    this.eventChain = Promise.resolve();
   }
 
   async load(code) {
@@ -43,7 +44,11 @@ export class PythonAppSession {
       });
     };
     const ready = this.waitFor("ready", 5000);
-    this.worker.postMessage({ type: "init", skulptUrl: skulptMinUrl, stdlibUrl: skulptStdlibUrl });
+    this.worker.postMessage({
+      type: "init",
+      skulptUrl: new URL(skulptMinUrl, window.location.href).href,
+      stdlibUrl: new URL(skulptStdlibUrl, window.location.href).href,
+    });
     await ready;
     const complete = this.waitFor("run-complete", SKUI_LIMITS.runTimeoutMs + 1000);
     this.worker.postMessage({ type: "run", code });
@@ -98,17 +103,24 @@ export class PythonAppSession {
     });
   }
 
-  async event(id, eventName, value) {
+  event(id, eventName, value, values = null) {
+    this.eventChain = this.eventChain
+      .catch(() => {})
+      .then(() => this.dispatchEvent(id, eventName, value, values));
+    return this.eventChain;
+  }
+
+  async dispatchEvent(id, eventName, value, values) {
     if (!this.alive) throw new Error("أعد تشغيل المشروع أولاً.");
     const complete = this.waitFor("event-complete", SKUI_LIMITS.eventTimeoutMs + 1000);
-    this.worker.postMessage({ type: "event", id, event: eventName, value });
+    this.worker.postMessage({ type: "event", id, event: eventName, value, values });
     const result = await complete;
     return { ui: this.ui, console: result.console || "" };
   }
 
   click(buttonId, inputValues = {}) {
     const value = inputValues?.[buttonId];
-    return this.event(buttonId, "on_click", value);
+    return this.event(buttonId, "on_click", value, inputValues);
   }
 
   destroy() {

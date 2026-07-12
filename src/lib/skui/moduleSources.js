@@ -306,6 +306,7 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
     var kind = str(kindValue);
     if (!COMPONENTS.includes(kind)) fail("المكوّن " + kind + " غير مدعوم في مكتبة skui.");
     if (Object.keys(state.nodes).length >= LIMITS.maxElements) fail("تم بلوغ الحد الأقصى لعدد عناصر الواجهة.");
+    if (kind === "Timer" && Object.keys(state.nodes).filter(function(id) { return state.nodes[id].type === "Timer"; }).length >= LIMITS.maxTimers) fail("تم بلوغ الحد الأقصى للمؤقتات.");
     var id = "skui-" + (++state.nextId);
     var props = sanitize(kind, js(propsValue));
     state.nodes[id] = { id: id, type: kind, props: props, children: [] };
