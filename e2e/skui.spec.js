@@ -121,20 +121,34 @@ test("published e2e fixtures execute in the isolated runtime", async ({ page }) 
   }
 });
 
-test("professional calculator keypad accepts input and computes a result", async ({ page }) => {
+test("default starter apps run without fixtures: guess check and calculator", async ({ page }) => {
   await loginStudent(page);
-  await page.goto("/python?mode=app");
+
+  await page.goto("/python?mode=app&app=app-guess-number");
+  await page.getByTestId("app-tab-code").click();
+  await expect(page.getByTestId("python-code-editor")).toContainText("app.run()");
+  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+  const guessFrame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(guessFrame.getByText("تخمين الرقم السري")).toBeVisible({ timeout: 20_000 });
+  await guessFrame.getByRole("button", { name: "ابدأ الجولة" }).click();
+  await expect(guessFrame.getByText("بدأت الجولة")).toBeVisible();
+  await guessFrame.getByPlaceholder("أدخل تخمينك").fill("5");
+  await guessFrame.getByRole("button", { name: "تحقق" }).click();
+  await expect(page.getByText("حدث خطأ داخل دالة on_click")).toHaveCount(0);
+  await expect(guessFrame.locator(".sk-Alert")).toContainText(/أكبر|أصغر|صحيحة|أدخل|بين/);
+
+  await page.getByTestId("app-tab-project").click();
   await page.getByTestId("start-project-app-calculator").click();
-  await expect(page.getByTestId("skui-project-title")).toContainText("آلة حاسبة");
-  await runCode(page, E2E_CALCULATOR_APP);
-  const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
-  await expect(frame.getByText("احسب بسرعة")).toBeVisible({ timeout: 20_000 });
-  await frame.getByRole("button", { name: "7", exact: true }).click();
-  await frame.getByRole("button", { name: "+", exact: true }).click();
-  await frame.getByRole("button", { name: "5", exact: true }).click();
-  await frame.getByRole("button", { name: "=", exact: true }).click();
-  await expect(frame.getByPlaceholder("0")).toHaveValue(/^12(?:\.0)?$/);
-  await expect(frame.getByText("تم الحساب بنجاح")).toBeVisible();
+  await page.getByTestId("app-tab-code").click();
+  await expect(page.getByTestId("python-code-editor")).toContainText("app.run()");
+  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+  const calcFrame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(calcFrame.getByText("احسب بسرعة")).toBeVisible({ timeout: 20_000 });
+  await calcFrame.getByRole("button", { name: "7", exact: true }).click();
+  await calcFrame.getByRole("button", { name: "+", exact: true }).click();
+  await calcFrame.getByRole("button", { name: "5", exact: true }).click();
+  await calcFrame.getByRole("button", { name: "=", exact: true }).click();
+  await expect(calcFrame.getByPlaceholder("0")).toHaveValue(/^12(?:\.0)?$/);
 });
 
 test("every declared first-release component renders in the sandbox", async ({ page }) => {

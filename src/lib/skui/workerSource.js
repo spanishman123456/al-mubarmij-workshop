@@ -80,13 +80,21 @@ async function dispatchEvent(message) {
   if (!running) throw new Error("أعد تشغيل المشروع أولاً.");
   var state = self.__skuiState;
   var node = state.nodes[message.id];
-  if (!node) return;
+  if (!node) {
+    self.postMessage({ type: "event-complete", console: "" });
+    return;
+  }
   if (message.values && typeof message.values === "object") {
     Object.keys(message.values).forEach(function(id) {
       if (state.nodes[id]) state.nodes[id].props.value = message.values[id];
     });
   }
-  if (Object.prototype.hasOwnProperty.call(message, "value")) {
+  // Never clobber another widget's value with an on_click payload.
+  if (
+    Object.prototype.hasOwnProperty.call(message, "value") &&
+    message.event !== "on_click" &&
+    message.value !== undefined
+  ) {
     node.props.value = message.value;
     if (node.type === "Checkbox") node.props.checked = Boolean(message.value);
   }
@@ -99,11 +107,29 @@ async function dispatchEvent(message) {
   Sk.execLimit = LIMITS.eventTimeoutMs;
   try {
     await Sk.misceval.asyncToPromise(function() {
+      var needsValue = ["on_key_press", "on_change", "on_input", "on_select", "on_submit"].indexOf(message.event) >= 0;
+      var argCount = 0;
+      try {
+        var fn = handler.im_func || handler;
+        if (fn && fn.func_code && typeof fn.func_code.co_argcount === "number") {
+          argCount = fn.func_code.co_argcount;
+          if (handler.im_self) argCount = Math.max(0, argCount - 1);
+        }
+      } catch (arityErr) {
+        argCount = 0;
+      }
+      if (needsValue && argCount >= 1) {
+        return Sk.misceval.callsimOrSuspend(
+          handler,
+          new Sk.builtin.str(String(message.value == null ? "" : message.value))
+        );
+      }
       return Sk.misceval.callsimOrSuspend(handler);
     }, LIMITS.eventTimeoutMs);
     self.postMessage({ type: "event-complete", console: output.join("") });
   } catch (err) {
     self.postMessage({ type: "error", feedback: friendlyError(err, message.event) });
+    self.postMessage({ type: "event-complete", console: output.join("") });
   }
 }
 

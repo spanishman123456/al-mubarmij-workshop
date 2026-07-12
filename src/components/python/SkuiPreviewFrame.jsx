@@ -85,11 +85,18 @@ function make(node){
 function append(id,parent,seen){
  if(seen.has(id)||!currentUi.nodes[id])return;seen.add(id);var node=currentUi.nodes[id],el=make(node);parent.appendChild(el);var target=node.childrenTarget||el;(node.children||[]).forEach(function(child){append(child,target,seen)})
 }
-function render(ui){clearTimers();currentValues={};currentUi=ui;var root=document.getElementById("root");root.replaceChildren();if(!ui||!ui.nodes){root.innerHTML='<div class="empty">اضغط «تشغيل» لعرض التطبيق</div>';return}var ids=ui.appId?[ui.appId]:ui.roots||[];var seen=new Set();ids.forEach(function(id){append(id,root,seen)});if(!seen.size)root.innerHTML='<div class="empty">لا توجد مكونات للعرض</div>';var app=ui.appId&&ui.nodes[ui.appId];if(app){document.documentElement.dir=app.props.direction==="ltr"?"ltr":"rtl";document.title=text(app.props.title||"skui");var light=app.props.theme==="light"||(app.props.theme==="auto"&&matchMedia("(prefers-color-scheme:light)").matches);document.documentElement.style.colorScheme=light?"light":"dark";document.body.style.background=light?"#f8fafc":"linear-gradient(150deg,#0f172a,#1e1b4b)";document.body.style.color=light?"#0f172a":"#f8fafc"}}
-addEventListener("message",function(e){if(e.source!==parent)return;var m=e.data||{};if(m.type==="render")render(m.ui);if(m.type==="clear")render(null)});
+function render(ui,emptyMessage){clearTimers();currentValues={};currentUi=ui;var root=document.getElementById("root");root.replaceChildren();var emptyText=emptyMessage||"اضغط «تشغيل» لعرض التطبيق";if(!ui||!ui.nodes){root.innerHTML='<div class="empty">'+emptyText+'</div>';return}var ids=ui.appId?[ui.appId]:ui.roots||[];var seen=new Set();ids.forEach(function(id){append(id,root,seen)});if(!seen.size)root.innerHTML='<div class="empty">لا توجد مكونات للعرض</div>';var app=ui.appId&&ui.nodes[ui.appId];if(app){document.documentElement.dir=app.props.direction==="ltr"?"ltr":"rtl";document.title=text(app.props.title||"skui");var light=app.props.theme==="light"||(app.props.theme==="auto"&&matchMedia("(prefers-color-scheme:light)").matches);document.documentElement.style.colorScheme=light?"light":"dark";document.body.style.background=light?"#f8fafc":"linear-gradient(150deg,#0f172a,#1e1b4b)";document.body.style.color=light?"#0f172a":"#f8fafc"}}
+addEventListener("message",function(e){if(e.source!==parent)return;var m=e.data||{};if(m.type==="render")render(m.ui,m.emptyMessage);if(m.type==="clear")render(null,m.emptyMessage)});
 </script></body></html>`;
 
-export function SkuiPreviewFrame({ ui, loading, onEvent, title = "معاينة تطبيق skui", minHeight = 360 }) {
+export function SkuiPreviewFrame({
+  ui,
+  loading,
+  onEvent,
+  title = "معاينة تطبيق skui",
+  minHeight = 360,
+  emptyMessage = "اضغط «تشغيل» لعرض التطبيق",
+}) {
   const frameRef = useRef(null);
   const srcDoc = useMemo(() => SKUI_FRAME_HTML, []);
 
@@ -106,8 +113,11 @@ export function SkuiPreviewFrame({ ui, loading, onEvent, title = "معاينة �
   }, [onEvent]);
 
   useEffect(() => {
-    frameRef.current?.contentWindow?.postMessage({ type: ui ? "render" : "clear", ui }, "*");
-  }, [ui]);
+    frameRef.current?.contentWindow?.postMessage(
+      { type: ui ? "render" : "clear", ui, emptyMessage },
+      "*",
+    );
+  }, [ui, emptyMessage]);
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-slate-950">
@@ -121,7 +131,12 @@ export function SkuiPreviewFrame({ ui, loading, onEvent, title = "معاينة �
         title={title}
         sandbox="allow-scripts"
         srcDoc={srcDoc}
-        onLoad={() => frameRef.current?.contentWindow?.postMessage({ type: ui ? "render" : "clear", ui }, "*")}
+        onLoad={() =>
+          frameRef.current?.contentWindow?.postMessage(
+            { type: ui ? "render" : "clear", ui, emptyMessage },
+            "*",
+          )
+        }
         className="w-full border-0 bg-slate-950"
         style={{ minHeight }}
         data-testid="skui-preview-frame"
