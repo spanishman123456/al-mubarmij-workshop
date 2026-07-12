@@ -44,7 +44,7 @@ def check_guess():
     raw = str(guess.value()).strip()
     try:
         value = int(raw)
-    except:
+    except Exception:
         feedback.set_text("أدخل رقمًا صحيحًا فقط.")
         return
     if value < 1 or value > 20:
@@ -238,7 +238,8 @@ app.run()`,
 
 app = ui.App(title="قائمة المهام", theme="modern", appearance="dark", width="480px")
 guide = ui.Guide(title="نظّم يومك", message="أضف مهمة، أكملها، أو احذفها. استخدم الفلاتر للعرض.", character="assistant")
-tasks = []
+texts = []
+done_flags = []
 filter_mode = ["all"]
 entry = ui.Input(placeholder="مهمة جديدة")
 list_view = ui.List(items=[])
@@ -246,36 +247,46 @@ status = ui.Alert(text="لا توجد مهام بعد", variant="info")
 
 def render():
     items = []
-    for i, t in enumerate(tasks):
-        if filter_mode[0] == "done" and not t["done"]:
-            continue
-        if filter_mode[0] == "active" and t["done"]:
-            continue
-        mark = "✓ " if t["done"] else "• "
-        items.append(mark + t["text"] + "  [" + str(i) + "]")
+    count = 0
+    i = 0
+    while i < len(texts):
+        show = True
+        if filter_mode[0] == "done" and done_flags[i] == False:
+            show = False
+        if filter_mode[0] == "active" and done_flags[i] == True:
+            show = False
+        if show:
+            mark = "✓ " if done_flags[i] else "• "
+            items.append(mark + texts[i])
+            count = count + 1
+        i = i + 1
     list_view.set_items(items)
-    status.set_text("عدد المهام المعروضة: " + str(len(items)))
+    status.set_text("عدد المهام المعروضة: " + str(count))
 
 def add_task():
     text = str(entry.value()).strip()
-    if not text:
+    if text == "":
         status.set_text("اكتب نص المهمة أولًا")
         return
-    tasks.append({"text": text, "done": False})
+    texts.append(text)
+    done_flags.append(False)
     entry.set_value("")
     render()
 
 def toggle_first_active():
-    for t in tasks:
-        if not t["done"]:
-            t["done"] = True
+    i = 0
+    while i < len(done_flags):
+        if done_flags[i] == False:
+            done_flags[i] = True
             render()
             return
+        i = i + 1
     status.set_text("لا توجد مهام نشطة")
 
 def delete_last():
-    if tasks:
-        tasks.pop()
+    if len(texts) > 0:
+        texts.pop()
+        done_flags.pop()
         render()
     else:
         status.set_text("القائمة فارغة")
@@ -322,12 +333,12 @@ score = [0]
 app = ui.App(title="اختبار قصير", theme="modern", appearance="dark", width="460px")
 guide = ui.Guide(title="اختبر نفسك", message="أجب عن الأسئلة ثم شاهد نتيجتك النهائية.", character="assistant")
 progress = ui.Progress(value=0, max=len(questions))
-question = ui.Text("")
-answer = ui.Select(options=questions[0]["options"])
+question = ui.Text("1) " + questions[0]["q"])
+answer = ui.Select(options=questions[0]["options"], value=questions[0]["options"][0])
 msg = ui.Alert(text="اختر إجابة ثم اضغط التالي", variant="info")
 result = ui.Text("")
 
-def show_question():
+def show_current():
     i = index[0]
     if i >= len(questions):
         question.set_text("انتهى الاختبار")
@@ -336,8 +347,9 @@ def show_question():
         progress.set_value(len(questions))
         return
     q = questions[i]
-    question.set_text((i + 1).__str__() + ") " + q["q"])
-    answer = ui.Select(options=q["options"])
+    question.set_text(str(i + 1) + ") " + q["q"])
+    answer.set_options(q["options"])
+    answer.set_value(q["options"][0])
     progress.set_value(i)
     msg.set_text("اختر إجابة")
     result.set_text("")
@@ -346,29 +358,21 @@ def next_q():
     i = index[0]
     if i >= len(questions):
         return
-    chosen = answer.value()
+    chosen = str(answer.value())
     if chosen == questions[i]["answer"]:
-        score[0] += 1
+        score[0] = score[0] + 1
         msg.set_text("إجابة صحيحة")
     else:
         msg.set_text("إجابة غير صحيحة")
-    index[0] += 1
-    if index[0] >= len(questions):
-        show_question()
-    else:
-        q = questions[index[0]]
-        question.set_text(str(index[0] + 1) + ") " + q["q"])
-        progress.set_value(index[0])
+    index[0] = i + 1
+    show_current()
 
 def retry():
     index[0] = 0
     score[0] = 0
-    question.set_text("1) " + questions[0]["q"])
-    progress.set_value(0)
+    show_current()
     msg.set_text("ابدأ من جديد")
-    result.set_text("")
 
-question.set_text("1) " + questions[0]["q"])
 app.add(guide)
 app.add(ui.Heading(text="اختبار سريع", level=1))
 app.add(progress)
@@ -386,22 +390,20 @@ remaining = [30]
 running = [False]
 
 app = ui.App(title="مؤقت التركيز", theme="modern", appearance="dark", width="400px")
-guide = ui.Guide(title="ركّز الآن", message="اضبط الثواني ثم شغّل المؤقت. سيظهر تنبيه عند الانتهاء.", character="assistant")
+guide = ui.Guide(title="ركّز الآن", message="اضغط تشغيل لبدء العدّ التنازلي من 30 ثانية.", character="assistant")
 display = ui.Text("30")
 bar = ui.Progress(value=30, max=30)
 msg = ui.Alert(text="اضغط تشغيل للبدء", variant="info")
-timer = ui.Timer(interval=1000, running=False)
 
 def tick(count):
-    if not running[0]:
+    if running[0] == False:
         return
     if remaining[0] <= 0:
         running[0] = False
-        timer.set_disabled(True)
         msg.set_text("انتهى الوقت!")
         display.set_text("0")
         return
-    remaining[0] -= 1
+    remaining[0] = remaining[0] - 1
     display.set_text(str(remaining[0]))
     bar.set_value(remaining[0])
     if remaining[0] == 0:
@@ -409,6 +411,10 @@ def tick(count):
         msg.set_text("انتهى الوقت! أحسنت.")
 
 def start():
+    if remaining[0] <= 0:
+        remaining[0] = 30
+        display.set_text("30")
+        bar.set_value(30)
     running[0] = True
     msg.set_text("المؤقت يعمل…")
 
@@ -476,9 +482,6 @@ app.run()`,
 
 app = ui.App(title="استوديو الألوان", theme="modern", appearance="dark", width="460px")
 guide = ui.Guide(title="اصنع لونك", message="حرّك منزلقات RGB وشاهد المعاينة وقيمة HEX فورًا.", character="assistant")
-r = ui.Slider(value=124, min=0, max=255)
-g = ui.Slider(value=58, min=0, max=255)
-b = ui.Slider(value=237, min=0, max=255)
 preview = ui.Card(padding="2rem", border_radius="1.2rem", background="#7c3aed")
 hex_text = ui.Text("#7C3AED")
 msg = ui.Alert(text="حرّك المنزلقات", variant="info")
@@ -569,7 +572,7 @@ result = ui.Alert(text="القائمة: " + str(numbers), variant="info")
 def search():
     try:
         value = int(str(target.value()).strip())
-    except:
+    except Exception:
         result.set_text("أدخل عددًا صحيحًا")
         return
     log = []
@@ -656,17 +659,16 @@ def new_q():
 def check():
     try:
         value = int(str(answer.value()).strip())
-    except:
+    except Exception:
         msg.set_text("أدخل رقمًا")
         return
     if value == a[0] * b[0]:
         score[0] += 1
-        msg.set_text("صحيح!")
+        msg.set_text("صحيح! اضغط سؤال جديد للمتابعة.")
     else:
         msg.set_text("خطأ — الناتج " + str(a[0] * b[0]))
     points.set_text("النقاط: " + str(score[0]))
     progress.set_value(min(score[0], 10))
-    new_q()
 
 app.add(guide)
 app.add(ui.Heading(text="مسابقة الضرب", level=1))

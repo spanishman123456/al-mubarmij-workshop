@@ -160,6 +160,10 @@ class Select(Widget):
         props.update({"options": list(options or []), "value": value})
         Widget.__init__(self, "Select", [], props)
 
+    def set_options(self, options):
+        _bridge.set_prop(self._id, "options", list(options or []))
+        return self
+
 
 class Slider(Widget):
     def __init__(self, value=0, min=0, max=100, step=1, **props):
@@ -217,8 +221,17 @@ Tabs = _simple("Tabs")
 Accordion = _simple("Accordion")
 Modal = _simple("Modal")
 Chart = _simple("Chart")
-Timer = _simple("Timer")
 Audio = _simple("Audio")
+
+
+class Timer(Widget):
+    def __init__(self, value=0, interval=1000, running=True, **props):
+        props.update({"value": value, "interval": interval, "running": bool(running)})
+        Widget.__init__(self, "Timer", [], props)
+
+    def set_running(self, running=True):
+        _bridge.set_prop(self._id, "running", bool(running))
+        return self
 `;
 
 export const APPKIT_COMPAT_MODULE = `
