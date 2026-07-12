@@ -45,7 +45,8 @@ export function splitLogicSum(expr) {
 /** @param {string} expr */
 export function isMintermStyle(expr) {
   const cleaned = expr.replace(/\s*\+\s*/g, "");
-  return /^[pqrst\u0304\u00af\u02c9\u2032'\s]+$/u.test(cleaned);
+  const notationMarks = new Set(["\u0304", "\u00af", "\u02c9", "\u2032", "'"]);
+  return [...cleaned].every((character) => /^[pqrst\s]$/u.test(character) || notationMarks.has(character));
 }
 
 /**
