@@ -1,31 +1,31 @@
 export const APPKIT_COMMANDS = [
-  { sig: 'appkit.title("العنوان")', desc: "عنوان البرنامج في أعلى الواجهة" },
-  { sig: 'appkit.text("نص توضيحي")', desc: "سطر نصي للشرح" },
-  { sig: 'appkit.input("id", "التسمية", "افتراضي", "placeholder")', desc: "مربع إدخال نص" },
-  { sig: 'appkit.number_input("id", "التسمية", "0", "مثال: 10")', desc: "مربع إدخال رقم مع placeholder" },
-  { sig: 'appkit.output("id", "التسمية")', desc: "منطقة عرض نتيجة" },
-  { sig: 'appkit.button("id", "نص الزر")', desc: "زر تفاعلي" },
-  { sig: 'appkit.get("id")', desc: "قراءة قيمة حقل إدخال" },
-  { sig: 'appkit.set("id", "النص")', desc: "تحديث منطقة النتيجة" },
-  { sig: "appkit.on_click(\"id\", دالة)", desc: "ربط زر بدالة عند الضغط" },
-  { sig: 'appkit.canvas("id", عرض, ارتفاع)', desc: "مساحة رسم" },
-  { sig: "appkit.draw_rect(...)", desc: "رسم مستطيل على Canvas" },
-  { sig: "appkit.draw_text(...)", desc: "كتابة نص على Canvas" },
-  { sig: 'appkit.clear_canvas("id")', desc: "مسح لوحة الرسم" },
-  { sig: "appkit.build()", desc: "إنهاء بناء الواجهة — ضعه في آخر الكود" },
+  { sig: 'ui.App(title="تطبيقي")', desc: "إنشاء التطبيق الرئيسي" },
+  { sig: 'ui.Column(gap="1rem")', desc: "ترتيب المكونات عموديًا" },
+  { sig: 'ui.Row(gap="1rem")', desc: "ترتيب المكونات أفقيًا" },
+  { sig: 'ui.Text("نص")', desc: "نص قابل للتحديث عبر set_text" },
+  { sig: 'ui.Heading(text="عنوان", level=1)', desc: "عنوان من المستوى 1 إلى 6" },
+  { sig: 'ui.Input(placeholder="اكتب")', desc: "حقل إدخال تُقرأ قيمته عبر value()" },
+  { sig: 'ui.Button(text="تشغيل", on_click=دالة)', desc: "زر مرتبط بدالة Python" },
+  { sig: "widget.set_text(value)", desc: "تحديث النص مباشرة" },
+  { sig: "widget.set_value(value)", desc: "تحديث قيمة المكوّن" },
+  { sig: "app.add(widget)", desc: "إضافة مكوّن إلى التطبيق" },
+  { sig: "app.run()", desc: "عرض التطبيق في المعاينة" },
 ];
 
-export const APPKIT_MINIMAL_EXAMPLE = `import appkit
+export const APPKIT_MINIMAL_EXAMPLE = `import skui as ui
 
-appkit.title("مثالي الأول")
-appkit.text("مرحبًا! هذا مثال يعمل في App Mode")
-appkit.input("name", "اسمك", "طالب")
-appkit.button("hi", "قل مرحبًا")
-appkit.output("msg", "النتيجة")
+app = ui.App(title="تطبيقي الأول", width=520, height=380)
+title = ui.Heading(text="مرحبًا بك", level=1)
+name_input = ui.Input(placeholder="اكتب اسمك")
+message = ui.Text("")
 
-def on_hi():
-    n = appkit.get("name")
-    appkit.set("msg", "مرحبًا " + n + "!")
+def welcome():
+    name = name_input.value()
+    message.set_text("مرحبًا " + name)
 
-appkit.on_click("hi", on_hi)
-appkit.build()`;
+button = ui.Button(text="تشغيل", variant="primary", on_click=welcome)
+app.add(title)
+app.add(name_input)
+app.add(button)
+app.add(message)
+app.run()`;

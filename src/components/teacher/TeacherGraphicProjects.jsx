@@ -31,6 +31,8 @@ function TeacherProjectRunner({ code }) {
     setConsoleOut("");
     try {
       const session = new PythonAppSession();
+      session.onSnapshot = (nextUi) => setUi(nextUi);
+      session.onError = (nextFeedback) => setFeedback(nextFeedback);
       sessionRef.current = session;
       const result = await session.load(code);
       setUi(result.ui);
@@ -60,6 +62,17 @@ function TeacherProjectRunner({ code }) {
     }
   }
 
+  async function onEvent(id, eventName, value) {
+    if (!sessionRef.current || eventName === "on_click") return;
+    try {
+      const result = await sessionRef.current.event(id, eventName, value);
+      setUi(result.ui);
+      if (result.console) setConsoleOut((prev) => prev + result.console);
+    } catch (e) {
+      setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
+    }
+  }
+
   return (
     <div className="mt-4 space-y-3">
       <button
@@ -78,6 +91,7 @@ function TeacherProjectRunner({ code }) {
         values={values}
         onChange={(id, v) => setValues((prev) => ({ ...prev, [id]: v }))}
         onButton={onButton}
+        onEvent={onEvent}
         loading={busy}
       />
       {consoleOut ? (
@@ -151,6 +165,8 @@ export function TeacherGraphicProjects({ students, onUpdate }) {
               mode="app"
               templateId={project.templateId || null}
               authorName={student.nameAr}
+              ownerId={student.id}
+              projectId={project.id}
               variant="light"
               compact
             />

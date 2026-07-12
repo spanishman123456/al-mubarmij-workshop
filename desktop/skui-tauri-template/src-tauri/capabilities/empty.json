@@ -1,0 +1,9 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "empty",
+  "description": "The SKUI export host exposes no Tauri commands or plugin permissions.",
+  "windows": [
+    "main"
+  ],
+  "permissions": []
+}

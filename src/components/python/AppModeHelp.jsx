@@ -15,7 +15,7 @@ export function AppModeHelp({ onInsertExample, variant = "dark" }) {
   return (
     <div className={box}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className={title}>أوامر App Mode المدعومة (appkit)</h3>
+        <h3 className={title}>أوامر مشروع الواجهة الرسومية (skui)</h3>
         {onInsertExample ? (
           <button type="button" className={btn} onClick={() => onInsertExample(APPKIT_MINIMAL_EXAMPLE)}>
             إدراج مثال جاهز
@@ -23,8 +23,8 @@ export function AppModeHelp({ onInsertExample, variant = "dark" }) {
         ) : null}
       </div>
       <p className={`mt-2 ${text}`}>
-        ابدأ دائمًا بـ <span dir="ltr" className={code}>import appkit</span> — هذه وحدة تعليمية مدمجة في
-        المختبر وليست مكتبة خارجية. لا تستخدم tkinter أو pygame هنا.
+        ابدأ دائمًا بـ <span dir="ltr" className={code}>import skui as ui</span> — مكتبة مدمجة أصلًا
+        لـ Skulpt والمتصفح. ليست Tkinter ولا تعتمد على CPython.
       </p>
       <ul className={`mt-3 max-h-48 space-y-1.5 overflow-y-auto ${text}`}>
         {APPKIT_COMMANDS.map((c) => (

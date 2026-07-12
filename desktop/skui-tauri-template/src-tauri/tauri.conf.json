@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "SKUI Project",
+  "version": "0.1.0",
+  "identifier": "org.mubarmij.skui.project",
+  "build": {
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "SKUI Project",
+        "width": 1024,
+        "height": 768,
+        "minWidth": 640,
+        "minHeight": 480,
+        "resizable": true,
+        "fullscreen": false,
+        "devtools": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; base-uri 'none'; connect-src 'none'; font-src 'self' data:; form-action 'none'; frame-ancestors 'none'; frame-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; object-src 'none'; script-src 'self'; style-src 'self'; worker-src 'self' blob:",
+      "capabilities": [
+        "empty"
+      ],
+      "freezePrototype": true
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis",
+      "msi"
+    ],
+    "category": "Education",
+    "shortDescription": "Offline SKUI student project",
+    "longDescription": "A locally packaged SKUI project exported from the programming workshop."
+  }
+}

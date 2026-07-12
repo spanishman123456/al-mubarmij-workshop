@@ -18,6 +18,7 @@ import {
   recordPageView,
   recordSimRun,
   recordPythonRun,
+  recordGuiEvent,
   recordActivityStart,
   recordActivityComplete,
   defaultAnalytics,
@@ -68,6 +69,7 @@ function scheduleActivitySync(studentId, analytics) {
       dailyLog: analytics.dailyLog,
       pagesVisited: analytics.pagesVisited,
       pythonRuns: analytics.pythonRuns,
+      guiEvents: analytics.guiEvents,
       activitiesCompleted: analytics.activitiesCompleted,
       simRuns: analytics.simRuns,
     });
@@ -260,6 +262,22 @@ export function PlatformProvider({ children }) {
           ...prev.analyticsByStudent,
           [uid]: recordPythonRun(current),
         },
+      };
+    });
+  }, [persist]);
+
+  const trackGuiEvent = useCallback((eventName) => {
+    persist((prev) => {
+      const uid = prev.sessionUserId;
+      if (!uid) return prev;
+      const resolved = resolveSessionUser(uid);
+      if (!resolved || resolved.role !== "student") return prev;
+      const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
+      const updated = recordGuiEvent(current, eventName);
+      scheduleActivitySync(uid, updated);
+      return {
+        ...prev,
+        analyticsByStudent: { ...prev.analyticsByStudent, [uid]: updated },
       };
     });
   }, [persist]);
@@ -588,6 +606,33 @@ export function PlatformProvider({ children }) {
     [persist, user],
   );
 
+  const deleteGraphicProject = useCallback(
+    (projectId) => {
+      if (!user || user.role !== "student") return false;
+      let removed = false;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const list = (current.graphicProjects || []).filter((project) => {
+          if (project.id === projectId) {
+            removed = true;
+            return false;
+          }
+          return true;
+        });
+        if (!removed) return prev;
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: { ...current, graphicProjects: list, updatedAt: new Date().toISOString() },
+          },
+        };
+      });
+      return removed;
+    },
+    [persist, user],
+  );
+
   const teacherUpdateGraphicProject = useCallback(
     (studentId, projectId, patch) => {
       persist((prev) => {
@@ -712,6 +757,7 @@ export function PlatformProvider({ children }) {
       savePythonSnippet,
       saveGraphicProject,
       submitGraphicProject,
+      deleteGraphicProject,
       saveProject,
       teacherUpdateStudent,
       teacherUpdateGraphicProject,
@@ -720,6 +766,7 @@ export function PlatformProvider({ children }) {
       trackPageView,
       trackSimRun,
       trackPythonRun,
+      trackGuiEvent,
       sessionUserId,
       isStudentSession,
       refreshTeacherAnalytics,
@@ -745,6 +792,7 @@ export function PlatformProvider({ children }) {
       savePythonSnippet,
       saveGraphicProject,
       submitGraphicProject,
+      deleteGraphicProject,
       saveProject,
       teacherUpdateStudent,
       teacherUpdateGraphicProject,
@@ -753,6 +801,7 @@ export function PlatformProvider({ children }) {
       trackPageView,
       trackSimRun,
       trackPythonRun,
+      trackGuiEvent,
       sessionUserId,
       isStudentSession,
       refreshTeacherAnalytics,

@@ -12,6 +12,7 @@ import { PyAppPreview } from "../components/python/PyAppPreview";
 import { ProjectExportPanel } from "../components/python/ProjectExportPanel";
 import { AppModeHelp } from "../components/python/AppModeHelp";
 import { StepLearningPanel } from "../components/python/StepLearningPanel";
+import { PythonCodeEditor } from "../components/python/PythonCodeEditor";
 import { getStepPlan } from "../data/stepLearningPlans.js";
 import {
   checkStep,
@@ -34,7 +35,15 @@ const MODES = [
 ];
 
 export default function PythonLab() {
-  const { user, myProgress, savePythonSnippet, saveGraphicProject, submitGraphicProject } = usePlatform();
+  const {
+    user,
+    myProgress,
+    savePythonSnippet,
+    saveGraphicProject,
+    submitGraphicProject,
+    deleteGraphicProject,
+    trackGuiEvent,
+  } = usePlatform();
   const [searchParams, setSearchParams] = useSearchParams();
   const exFromUrl = searchParams.get("ex");
   const modeFromUrl = searchParams.get("mode");
@@ -69,6 +78,7 @@ export default function PythonLab() {
   const [solutionRevealed, setSolutionRevealed] = useState(false);
 
   const sessionRef = useRef(null);
+  const previewRef = useRef(null);
   const draftRestoredRef = useRef(false);
   const codeRef = useRef(code);
   codeRef.current = code;
@@ -135,6 +145,7 @@ export default function PythonLab() {
       setAppValues({});
       setAppConsole("");
       setFeedback(null);
+      trackGuiEvent?.("gui_project_started");
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set("mode", "app");
@@ -142,7 +153,7 @@ export default function PythonLab() {
         return next;
       });
     },
-    [setSearchParams, stopAppSession],
+    [setSearchParams, stopAppSession, trackGuiEvent],
   );
 
   const loadSavedProject = useCallback(
@@ -331,11 +342,16 @@ export default function PythonLab() {
     setAppUi(null);
     try {
       const session = new PythonAppSession();
+      session.onSnapshot = (nextUi) => setAppUi(nextUi);
+      session.onError = (nextFeedback) => setFeedback(nextFeedback);
       sessionRef.current = session;
       const result = await session.load(code);
       setAppUi(result.ui);
       setAppValues(result.ui.values || {});
       if (result.console) setAppConsole(result.console);
+      trackGuiEvent?.("gui_project_run");
+      const componentCount = Object.keys(result.ui?.nodes || {}).length;
+      if (componentCount > 0) trackGuiEvent?.("gui_component_created");
     } catch (e) {
       setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
     } finally {
@@ -356,6 +372,19 @@ export default function PythonLab() {
       setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onAppEvent(id, eventName, value) {
+    if (!sessionRef.current || eventName === "on_click") return;
+    setAppValues((prev) => ({ ...prev, [id]: value }));
+    setFeedback(null);
+    try {
+      const result = await sessionRef.current.event(id, eventName, value);
+      setAppUi(result.ui);
+      if (result.console) setAppConsole((prev) => prev + result.console);
+    } catch (e) {
+      setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
     }
   }
 
@@ -387,6 +416,7 @@ export default function PythonLab() {
     const title = projectTitle.trim() || appTemplate.titleAr;
     const id = saveGraphicProject(title, code, savedProjectId);
     if (id) setSavedProjectId(id);
+    trackGuiEvent?.("gui_project_saved");
     window.alert("تم حفظ المشروع الرسومي في حسابك.");
   }
 
@@ -404,6 +434,7 @@ export default function PythonLab() {
     if (!id) return;
     setSavedProjectId(id);
     const ok = submitGraphicProject(id);
+    if (ok) trackGuiEvent?.("gui_project_completed");
     window.alert(ok ? "تم إرسال المشروع للمعلم بنجاح." : "تعذر الإرسال — احفظ المشروع أولاً.");
   }
 
@@ -499,8 +530,8 @@ export default function PythonLab() {
             <div className="mb-4 rounded-xl border border-violet-500/30 bg-violet-950/20 p-4 text-sm text-violet-100">
               <p className="font-bold text-violet-200">وضع المشروع الرسومي</p>
               <p className="mt-1 text-slate-300">
-                استخدم <span dir="ltr" className="font-mono text-cyan-300">import appkit</span> — وحدة مدمجة
-                في المختبر لبناء واجهات تفاعلية (أزرار، مدخلات، Canvas).
+                استخدم <span dir="ltr" className="font-mono text-cyan-300">import skui as ui</span> — مكتبة
+                واجهات أصلية لـ Skulpt تعمل داخل معاينة معزولة.
               </p>
             </div>
             <AppModeHelp variant="dark" onInsertExample={(ex) => setCode(ex)} />
@@ -523,17 +554,49 @@ export default function PythonLab() {
                 <p className="mb-2 text-sm font-bold text-cyan-200">مشاريعي المحفوظة</p>
                 <div className="flex flex-wrap gap-2">
                   {myGraphicProjects.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => loadSavedProject(p)}
-                      className={`rounded-lg px-3 py-1.5 text-xs ${
-                        savedProjectId === p.id ? "bg-cyan-600 text-white" : "bg-white/10 text-slate-200"
-                      }`}
-                    >
-                      {p.title}{" "}
-                      {p.status === "submitted" ? "📤" : p.status === "reviewed" ? "✓" : ""}
-                    </button>
+                    <div key={p.id} className="flex items-center overflow-hidden rounded-lg border border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => loadSavedProject(p)}
+                        className={`px-3 py-1.5 text-xs ${
+                          savedProjectId === p.id ? "bg-cyan-600 text-white" : "bg-white/10 text-slate-200"
+                        }`}
+                      >
+                        {p.title} {p.status === "submitted" ? "مرسل" : p.status === "reviewed" ? "✓" : ""}
+                      </button>
+                      <button
+                        type="button"
+                        className="px-2 text-xs text-amber-200"
+                        title="إعادة تسمية"
+                        onClick={() => {
+                          const next = window.prompt("اسم المشروع الجديد", p.title);
+                          if (next?.trim()) saveGraphicProject(next.trim(), p.code, p.id);
+                        }}
+                      >
+                        تسمية
+                      </button>
+                      <button
+                        type="button"
+                        className="px-2 text-xs text-emerald-200"
+                        title="إنشاء نسخة"
+                        onClick={() => saveGraphicProject(`${p.title} (نسخة)`, p.code)}
+                      >
+                        نسخ
+                      </button>
+                      <button
+                        type="button"
+                        className="px-2 text-xs text-red-200"
+                        title="حذف"
+                        onClick={() => {
+                          if (window.confirm(`حذف المشروع «${p.title}»؟`)) {
+                            deleteGraphicProject?.(p.id);
+                            if (savedProjectId === p.id) resetApp();
+                          }
+                        }}
+                      >
+                        حذف
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -555,14 +618,10 @@ export default function PythonLab() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm text-slate-400">الكود</label>
-            <textarea
-              dir="ltr"
-              className="code-editor min-h-[min(70vh,480px)] w-full resize-y"
+            <PythonCodeEditor
               value={code}
-              onChange={(e) => setCode(e.target.value)}
-              spellCheck={false}
-              autoCapitalize="off"
-              autoCorrect="off"
+              onChange={setCode}
+              appMode={runMode === "app"}
             />
             {runMode === "console" ? (
               <p className="mt-2 text-xs leading-relaxed text-slate-500">
@@ -571,8 +630,8 @@ export default function PythonLab() {
               </p>
             ) : (
               <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                مثال: <span dir="ltr">appkit.button</span>، <span dir="ltr">appkit.on_click</span>،{" "}
-                <span dir="ltr">appkit.build()</span> في نهاية الكود.
+                مثال: <span dir="ltr">ui.Button</span>، <span dir="ltr">on_click</span>،{" "}
+                <span dir="ltr">app.run()</span> في نهاية الكود.
               </p>
             )}
 
@@ -601,7 +660,20 @@ export default function PythonLab() {
                     disabled={busy}
                     className="rounded-xl border border-white/20 px-4 py-3 text-sm font-bold text-slate-200 hover:bg-white/10 disabled:opacity-50"
                   >
-                    إعادة
+                    إعادة تشغيل
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopAppSession();
+                      setAppUi(null);
+                      setAppValues({});
+                      setAppConsole("");
+                    }}
+                    disabled={busy}
+                    className="rounded-xl border border-white/20 px-4 py-3 text-sm font-bold text-slate-200 hover:bg-white/10 disabled:opacity-50"
+                  >
+                    مسح المعاينة
                   </button>
                 </>
               ) : null}
@@ -636,6 +708,8 @@ export default function PythonLab() {
                   mode="app"
                   templateId={activeAppId}
                   authorName={user?.nameAr}
+                  ownerId={user?.id}
+                  projectId={savedProjectId || activeAppId}
                   variant="dark"
                 />
               </div>
@@ -646,6 +720,8 @@ export default function PythonLab() {
                   code={code}
                   mode="console"
                   authorName={user?.nameAr}
+                  ownerId={user?.id}
+                  projectId={activeId}
                   variant="dark"
                 />
               </div>
@@ -688,15 +764,25 @@ export default function PythonLab() {
               <>
                 <label className="mb-2 block text-sm text-slate-400">معاينة المشروع (Preview)</label>
                 {errorPanel}
+                <div ref={previewRef}>
                 <GraphicProjectFrame project={appTemplate}>
                   <PyAppPreview
                     ui={appUi}
                     values={appValues}
                     onChange={(id, v) => setAppValues((prev) => ({ ...prev, [id]: v }))}
                     onButton={onAppButton}
+                    onEvent={onAppEvent}
                     loading={busy}
                   />
                 </GraphicProjectFrame>
+                </div>
+                <button
+                  type="button"
+                  className="mt-2 rounded-lg border border-cyan-500/40 px-3 py-2 text-xs font-bold text-cyan-200"
+                  onClick={() => previewRef.current?.requestFullscreen?.()}
+                >
+                  فتح بملء الشاشة
+                </button>
                 {appConsole ? (
                   <pre
                     dir="ltr"
@@ -708,8 +794,8 @@ export default function PythonLab() {
               </>
             )}
             <p className="mt-4 text-xs leading-relaxed text-slate-500">
-              التشغيل في المتصفح عبر Skulpt داخل بيئة آمنة. الوضع الرسومي يستخدم وحدة{" "}
-              <span dir="ltr">appkit</span> لبناء واجهات تفاعلية دون الوصول لملفات النظام أو بيانات المستخدمين.
+              مكتبة skui مصممة خصيصًا لـ Skulpt والمتصفح، وليست Tkinter. تعمل الواجهة داخل iframe معزول،
+              ويعمل كود Python داخل Web Worker قابل للإيقاف دون الوصول إلى DOM المنصة أو بياناتها.
             </p>
           </div>
         </div>
