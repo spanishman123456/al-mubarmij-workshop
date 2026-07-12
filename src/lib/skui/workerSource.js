@@ -30,6 +30,13 @@ function lineFromError(err) {
   return match ? Number(match[1]) : null;
 }
 
+function resetExecBudget(timeoutMs) {
+  // Skulpt measures elapsed time from Sk.execStart once per worker session.
+  // Without resetting it, every on_click after the initial run looks "timed out".
+  Sk.execStart = Date.now();
+  Sk.execLimit = timeoutMs;
+}
+
 function friendlyError(err, eventName) {
   var raw = String((err && err.toString && err.toString()) || err || "خطأ غير معروف");
   var unknown = raw.match(/has no attribute ['"]?([A-Za-z_][A-Za-z0-9_]*)/);
@@ -58,6 +65,7 @@ async function initialize(message) {
 async function runCode(code) {
   resetState();
   running = true;
+  resetExecBudget(LIMITS.runTimeoutMs);
   Sk.configure({
     output: function(text) { output.push(String(text)); },
     read: readFile,
@@ -76,6 +84,7 @@ async function runCode(code) {
       nodes[id] = { id: id, type: node.type, props: Object.assign({}, node.props), children: node.children.slice() };
     });
     var ui = { version: "1.1.0", appId: state.appId, roots: state.roots.slice(), nodes: nodes };
+    Sk.execLimit = Number.POSITIVE_INFINITY;
     self.postMessage({ type: "run-complete", console: output.join(""), ui: ui });
   } catch (err) {
     running = false;
@@ -111,7 +120,7 @@ async function dispatchEvent(message) {
     return;
   }
   output = [];
-  Sk.execLimit = LIMITS.eventTimeoutMs;
+  resetExecBudget(LIMITS.eventTimeoutMs);
   try {
     await Sk.misceval.asyncToPromise(function() {
       var needsValue = ["on_key_press", "on_change", "on_input", "on_select", "on_submit"].indexOf(message.event) >= 0;
@@ -133,6 +142,7 @@ async function dispatchEvent(message) {
       }
       return Sk.misceval.callsimOrSuspend(handler);
     }, LIMITS.eventTimeoutMs);
+    Sk.execLimit = Number.POSITIVE_INFINITY;
     self.postMessage({ type: "event-complete", console: output.join("") });
   } catch (err) {
     self.postMessage({ type: "error", feedback: friendlyError(err, message.event) });
