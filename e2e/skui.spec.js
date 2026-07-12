@@ -123,6 +123,39 @@ test("published e2e fixtures execute in the isolated runtime", async ({ page }) 
   }
 });
 
+test("click handlers still work after the initial run timer budget elapses", async ({ page }) => {
+  await loginStudent(page);
+  await openAppLab(page, "app-guess-number");
+  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+  const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(frame.getByText("تخمين الرقم السري")).toBeVisible({ timeout: 20_000 });
+  await page.waitForTimeout(6500);
+  await frame.getByRole("button", { name: "ابدأ الجولة", exact: true }).click();
+  await expect(frame.getByText("بدأت الجولة").first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("TimeLimitError")).toHaveCount(0);
+  await expect(page.getByText("حدث خطأ داخل دالة on_click")).toHaveCount(0);
+});
+
+test("WebApp preview handles button clicks without timing out", async ({ page }) => {
+  await loginStudent(page);
+  await openAppLab(page, "app-calculator");
+  await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+  const labFrame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(labFrame.getByText("احسب بسرعة")).toBeVisible({ timeout: 20_000 });
+  await page.waitForTimeout(6500);
+  await page.getByTestId("app-tab-export").click();
+  const popupPromise = page.waitForEvent("popup");
+  await page.getByRole("button", { name: /فتح WebApp في تبويب جديد/ }).click();
+  const previewPage = await popupPromise;
+  const frame = previewPage.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(frame.getByText("احسب بسرعة")).toBeVisible({ timeout: 20_000 });
+  await previewPage.waitForTimeout(6500);
+  await frame.getByRole("button", { name: "7", exact: true }).click();
+  await expect(frame.getByPlaceholder("0")).toHaveValue("7");
+  await expect(previewPage.getByText("TimeLimitError")).toHaveCount(0);
+  await expect(previewPage.getByText("حدث خطأ داخل دالة on_click")).toHaveCount(0);
+});
+
 test("every registered starter mounts and responds to a primary action", async ({ page }) => {
   test.setTimeout(240_000);
   await loginStudent(page);
