@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getWorksheet15ById } from "../data/worksheets15Days";
 import { usePlatform } from "../context/PlatformContext";
@@ -9,14 +9,17 @@ export default function WorksheetDetailPage() {
   const { worksheetId } = useParams();
   const ws = getWorksheet15ById(worksheetId);
   const { user, myProgress, saveWorksheetAnswers } = usePlatform();
-  const saved = myProgress?.worksheetAnswers?.[worksheetId]?.answers ?? {};
+  const saved = useMemo(
+    () => myProgress?.worksheetAnswers?.[worksheetId]?.answers ?? {},
+    [myProgress?.worksheetAnswers, worksheetId],
+  );
   const status = myProgress?.worksheetStatus?.[worksheetId] ?? "not_started";
 
   const [answers, setAnswers] = useState(saved);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    setAnswers(saved);
+    queueMicrotask(() => setAnswers(saved));
   }, [worksheetId, saved]);
 
   useEffect(() => {

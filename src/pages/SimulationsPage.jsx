@@ -37,7 +37,7 @@ export default function SimulationsPage() {
   function select(id) {
     setActive(id);
     trackSimRun(id);
-    window.location.hash = id;
+    window.history.replaceState(null, "", `#${id}`);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 

@@ -46,8 +46,10 @@ export default function MakeCodeModal({ open, code, onClose }) {
 
   useEffect(() => {
     if (!open) {
-      setStatus("idle");
-      setMessage("");
+      queueMicrotask(() => {
+        setStatus("idle");
+        setMessage("");
+      });
     }
   }, [open]);
 

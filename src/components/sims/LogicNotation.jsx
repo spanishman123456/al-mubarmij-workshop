@@ -108,18 +108,9 @@ export function LogicTableHeader({ label, size = "md" }) {
   if (!label || label === "الناتج") {
     return <span className="truth-table__head-text">{label}</span>;
   }
-  try {
-    return (
-      <span className="truth-table__head-logic" title={label}>
-        <LogicExpression expr={label} size={size} />
-      </span>
-    );
-  } catch (err) {
-    console.warn("[LogicTableHeader] fallback label render:", label, err);
-    return (
-      <span className="truth-table__head-label" dir="ltr">
-        {label}
-      </span>
-    );
-  }
+  return (
+    <span className="truth-table__head-logic" title={label}>
+      <LogicExpression expr={label} size={size} />
+    </span>
+  );
 }
