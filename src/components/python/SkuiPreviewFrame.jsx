@@ -72,7 +72,7 @@ function render(ui){clearTimers();currentValues={};currentUi=ui;var root=documen
 addEventListener("message",function(e){if(e.source!==parent)return;var m=e.data||{};if(m.type==="render")render(m.ui);if(m.type==="clear")render(null)});
 </script></body></html>`;
 
-export function SkuiPreviewFrame({ ui, loading, onEvent, title = "معاينة تطبيق skui" }) {
+export function SkuiPreviewFrame({ ui, loading, onEvent, title = "معاينة تطبيق skui", minHeight = 360 }) {
   const frameRef = useRef(null);
   const srcDoc = useMemo(() => SKUI_FRAME_HTML, []);
 
@@ -105,7 +105,8 @@ export function SkuiPreviewFrame({ ui, loading, onEvent, title = "معاينة �
         sandbox="allow-scripts"
         srcDoc={srcDoc}
         onLoad={() => frameRef.current?.contentWindow?.postMessage({ type: ui ? "render" : "clear", ui }, "*")}
-        className="min-h-[360px] w-full border-0 bg-slate-950"
+        className="w-full border-0 bg-slate-950"
+        style={{ minHeight }}
         data-testid="skui-preview-frame"
       />
     </div>

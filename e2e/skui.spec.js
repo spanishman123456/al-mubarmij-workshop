@@ -63,6 +63,25 @@ test("student runs an isolated skui app and updates state", async ({ page }) => 
   expect(sandbox).toBe("allow-scripts");
 });
 
+test("student opens the current project as a direct WebApp preview", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
+  await page.getByRole("button", { name: "دخول", exact: true }).click();
+  await page.goto("/python?mode=app&app=app-number-convert");
+  await page.getByRole("button", { name: "إدراج مثال جاهز" }).click();
+
+  const popupPromise = page.waitForEvent("popup");
+  await page.getByRole("button", { name: "فتح WebApp مباشرة", exact: true }).click();
+  const previewPage = await popupPromise;
+  await expect(previewPage.getByText("معاينة WebApp مباشرة")).toBeVisible();
+  const frame = previewPage.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(frame.getByText("مرحبًا بك")).toBeVisible({ timeout: 20_000 });
+  const name = frame.getByPlaceholder("اكتب اسمك");
+  await name.pressSequentially("مباشر");
+  await frame.getByRole("button", { name: "تشغيل" }).click();
+  await expect(frame.getByText("مرحبًا مباشر")).toBeVisible();
+});
+
 test("skui autocomplete and unsupported component feedback are educational", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("رقم الهوية الوطنية").fill("1165814631");
