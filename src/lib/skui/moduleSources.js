@@ -35,7 +35,10 @@ class Widget:
         _bridge.dispose(self._id)
 
     def value(self):
-        return _bridge.get_value(self._id)
+        raw = _bridge.get_value(self._id)
+        if raw is None:
+            return ""
+        return raw
 
     def set_value(self, value):
         _bridge.set_prop(self._id, "value", value)
@@ -157,6 +160,10 @@ class Select(Widget):
         props.update({"options": list(options or []), "value": value})
         Widget.__init__(self, "Select", [], props)
 
+    def set_options(self, options):
+        _bridge.set_prop(self._id, "options", list(options or []))
+        return self
+
 
 class Slider(Widget):
     def __init__(self, value=0, min=0, max=100, step=1, **props):
@@ -214,8 +221,17 @@ Tabs = _simple("Tabs")
 Accordion = _simple("Accordion")
 Modal = _simple("Modal")
 Chart = _simple("Chart")
-Timer = _simple("Timer")
 Audio = _simple("Audio")
+
+
+class Timer(Widget):
+    def __init__(self, value=0, interval=1000, running=True, **props):
+        props.update({"value": value, "interval": interval, "running": bool(running)})
+        Widget.__init__(self, "Timer", [], props)
+
+    def set_running(self, running=True):
+        _bridge.set_prop(self._id, "running", bool(running))
+        return self
 `;
 
 export const APPKIT_COMPAT_MODULE = `
@@ -377,8 +393,18 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
   });
   mod.get_value = new Sk.builtin.func(function(idValue) {
     var node = state.nodes[str(idValue)];
-    var value = node ? node.props.value : "";
-    return Sk.ffi.remapToPy(value == null ? "" : value);
+    if (!node) return new Sk.builtin.str("");
+    var value = node.props.value;
+    if (node.type === "Checkbox") {
+      return (node.props.checked || value === true) ? Sk.builtin.bool.true$ : Sk.builtin.bool.false$;
+    }
+    if (node.type === "Slider" || node.type === "Progress" || node.type === "Timer") {
+      var n = Number(value);
+      return new Sk.builtin.float_(Number.isFinite(n) ? n : 0);
+    }
+    if (value == null) value = "";
+    // Input/TextArea/Select: always a real Skulpt str so .strip() works after DOM sync.
+    return new Sk.builtin.str(String(value));
   });
   mod.dispose = new Sk.builtin.func(function(idValue) {
     var id = str(idValue);

@@ -121,20 +121,51 @@ test("published e2e fixtures execute in the isolated runtime", async ({ page }) 
   }
 });
 
-test("professional calculator keypad accepts input and computes a result", async ({ page }) => {
+test("every registered starter mounts and responds to a primary action", async ({ page }) => {
+  test.setTimeout(240_000);
   await loginStudent(page);
-  await page.goto("/python?mode=app");
-  await page.getByTestId("start-project-app-calculator").click();
-  await expect(page.getByTestId("skui-project-title")).toContainText("آلة حاسبة");
-  await runCode(page, E2E_CALCULATOR_APP);
-  const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
-  await expect(frame.getByText("احسب بسرعة")).toBeVisible({ timeout: 20_000 });
-  await frame.getByRole("button", { name: "7", exact: true }).click();
-  await frame.getByRole("button", { name: "+", exact: true }).click();
-  await frame.getByRole("button", { name: "5", exact: true }).click();
-  await frame.getByRole("button", { name: "=", exact: true }).click();
-  await expect(frame.getByPlaceholder("0")).toHaveValue(/^12(?:\.0)?$/);
-  await expect(frame.getByText("تم الحساب بنجاح")).toBeVisible();
+  const apps = [
+    { id: "app-guess-number", ready: "تخمين الرقم السري", action: "ابدأ الجولة", after: "بدأت الجولة" },
+    { id: "app-calculator", ready: "احسب بسرعة", action: "7", after: null },
+    { id: "app-registration", ready: "إنشاء حساب", action: "تسجيل", after: "أدخل اسمًا صحيحًا" },
+    { id: "app-todo", ready: "مهامي", action: "إضافة", after: "عدد المهام المعروضة: 1" },
+    { id: "app-quiz", ready: "اختبار سريع", action: "التالي", after: "إجابة" },
+    { id: "app-timer", ready: "مؤقت 30 ثانية", action: "تشغيل", after: "المؤقت يعمل" },
+    { id: "app-dashboard", ready: "لوحة بسيطة", action: "تحديث", after: "تم تحديث البيانات" },
+    { id: "app-colors", ready: "ألوان RGB", action: null, after: null },
+    { id: "app-canvas-demo", ready: "مطاردة النقاط", action: "تحريك", after: "النقاط:" },
+    { id: "app-linear-search", ready: "محاكاة البحث الخطي", action: "ابحث", after: "وُجد في الموقع" },
+    { id: "app-caesar", ready: "برنامج التشفير", action: "تشفير", after: "Kl" },
+    { id: "app-edu-game", ready: "مسابقة الضرب", action: "تحقق", after: "خطأ" },
+    { id: "app-number-convert", ready: "تحويل أنظمة العد", action: "تحويل", after: "أدخل عددًا صحيحًا" },
+  ];
+
+  for (const app of apps) {
+    await page.goto(`/python?mode=app&app=${app.id}`);
+    await page.getByTestId("app-tab-code").click();
+    await expect(page.getByTestId("python-code-editor"), app.id).toContainText("app.run()");
+    await page.getByRole("button", { name: "تشغيل المشروع" }).click();
+    const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
+    await expect(frame.locator(".sk-App"), app.id).toBeAttached({ timeout: 20_000 });
+    await expect(frame.getByText(app.ready).first(), app.id).toBeVisible();
+    if (app.action) {
+      if (app.id === "app-todo") await frame.getByPlaceholder("مهمة جديدة").fill("واجب");
+      if (app.id === "app-edu-game") await frame.getByPlaceholder("إجابتك").fill("0");
+      if (app.id === "app-linear-search") await frame.getByPlaceholder("العدد المطلوب").fill("15");
+      if (app.id === "app-caesar") await frame.getByPlaceholder("نص إنجليزي").fill("Hi");
+      if (app.id === "app-calculator") {
+        await frame.getByRole("button", { name: "7", exact: true }).click();
+        await expect(frame.getByPlaceholder("0")).toHaveValue("7");
+      } else {
+        await frame.getByRole("button", { name: app.action, exact: true }).click();
+        if (app.after) {
+          await expect(frame.getByText(app.after).first(), app.id).toBeVisible({ timeout: 10_000 });
+        }
+      }
+    }
+    await expect(page.getByText("حدث خطأ داخل دالة on_click")).toHaveCount(0);
+    await expect(page.getByText("حدث خطأ أثناء تشغيل الكود")).toHaveCount(0);
+  }
 });
 
 test("every declared first-release component renders in the sandbox", async ({ page }) => {

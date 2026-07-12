@@ -16,11 +16,12 @@ describe("skuiProjectsRegistry", () => {
     expect(guess.usageSteps.join(" ")).not.toContain("حاسبة");
   });
 
-  it("keeps student starter skeletons without full solutions", () => {
+  it("ships runnable starter apps with app.run()", () => {
     for (const project of SKUI_PROJECTS) {
-      expect(project.starterCode).toMatch(/import skui as/);
-      expect(project.starterCode).not.toMatch(/app\.run\s*\(/);
+      expect(project.starterCode).toMatch(/import skui as ui/);
+      expect(project.starterCode).toMatch(/app\.run\s*\(/);
       expect(project.teacherSolutionId).toBe(project.id);
+      expect(validateSkuiProject(project.starterCode).ok).toBe(true);
     }
   });
 
