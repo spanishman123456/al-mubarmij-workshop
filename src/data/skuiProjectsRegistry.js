@@ -1,7 +1,8 @@
 /**
  * سجل موحّد لمشروعات skui — مصدر الحقيقة الوحيد للاختيار والبيانات الوصفية.
- * الحلول الكاملة للمعلم فقط عبر /api/teacher/skui-projects/:id/solution
+ * starterCode = تطبيق قابل للتشغيل فورًا (مصدر مشترك مع حل المعلم).
  */
+import { SKUI_DEMO_APPS } from "./skuiDemoApps.js";
 
 export const SKUI_PROJECT_TYPES = Object.freeze({
   app: "تطبيق",
@@ -10,12 +11,17 @@ export const SKUI_PROJECT_TYPES = Object.freeze({
   tool: "أداة",
 });
 
-/** هيكل طالب للخطوة الأولى — بدون الحل الكامل */
-function studentImportSkeleton(title) {
-  return `# مشروع: ${title}
-# أكمل الخطوات في لوحة التعلّم
-import skui as ______
-`;
+function runnableStarter(id, title) {
+  return (
+    SKUI_DEMO_APPS[id] ||
+    `# مشروع: ${title}
+import skui as ui
+app = ui.App(title="${title}", theme="modern", appearance="dark")
+app.add(ui.Guide(title="ابدأ هنا", message="عدّل الكود ثم شغّل المشروع.", character="assistant"))
+app.add(ui.Alert(text="المشروع جاهز", variant="info"))
+app.run()
+`
+  );
 }
 
 /**
@@ -54,7 +60,7 @@ export const SKUI_PROJECTS = [
       "تابع حتى تفوز أو تنفد المحاولات.",
       "اضغط جولة جديدة لإعادة اللعب.",
     ],
-    starterCode: studentImportSkeleton("لعبة تخمين الرقم"),
+    starterCode: runnableStarter("app-guess-number", "لعبة تخمين الرقم"),
     teacherSolutionId: "app-guess-number",
     tests: [
       "الرقم السري ضمن المجال 1–20",
@@ -83,7 +89,7 @@ export const SKUI_PROJECTS = [
       "C للمسح و⌫ لحذف آخر رقم.",
       "يمكنك الكتابة من لوحة المفاتيح.",
     ],
-    starterCode: studentImportSkeleton("آلة حاسبة"),
+    starterCode: runnableStarter("app-calculator", "آلة حاسبة"),
     teacherSolutionId: "app-calculator",
     tests: [
       "الأزرار تعمل",
@@ -107,7 +113,7 @@ export const SKUI_PROJECTS = [
       "اضغط تسجيل.",
       "اقرأ رسالة التحقق أو النجاح.",
     ],
-    starterCode: studentImportSkeleton("نموذج تسجيل"),
+    starterCode: runnableStarter("app-registration", "نموذج تسجيل"),
     teacherSolutionId: "app-registration",
     tests: ["التحقق من الحقول", "رسالة نجاح", "يعمل بعد WebApp"],
   },
@@ -126,7 +132,7 @@ export const SKUI_PROJECTS = [
       "احذف ما لا تحتاجه.",
       "فلتر بين الكل / النشط / المكتمل.",
     ],
-    starterCode: studentImportSkeleton("قائمة مهام"),
+    starterCode: runnableStarter("app-todo", "قائمة مهام"),
     teacherSolutionId: "app-todo",
     tests: ["إضافة مهمة", "إتمام", "حذف", "فلترة"],
   },
@@ -144,7 +150,7 @@ export const SKUI_PROJECTS = [
       "اضغط التالي للانتقال.",
       "شاهد النتيجة النهائية وأعد المحاولة.",
     ],
-    starterCode: studentImportSkeleton("اختبار قصير"),
+    starterCode: runnableStarter("app-quiz", "اختبار قصير"),
     teacherSolutionId: "app-quiz",
     tests: ["عرض السؤال", "تقدم", "نتيجة", "إعادة محاولة"],
     dayId: "day-05",
@@ -164,7 +170,7 @@ export const SKUI_PROJECTS = [
       "شغّل المؤقت ثم أوقفه عند الحاجة.",
       "أعد الضبط للبدء من جديد.",
     ],
-    starterCode: studentImportSkeleton("مؤقت"),
+    starterCode: runnableStarter("app-timer", "مؤقت"),
     teacherSolutionId: "app-timer",
     tests: ["تشغيل", "إيقاف", "إعادة ضبط", "تنبيه عند الانتهاء"],
   },
@@ -182,7 +188,7 @@ export const SKUI_PROJECTS = [
       "لاحظ المخطط ونسب التقدم.",
       "حدّث البيانات بزر التحديث.",
     ],
-    starterCode: studentImportSkeleton("لوحة بيانات"),
+    starterCode: runnableStarter("app-dashboard", "لوحة بيانات"),
     teacherSolutionId: "app-dashboard",
     tests: ["عرض المؤشرات", "مخطط", "تحديث"],
   },
@@ -199,7 +205,7 @@ export const SKUI_PROJECTS = [
       "حرّك منزلقات R وG وB.",
       "شاهد المعاينة الفورية وقيمة HEX.",
     ],
-    starterCode: studentImportSkeleton("تطبيق ألوان"),
+    starterCode: runnableStarter("app-colors", "تطبيق ألوان"),
     teacherSolutionId: "app-colors",
     tests: ["تغيير RGB", "عرض HEX", "معاينة مباشرة"],
   },
@@ -217,7 +223,7 @@ export const SKUI_PROJECTS = [
       "اجمع النقاط.",
       "أعد التشغيل لجولة جديدة.",
     ],
-    starterCode: studentImportSkeleton("لعبة Canvas"),
+    starterCode: runnableStarter("app-canvas-demo", "لعبة Canvas"),
     teacherSolutionId: "app-canvas-demo",
     tests: ["رسم", "حركة", "نقاط", "إعادة تشغيل"],
     dayId: "day-08",
@@ -237,7 +243,7 @@ export const SKUI_PROJECTS = [
       "اضغط ابحث وشاهد خطوات الفحص.",
       "اقرأ إن وُجد العنصر أو لم يوجد.",
     ],
-    starterCode: studentImportSkeleton("محاكاة البحث الخطي"),
+    starterCode: runnableStarter("app-linear-search", "محاكاة البحث الخطي"),
     teacherSolutionId: "app-linear-search",
     tests: ["بحث موجود", "بحث غير موجود", "عرض الخطوات"],
     dayId: "day-06",
@@ -257,7 +263,7 @@ export const SKUI_PROJECTS = [
       "اضبط مفتاح الإزاحة.",
       "شفّر أو افك التشفير.",
     ],
-    starterCode: studentImportSkeleton("تشفير قيصر"),
+    starterCode: runnableStarter("app-caesar", "تشفير قيصر"),
     teacherSolutionId: "app-caesar",
     tests: ["تشفير", "فك تشفير", "مفتاح الإزاحة"],
     dayId: "day-04",
@@ -277,7 +283,7 @@ export const SKUI_PROJECTS = [
       "أدخل الإجابة وتحقق.",
       "اجمع النقاط ثم انتقل للسؤال التالي.",
     ],
-    starterCode: studentImportSkeleton("لعبة تعليمية"),
+    starterCode: runnableStarter("app-edu-game", "لعبة تعليمية"),
     teacherSolutionId: "app-edu-game",
     tests: ["سؤال جديد", "تحقق", "نقاط", "تقدم"],
   },
@@ -294,7 +300,7 @@ export const SKUI_PROJECTS = [
       "أدخل عددًا عشريًا.",
       "اضغط تحويل لرؤية الثنائي.",
     ],
-    starterCode: studentImportSkeleton("محول أنظمة العد"),
+    starterCode: runnableStarter("app-number-convert", "محول أنظمة العد"),
     teacherSolutionId: "app-number-convert",
     tests: ["تحويل صحيح", "رسالة خطأ للمدخلات"],
     dayId: "day-03",

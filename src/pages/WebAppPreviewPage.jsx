@@ -20,11 +20,20 @@ export default function WebAppPreviewPage() {
     setUi(null);
     const session = new PythonAppSession();
     session.onSnapshot = setUi;
-    session.onError = setFeedback;
+    session.onError = (err) => {
+      setFeedback(err || { headlineAr: "حدث خطأ أثناء تشغيل الكود" });
+    };
     sessionRef.current = session;
     try {
       const result = await session.load(project.code);
       setUi(result.ui);
+      if (!result.ui?.nodes || !Object.keys(result.ui.nodes).length) {
+        setFeedback({
+          headlineAr: "الكود اشتغل لكن لا توجد واجهة للعرض.",
+          hintAr: "تأكد أن المشروع ينشئ ui.App ويضيف مكوّنات ثم يستدعي app.run().",
+          detail: "",
+        });
+      }
     } catch (error) {
       setFeedback(error?.feedback || { headlineAr: error?.message || "تعذر تشغيل المشروع." });
     } finally {
@@ -58,6 +67,12 @@ export default function WebAppPreviewPage() {
     );
   }
 
+  const emptyHint = feedback
+    ? "راجع رسالة الخطأ أعلاه ثم اضغط إعادة التشغيل بعد إصلاح الكود."
+    : loading
+      ? "جاري تشغيل التطبيق…"
+      : "تعذر عرض الواجهة. اضغط إعادة التشغيل.";
+
   return (
     <main className="min-h-screen bg-[#070b18] p-3 text-white sm:p-6" dir="rtl">
       <header className="mx-auto mb-4 flex max-w-6xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
@@ -76,8 +91,14 @@ export default function WebAppPreviewPage() {
       </header>
       <section className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-violet-400/20 shadow-2xl shadow-violet-950/40">
         {feedback ? (
-          <div className="border-b border-red-400/20 bg-red-950/60 p-3 text-sm text-red-100">
-            {feedback.headlineAr}
+          <div className="space-y-1 border-b border-red-400/20 bg-red-950/60 p-3 text-sm text-red-100">
+            <p className="font-bold">{feedback.headlineAr}</p>
+            {feedback.hintAr ? <p className="text-red-100/90">{feedback.hintAr}</p> : null}
+            {feedback.detail ? (
+              <pre dir="ltr" className="mt-2 max-h-28 overflow-auto whitespace-pre-wrap font-mono text-xs text-red-50/80">
+                {feedback.detail}
+              </pre>
+            ) : null}
           </div>
         ) : null}
         <SkuiPreviewFrame
@@ -86,6 +107,7 @@ export default function WebAppPreviewPage() {
           onEvent={handleEvent}
           title={`WebApp — ${project.title}`}
           minHeight="calc(100vh - 150px)"
+          emptyMessage={emptyHint}
         />
       </section>
     </main>

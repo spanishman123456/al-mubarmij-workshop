@@ -301,7 +301,7 @@ function buildGenericAppPlan(project) {
       {
         titleAr: "الخطوة 1 — الاستيراد",
         instructionAr: `ابدأ مشروع «${project.titleAr}» باستيراد مكتبة skui باسم ui.`,
-        initialCode: project.starter || `# استورد مكتبة الواجهة\nimport skui as ______`,
+        initialCode: `# مشروع: ${project.titleAr}\n# أكمل الخطوات تدريجيًا (أو استخدم النسخة الجاهزة من تبويب المشروع)\nimport skui as ______`,
         appendCode: "",
         hints: [
           "أول سطر: import skui as ui",

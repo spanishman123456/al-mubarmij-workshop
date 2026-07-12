@@ -111,14 +111,14 @@ export default function PythonLab() {
   const myGraphicProjects = myProgress?.graphicProjects ?? [];
   const visibleTabs = APP_TABS.filter((tab) => !tab.teacherOnly || isTeacher);
 
-  function applyStepReset(plan) {
+  function applyStepReset(plan, { loadCode = true } = {}) {
     const s = resetStepState();
     setStepIndex(s.stepIndex);
     setStepHintLevel(s.stepHintLevel);
     setStepCheckResult(s.stepCheckResult);
     setStepCheckAttempts(s.stepCheckAttempts);
     setSolutionRevealed(s.solutionRevealed);
-    if (plan) setCode(getInitialCode(plan));
+    if (plan && loadCode) setCode(getInitialCode(plan));
   }
 
   const filteredExercises = useMemo(() => {
@@ -158,8 +158,9 @@ export default function PythonLab() {
         setCode(codeOverride);
         applyStepReset(null);
       } else if (!keepCode) {
-        const plan = getStepPlan("app", project.id);
-        applyStepReset(plan);
+        // افتح تطبيقًا قابلاً للتشغيل فورًا — لا هيكلًا مكسورًا
+        setCode(project.starterCode);
+        applyStepReset(getStepPlan("app", project.id), { loadCode: false });
       }
       trackGuiEvent?.("gui_project_started");
       setSearchParams((prev) => {
