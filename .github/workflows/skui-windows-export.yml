@@ -137,12 +137,12 @@ jobs:
 
       - name: Install Tauri CLI
         shell: pwsh
-        run: cargo install tauri-cli --version "^2" --locked
+        run: npm install --global @tauri-apps/cli@latest
 
       - name: Build NSIS and MSI bundles
         shell: pwsh
         working-directory: desktop/skui-tauri-template/src-tauri
-        run: cargo tauri build --bundles nsis,msi
+        run: tauri build --bundles nsis,msi
 
       - name: Sign and verify Windows installers when configured
         shell: pwsh
