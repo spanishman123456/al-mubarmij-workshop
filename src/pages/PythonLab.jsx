@@ -970,7 +970,7 @@ export default function PythonLab() {
               ))}
             </div>
             <div className="mb-4 rounded-xl border border-violet-500/25 bg-violet-950/30 px-4 py-3 text-center">
-              <p className="text-lg font-bold text-violet-100">
+              <p className="text-lg font-bold text-violet-100" data-testid="skui-project-title">
                 {appTemplate.icon} {projectTitle.trim() || appTemplate.titleAr}
               </p>
               <p className="mt-1 text-xs text-slate-400">{appTemplate.description}</p>
