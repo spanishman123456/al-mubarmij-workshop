@@ -10,6 +10,7 @@ import _skui_bridge as _bridge
 
 _EVENTS = ${JSON.stringify(SKUI_EVENTS)}
 
+
 class Widget:
     def __init__(self, kind, children=None, props=None):
         props = dict(props or {})
@@ -50,6 +51,14 @@ class Widget:
 
     def set_disabled(self, disabled=True):
         _bridge.set_prop(self._id, "disabled", bool(disabled))
+        return self
+
+    def set_visible(self, visible=True):
+        _bridge.set_prop(self._id, "visible", bool(visible))
+        return self
+
+    def set_variant(self, variant):
+        _bridge.set_prop(self._id, "variant", variant)
         return self
 
     def set_open(self, opened=True):
@@ -197,9 +206,132 @@ class Canvas(Widget):
         _bridge.canvas(self._id, "text", {"text": text, "x": x, "y": y, "color": color, "size": size})
         return self
 
+    def draw_line(self, x1, y1, x2, y2, color="#111827", width=2):
+        _bridge.canvas(self._id, "line", {
+            "x1": x1, "y1": y1, "x2": x2, "y2": y2, "color": color, "width": width
+        })
+        return self
+
+    def draw_circle(self, x, y, radius, color="#7c3aed", width=0):
+        _bridge.canvas(self._id, "circle", {
+            "x": x, "y": y, "radius": radius, "color": color, "width": width
+        })
+        return self
+
     def clear(self):
         _bridge.canvas(self._id, "clear", {})
         return self
+
+
+class Scene(Widget):
+    def __init__(self, *children, title="", background="", **props):
+        props.update({"title": title, "background": background})
+        Widget.__init__(self, "Scene", list(children), props)
+
+
+class HeroSection(Widget):
+    def __init__(self, *children, title="", subtitle="", image="", **props):
+        props.update({"title": title, "subtitle": subtitle, "image": image})
+        Widget.__init__(self, "HeroSection", list(children), props)
+
+
+class GameBoard(Widget):
+    def __init__(self, *children, rows=3, columns=3, items=None, **props):
+        props.update({"rows": rows, "columns": columns, "items": list(items or [])})
+        Widget.__init__(self, "GameBoard", list(children), props)
+
+
+class MetricCard(Widget):
+    def __init__(self, title="", value=0, unit="", trend="", **props):
+        props.update({"title": title, "value": value, "unit": unit, "trend": trend})
+        Widget.__init__(self, "MetricCard", [], props)
+
+
+class StatusPanel(Widget):
+    def __init__(self, *children, title="", status="", items=None, **props):
+        props.update({"title": title, "status": status, "items": list(items or [])})
+        Widget.__init__(self, "StatusPanel", list(children), props)
+
+
+class Timeline(Widget):
+    def __init__(self, items=None, **props):
+        props["items"] = list(items or [])
+        Widget.__init__(self, "Timeline", [], props)
+
+
+class MissionCard(Widget):
+    def __init__(self, *children, title="", description="", status="", progress=0, **props):
+        props.update({"title": title, "description": description, "status": status, "progress": progress})
+        Widget.__init__(self, "MissionCard", list(children), props)
+
+
+class MapPanel(Widget):
+    def __init__(self, markers=None, center=None, zoom=1, **props):
+        props.update({"markers": list(markers or []), "center": list(center or []), "zoom": zoom})
+        Widget.__init__(self, "MapPanel", [], props)
+
+
+class AnimatedCounter(Widget):
+    def __init__(self, value=0, duration=1000, **props):
+        props.update({"value": value, "duration": duration})
+        Widget.__init__(self, "AnimatedCounter", [], props)
+
+
+class ProgressRing(Widget):
+    def __init__(self, value=0, max=100, **props):
+        props.update({"value": value, "max": max})
+        Widget.__init__(self, "ProgressRing", [], props)
+
+
+class LevelBadge(Widget):
+    def __init__(self, level=1, text="", **props):
+        props.update({"level": level, "text": text})
+        Widget.__init__(self, "LevelBadge", [], props)
+
+
+class Dialog(Widget):
+    def __init__(self, *children, title="", open=False, **props):
+        props.update({"title": title, "open": bool(open)})
+        Widget.__init__(self, "Dialog", list(children), props)
+
+
+class Drawer(Widget):
+    def __init__(self, *children, title="", open=False, position="end", **props):
+        props.update({"title": title, "open": bool(open), "position": position})
+        Widget.__init__(self, "Drawer", list(children), props)
+
+
+class Toast(Widget):
+    def __init__(self, message="", variant="info", open=True, duration=3000, **props):
+        props.update({"message": message, "variant": variant, "open": bool(open), "duration": duration})
+        Widget.__init__(self, "Toast", [], props)
+
+
+class Tooltip(Widget):
+    def __init__(self, *children, text="", content="", position="top", **props):
+        props.update({"text": text, "content": content, "position": position})
+        Widget.__init__(self, "Tooltip", list(children), props)
+
+
+class StepIndicator(Widget):
+    def __init__(self, steps=None, current=0, **props):
+        props.update({"steps": list(steps or []), "current": current})
+        Widget.__init__(self, "StepIndicator", [], props)
+
+
+class DataGrid(Widget):
+    def __init__(self, columns=None, data=None, **props):
+        props.update({"columns": list(columns or []), "data": list(data or [])})
+        Widget.__init__(self, "DataGrid", [], props)
+
+
+class CharacterGuide(Guide):
+    def __init__(self, title="مرحبًا", message="", character="assistant", position="top", open=True, **props):
+        props.update({
+            "title": title, "message": message, "character": character,
+            "position": position, "open": bool(open), "text": title
+        })
+        Widget.__init__(self, "CharacterGuide", [], props)
 
 
 def _simple(name):
@@ -304,7 +436,7 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
   var COMPONENTS = ${COMPONENTS_JSON};
   var EVENTS = ${EVENTS_JSON};
   var LIMITS = ${LIMITS_JSON};
-  var allowedStyle = ["width","height","padding","margin","align","justify","gap","background","text_color","border_radius","variant","size","columns","depth","appearance","scene"];
+  var allowedStyle = ["width","height","padding","margin","align","justify","gap","background","text_color","border_radius","variant","size","columns","depth","appearance","scene","layout","span","full_width"];
   var state = self.__skuiState;
   var mod = {};
   function none() { return Sk.builtin.none.none$; }
@@ -321,6 +453,20 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
     var v = String(value || "");
     return /^\\d+(\\.\\d+)?(px|%|rem|em|vh|vw)$/.test(v) ? v : "";
   }
+  function acceptsEventPayload(handler) {
+    var target = handler && (handler.im_func || handler);
+    if (!target) fail("دالة الحدث غير صالحة.");
+    if (typeof target.$memoiseFlags === "function" && !target.memoised) target.$memoiseFlags();
+    var code = target.func_code || {};
+    var count = Number(target.co_argcount);
+    if (!Number.isFinite(count)) count = Number(code.co_argcount);
+    if (!Number.isFinite(count) && Array.isArray(code.co_varnames)) count = code.co_varnames.length;
+    if (!Number.isFinite(count)) fail("تعذر تحديد معاملات دالة الحدث.");
+    if (handler.im_self || handler.$self) count = Math.max(0, count - 1);
+    var hasVarargs = Boolean(target.co_varargs || code.co_varargs);
+    if (count > 1 && !hasVarargs) fail("دالة الحدث يجب أن تقبل صفر أو معاملًا واحدًا.");
+    return hasVarargs || count === 1;
+  }
   function sanitize(kind, raw) {
     var props = {};
     raw = raw && typeof raw === "object" ? raw : {};
@@ -329,14 +475,17 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
       if (key === "src") {
         var src = String(value || "");
         props.src = /^(data:image\\/(png|jpeg|gif|webp);base64,|\\.\\/|assets\\/)/i.test(src) ? src : "";
-      } else if (key === "background" || key === "text_color") {
+      } else if (key === "background" || key === "text_color" || key === "color") {
         props[key] = safeColor(value);
       } else if (["width","height","padding","margin","gap","border_radius"].includes(key)) {
         props[key] = safeSize(value);
       } else if (key === "columns") {
-        var columns = Math.round(Number(value));
-        if (columns >= 1 && columns <= 6) props.columns = columns;
-      } else if (allowedStyle.includes(key) || ["title","text","message","character","position","placeholder","value","disabled","theme","appearance","direction","level","rows","checked","group","options","min","max","step","alt","open","operations","headers","items","tabs","panels","interval","running","data","labels","autoplay","controls","scene"].includes(key)) {
+        if (kind === "DataGrid" && Array.isArray(value)) props.columns = value.slice(0, 100);
+        else {
+          var columns = Math.round(Number(value));
+          if (columns >= 1 && columns <= 6) props.columns = columns;
+        }
+      } else if (allowedStyle.includes(key) || ["title","text","message","subtitle","image","icon","character","position","placeholder","value","disabled","visible","theme","appearance","direction","level","rows","checked","group","options","min","max","step","alt","open","operations","headers","items","tabs","panels","interval","running","data","labels","autoplay","controls","scene","layout","span","full_width","unit","suffix","trend","status","description","progress","markers","center","zoom","duration","content","steps","current","mood","dismissible","dismiss_text","events","name","label"].includes(key)) {
         if (typeof value === "string") props[key] = value.slice(0, LIMITS.maxTextLength);
         else if (Array.isArray(value)) props[key] = value.slice(0, 500);
         else if (value == null || ["number","boolean"].includes(typeof value)) props[key] = value;
@@ -386,7 +535,10 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
     if (!state.nodes[id]) fail("المكوّن غير موجود.");
     if (!EVENTS.includes(event)) fail("الحدث " + event + " غير مدعوم.");
     if (Object.keys(state.handlers).length >= LIMITS.maxHandlers) fail("تم بلوغ الحد الأقصى للأحداث.");
-    state.handlers[id + ":" + event] = handler;
+    state.handlers[id + ":" + event] = {
+      callback: handler,
+      acceptsPayload: acceptsEventPayload(handler)
+    };
     return none();
   });
   mod.set_prop = new Sk.builtin.func(function(idValue, keyValue, value) {
@@ -427,12 +579,19 @@ export const SKUI_BRIDGE_MODULE = `var $builtinmodule = function(name) {
   mod.canvas = new Sk.builtin.func(function(idValue, opValue, payloadValue) {
     var node = state.nodes[str(idValue)], op = str(opValue), payload = js(payloadValue) || {};
     if (!node || node.type !== "Canvas") fail("العملية تتطلب مكوّن Canvas.");
+    if (!["clear","rect","text","line","circle"].includes(op)) fail("عملية Canvas غير مدعومة.");
     if (op === "clear") node.props.operations = [];
     else {
       var operations = Array.isArray(node.props.operations) ? node.props.operations : [];
       if (operations.length >= LIMITS.maxCanvasOperations) fail("تم بلوغ الحد الأقصى لعمليات Canvas.");
       var clean = { op: op };
-      ["x","y","width","height","size"].forEach(function(k) { if (payload[k] != null) clean[k] = finite(payload[k], 0); });
+      ["x","y","x1","y1","x2","y2","width","height","size","radius"].forEach(function(k) {
+        if (payload[k] != null) {
+          var value = Math.max(-100000, Math.min(100000, finite(payload[k], 0)));
+          if (["width","height","size","radius"].includes(k)) value = Math.max(0, Math.min(2000, value));
+          clean[k] = value;
+        }
+      });
       if (payload.text != null) clean.text = String(payload.text).slice(0, 2000);
       if (payload.color != null) clean.color = safeColor(payload.color) || "#111827";
       operations.push(clean); node.props.operations = operations;

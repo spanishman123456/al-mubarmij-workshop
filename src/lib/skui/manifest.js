@@ -1,4 +1,4 @@
-export const SKUI_VERSION = "1.1.0";
+export const SKUI_VERSION = "1.2.0";
 export const SKULPT_BUILD = Object.freeze({
   gitHash: "e3c1c1a4e081362d96ba8afc5997be516b437f30",
   date: "2021-03-25T11:36:32.075Z",
@@ -56,6 +56,24 @@ export const SKUI_COMPONENTS = Object.freeze([
   "Timer",
   "Audio",
   "Guide",
+  "Scene",
+  "HeroSection",
+  "GameBoard",
+  "MetricCard",
+  "StatusPanel",
+  "Timeline",
+  "MissionCard",
+  "MapPanel",
+  "AnimatedCounter",
+  "ProgressRing",
+  "LevelBadge",
+  "Dialog",
+  "Drawer",
+  "Toast",
+  "Tooltip",
+  "StepIndicator",
+  "DataGrid",
+  "CharacterGuide",
 ]);
 
 export const SKUI_STYLE_PROPS = Object.freeze([
@@ -75,6 +93,9 @@ export const SKUI_STYLE_PROPS = Object.freeze([
   "depth",
   "appearance",
   "scene",
+  "layout",
+  "span",
+  "full_width",
 ]);
 
 export const SKUI_COMPONENT_API = Object.freeze(
@@ -84,7 +105,13 @@ export const SKUI_COMPONENT_API = Object.freeze(
       {
         name,
         events: SKUI_EVENTS,
-        methods: ["add", "dispose", "value", "set_value", "set_text", "set_disabled"],
+        methods: [
+          "add", "dispose", "value", "set_value", "set_text", "set_disabled",
+          "set_visible", "set_variant", "set_items", "set_data",
+          ...(name === "Canvas"
+            ? ["draw_rect", "draw_text", "draw_line", "draw_circle", "clear"]
+            : []),
+        ],
       },
     ]),
   ),
@@ -101,7 +128,7 @@ export function getSkuiAutocompleteSuggestions(prefix = "") {
 }
 
 export function getSkuiConstructorProps(component) {
-  const common = [...SKUI_STYLE_PROPS, "disabled"];
+  const common = [...SKUI_STYLE_PROPS, "disabled", "visible"];
   const map = {
     App: ["title", "width", "height", "theme", "appearance", "direction"],
     Button: ["text", "variant", "size", "depth", "on_click", "disabled"],
@@ -114,6 +141,24 @@ export function getSkuiConstructorProps(component) {
     Canvas: ["width", "height"],
     Timer: ["interval", "running", "on_change"],
     Guide: ["title", "message", "character", "position", "open"],
+    Scene: ["title", "background"],
+    HeroSection: ["title", "subtitle", "image"],
+    GameBoard: ["rows", "columns", "items"],
+    MetricCard: ["title", "value", "unit", "trend"],
+    StatusPanel: ["title", "status", "items"],
+    Timeline: ["items"],
+    MissionCard: ["title", "description", "status", "progress"],
+    MapPanel: ["markers", "center", "zoom"],
+    AnimatedCounter: ["value", "duration"],
+    ProgressRing: ["value", "max"],
+    LevelBadge: ["level", "text"],
+    Dialog: ["title", "open"],
+    Drawer: ["title", "open", "position"],
+    Toast: ["message", "variant", "open", "duration"],
+    Tooltip: ["text", "content", "position"],
+    StepIndicator: ["steps", "current"],
+    DataGrid: ["columns", "data"],
+    CharacterGuide: ["title", "message", "character", "position", "open"],
   };
   return [...new Set([...(map[component] || []), ...common, ...SKUI_EVENTS])];
 }

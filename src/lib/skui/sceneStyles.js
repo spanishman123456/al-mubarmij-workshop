@@ -63,6 +63,32 @@ body.scene-edugame .sk-Badge{background:linear-gradient(90deg,#eab308,#f97316)}
 body.scene-convert{background:radial-gradient(circle at 50% 0%,#38bdf833,transparent 45%),linear-gradient(160deg,#020617,#0c4a6e 48%,#082f49)}
 body.scene-convert .sk-App{background:linear-gradient(155deg,#0f172acc,#0369a133);border-color:#38bdf866;font-family:Consolas,monospace}
 body.scene-convert .sk-Guide{background:linear-gradient(135deg,#0284c733,#0ea5e922);border-color:#38bdf855}
+
+/* مختبر تقني: شبكة دقيقة، مؤشرات خوارزمية، وألوان تنفيذ واضحة */
+body.scene-algorithm-lab{--c-primary:#06b6d4;--c-primary2:#2563eb;--c-accent:#22d3ee;background-color:#020617;background-image:linear-gradient(#22d3ee0b 1px,transparent 1px),linear-gradient(90deg,#22d3ee0b 1px,transparent 1px),radial-gradient(circle at 50% -10%,#0e749066,transparent 40%);background-size:24px 24px,24px 24px,auto}
+body.scene-algorithm-lab .sk-App{background:#020617e8;border-color:#22d3ee55;box-shadow:0 0 0 1px #0891b222,0 28px 90px #001827}
+body.scene-algorithm-lab .sk-HeroSection{background:linear-gradient(120deg,#083344,#172554);border-color:#22d3ee55}
+body.scene-algorithm-lab .sk-GameBoard,body.scene-algorithm-lab canvas{background:#020b19;border:1px solid #22d3ee44;box-shadow:inset 0 0 60px #0891b21c}
+body.scene-algorithm-lab .sk-MetricCard{font-family:Consolas,"Segoe UI",monospace;background:#071525;border-color:#0e749066}
+body.scene-algorithm-lab .sk-Timeline .timeline-item{background:#082f4966}
+
+/* غرفة هروب قصصية: معدن داكن، ذهب، وأختام مشفرة */
+body.scene-cipher-escape{--c-primary:#d97706;--c-primary2:#92400e;--c-accent:#fbbf24;background:radial-gradient(circle at 50% 0%,#92400e55,transparent 32%),repeating-linear-gradient(125deg,#0f0b08 0,#0f0b08 22px,#17100b 23px,#17100b 24px)}
+body.scene-cipher-escape .sk-App{background:linear-gradient(145deg,#1c1917f2,#0c0a09ed);border-color:#f59e0b55;box-shadow:0 30px 100px #000,0 0 45px #d9770618}
+body.scene-cipher-escape .sk-HeroSection{background:radial-gradient(circle at 80% 20%,#f59e0b33,transparent 25%),linear-gradient(120deg,#451a03,#1c1917);border-color:#fbbf2466;font-family:Georgia,"Segoe UI",serif}
+body.scene-cipher-escape .sk-MapPanel{background-color:#1c1917;background-image:radial-gradient(circle,#fbbf2422 1px,transparent 2px);background-size:25px 25px;border:2px solid #92400e}
+body.scene-cipher-escape .sk-MissionCard{background:#292017cc;border-color:#d9770666;border-inline-start-color:#fbbf24}
+body.scene-cipher-escape .sk-LevelBadge{background:linear-gradient(90deg,#78350f,#d97706);box-shadow:0 0 18px #f59e0b44}
+body.scene-cipher-escape .sk-Guide{background:#292017e8;border-color:#d9770666}
+
+/* عمليات مدينة: خرائط مضيئة ولوحات قيادة هندسية */
+body.scene-smart-city-ops{--c-primary:#10b981;--c-primary2:#0f766e;--c-accent:#5eead4;background:radial-gradient(circle at 80% 0%,#10b9812e,transparent 35%),radial-gradient(circle at 10% 80%,#0284c733,transparent 40%),linear-gradient(145deg,#02131d,#042f2e 52%,#071827)}
+body.scene-smart-city-ops .sk-App{background:#03171ddf;border-color:#34d39944;box-shadow:0 30px 90px #00100d}
+body.scene-smart-city-ops .sk-HeroSection{background:linear-gradient(115deg,#064e3b,#0c4a6e);border-color:#5eead455}
+body.scene-smart-city-ops .sk-MapPanel{background-color:#052e3b;background-image:linear-gradient(30deg,#2dd4bf16 12%,transparent 12.5%,transparent 87%,#2dd4bf16 87.5%),linear-gradient(150deg,#2dd4bf16 12%,transparent 12.5%,transparent 87%,#2dd4bf16 87.5%);background-size:42px 72px}
+body.scene-smart-city-ops .sk-StatusPanel{background:linear-gradient(145deg,#063b3a,#082f49);border-color:#2dd4bf55}
+body.scene-smart-city-ops .sk-MetricCard{background:#042f2ecc;border-color:#10b98155;border-block-start-color:#5eead4}
+body.scene-smart-city-ops .sk-Timeline .timeline-item{border-inline-start:3px solid #f59e0b;background:#17202dcc}
 `;
 
 export const SKUI_SCENE_IDS = [
@@ -79,6 +105,9 @@ export const SKUI_SCENE_IDS = [
   "caesar",
   "edugame",
   "convert",
+  "algorithm-lab",
+  "cipher-escape",
+  "smart-city-ops",
 ];
 
 export const PROJECT_SCENE_MAP = {
@@ -95,4 +124,13 @@ export const PROJECT_SCENE_MAP = {
   "app-caesar": "caesar",
   "app-edu-game": "edugame",
   "app-number-convert": "convert",
+  "algorithm-lab": "algorithm-lab",
+  "cipher-escape": "cipher-escape",
+  "smart-city-ops": "smart-city-ops",
+  "app-algorithm-lab": "algorithm-lab",
+  "app-cipher-escape": "cipher-escape",
+  "app-smart-city-ops": "smart-city-ops",
+  "advanced-algorithm-lab": "algorithm-lab",
+  "advanced-cipher-escape": "cipher-escape",
+  "advanced-smart-city-ops": "smart-city-ops",
 };

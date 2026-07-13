@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   SKUI_COMPONENTS,
+  SKUI_COMPONENT_API,
   SKUI_EVENTS,
   getSkuiAutocompleteSuggestions,
   getSkuiConstructorProps,
   validateSkuiProject,
 } from "./manifest.js";
+import { SKUI_BRIDGE_MODULE, SKUI_PYTHON_MODULE } from "./moduleSources.js";
+import { buildSkuiWorkerSource } from "./workerSource.js";
 
 describe("skui API manifest", () => {
   it("declares every first-release component without duplicates", () => {
@@ -18,6 +21,20 @@ describe("skui API manifest", () => {
     expect(new Set(SKUI_COMPONENTS).size).toBe(SKUI_COMPONENTS.length);
   });
 
+  it("declares the advanced-project component set", () => {
+    const advanced = [
+      "Scene", "HeroSection", "GameBoard", "MetricCard", "StatusPanel", "Timeline",
+      "MissionCard", "MapPanel", "AnimatedCounter", "ProgressRing", "LevelBadge",
+      "Dialog", "Drawer", "Toast", "Tooltip", "StepIndicator", "DataGrid",
+      "CharacterGuide",
+    ];
+    expect(SKUI_COMPONENTS).toEqual(expect.arrayContaining(advanced));
+    expect(getSkuiConstructorProps("DataGrid")).toEqual(expect.arrayContaining(["columns", "data"]));
+    expect(getSkuiConstructorProps("MissionCard")).toEqual(
+      expect.arrayContaining(["title", "description", "status", "progress"]),
+    );
+  });
+
   it("declares the complete event API", () => {
     expect(SKUI_EVENTS).toEqual([
       "on_click", "on_change", "on_input", "on_submit", "on_select", "on_key_press", "on_focus", "on_blur",
@@ -28,6 +45,24 @@ describe("skui API manifest", () => {
     expect(getSkuiAutocompleteSuggestions("Bu").map((item) => item.label)).toEqual(["Button"]);
     expect(getSkuiConstructorProps("Button")).toEqual(expect.arrayContaining(["text", "variant", "on_click", "disabled"]));
     expect(getSkuiConstructorProps("Grid")).toEqual(expect.arrayContaining(["columns", "gap"]));
+    expect(SKUI_COMPONENT_API.Canvas.methods).toEqual(
+      expect.arrayContaining([
+        "set_visible", "set_variant", "set_items", "set_data", "draw_line", "draw_circle",
+      ]),
+    );
+  });
+
+  it("exposes typed callback adapters and the expanded Canvas API", () => {
+    const worker = buildSkuiWorkerSource();
+    expect(SKUI_PYTHON_MODULE).toContain("_bridge.bind(self._id, event, handler)");
+    expect(SKUI_BRIDGE_MODULE).toContain("function acceptsEventPayload(handler)");
+    expect(SKUI_BRIDGE_MODULE).toContain("target.$memoiseFlags()");
+    expect(SKUI_PYTHON_MODULE).toContain("def draw_line(");
+    expect(SKUI_PYTHON_MODULE).toContain("def draw_circle(");
+    expect(worker).toContain("Sk.ffi.remapToPy(payload");
+    expect(worker).toContain('node.type === "Canvas"');
+    expect(worker).not.toContain("func_code.co_argcount");
+    expect(worker).not.toContain("catch (arityErr)");
   });
 
   it("accepts a supported project", () => {

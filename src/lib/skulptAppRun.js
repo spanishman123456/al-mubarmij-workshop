@@ -122,8 +122,8 @@ export class PythonAppSession {
     return { ui: this.ui, console: result.console || "" };
   }
 
-  click(buttonId, inputValues = {}) {
-    const value = inputValues?.[buttonId];
+  click(buttonId, inputValues = {}, payload = inputValues?.[buttonId]) {
+    const value = payload;
     return this.event(buttonId, "on_click", value, inputValues);
   }
 

@@ -417,12 +417,12 @@ export default function PythonLab() {
     }
   }
 
-  async function onAppButton(btnId, currentValues = appValues) {
+  async function onAppButton(btnId, currentValues = appValues, value = undefined) {
     if (!sessionRef.current) return;
     setBusy(true);
     setFeedback(null);
     try {
-      const result = await sessionRef.current.click(btnId, currentValues);
+      const result = await sessionRef.current.click(btnId, currentValues, value);
       setAppUi(result.ui);
       setAppValues(result.ui.values || {});
       if (result.console) setAppConsole((prev) => prev + result.console);
@@ -728,7 +728,11 @@ export default function PythonLab() {
 
             {appTab === "project" ? (
               <div className="space-y-4">
-                <SkuiProjectGallery selectedId={activeAppId} onSelect={(id) => selectProject(id)} />
+                <SkuiProjectGallery
+                  selectedId={activeAppId}
+                  onSelect={(id) => selectProject(id)}
+                  role={user?.role}
+                />
                 <AppModeHelp
                   variant="dark"
                   onInsertExample={(example) => {
