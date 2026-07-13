@@ -4,6 +4,7 @@ import {
   extractUserSymbols,
   findTypoHint,
   getSuggestions,
+  isSkuiNamespace,
   parseCompletionContext,
   shouldAutoTrigger,
 } from "./autocomplete.js";
@@ -47,6 +48,21 @@ describe("python autocomplete", () => {
     const ctx = parseCompletionContext(code, code.length);
     const { items } = getSuggestions(ctx, { code });
     expect(items.some((i) => i.label === "upper")).toBe(true);
+  });
+
+  it("suggests skui components for ui alias in app mode", () => {
+    const code = "import skui as ui\nui.Bu";
+    expect(isSkuiNamespace(code, "ui")).toBe(true);
+    const ctx = parseCompletionContext(code, code.length);
+    const { items } = getSuggestions(ctx, { code, appMode: true });
+    expect(items.map((i) => i.label)).toEqual(["Button"]);
+  });
+
+  it("does not suggest skui components outside app mode", () => {
+    const code = "import skui as ui\nui.Bu";
+    const ctx = parseCompletionContext(code, code.length);
+    const { items } = getSuggestions(ctx, { code, appMode: false });
+    expect(items.some((i) => i.label === "Button")).toBe(false);
   });
 
   it("suggests list methods for list variable", () => {

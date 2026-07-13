@@ -2,7 +2,7 @@
  * Student pilot smoke — MUST run with PUBLISHED_DAYS=1 (see npm run test:e2e:pilot).
  */
 import { test, expect } from "@playwright/test";
-import { loginStudent } from "./helpers.js";
+import { loginStudent, loginStudentWithOnboarding } from "./helpers.js";
 const LOCKED_HEADING = /المحتوى غير متاح بعد/;
 
 test.describe("pilot PUBLISHED_DAYS=1", () => {
@@ -263,7 +263,7 @@ test.describe("pilot PUBLISHED_DAYS=1", () => {
   });
 
   test("python lab still accessible", async ({ page }) => {
-    await loginStudent(page);
+    await loginStudentWithOnboarding(page);
     await page.goto("/python");
     await expect(page.getByRole("button", { name: "تشغيل الكود" })).toBeVisible();
   });

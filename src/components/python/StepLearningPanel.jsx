@@ -34,7 +34,8 @@ export function StepLearningPanel({
   const total = plan.steps.length;
   const progress = Math.round(((stepIndex + (checkResult?.ok ? 1 : 0)) / total) * 100);
   const hintsShown = step?.hints?.slice(0, hintLevel) ?? [];
-  const canRevealSolution = allowRevealSolution && (checkAttempts >= MIN_ATTEMPTS_BEFORE_SOLUTION || solutionRevealed);
+  const canRevealSolution =
+    allowRevealSolution && plan.fullSolution && (checkAttempts >= MIN_ATTEMPTS_BEFORE_SOLUTION || solutionRevealed);
 
   return (
     <div className="step-learning-panel mt-4 space-y-4 rounded-2xl border border-violet-500/35 bg-violet-950/30 p-4" dir="rtl">
@@ -97,7 +98,8 @@ export function StepLearningPanel({
         >
           ✓ تحقق من الحل
         </button>
-        {canRevealSolution ? (
+        {allowRevealSolution && plan.fullSolution ? (
+          canRevealSolution ? (
           <button
             type="button"
             onClick={onRevealSolution}
@@ -105,12 +107,15 @@ export function StepLearningPanel({
           >
             {solutionRevealed ? "الحل ظاهر" : "عرض الحل الكامل"}
           </button>
-        ) : allowRevealSolution ? (
+          ) : (
           <span className="self-center text-xs text-slate-500">
             الحل الكامل بعد {MIN_ATTEMPTS_BEFORE_SOLUTION - checkAttempts} محاولات أخرى
           </span>
+          )
         ) : (
-          <span className="self-center text-xs text-slate-500">راجع التلميحات والشرح — الحل لا يُكشف تلقائيًا.</span>
+          <span className="self-center text-xs text-slate-500">
+            ابنِ المشروع خطوة بخطوة — الحل النموذجي متاح للمعلم فقط.
+          </span>
         )}
       </div>
 

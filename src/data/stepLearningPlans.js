@@ -156,6 +156,9 @@ export const CONSOLE_STEP_PLANS = {
 /** @type {Record<string, StepPlan>} */
 export const APP_STEP_PLANS = {
   "app-guess-number": buildGuessNumberPlan(),
+  "advanced-algorithm-lab": buildAlgorithmLabPlan(),
+  "advanced-cipher-escape": buildCipherEscapePlan(),
+  "advanced-smart-city-ops": buildSmartCityPlan(),
 };
 
 function buildGuessNumberPlan() {
@@ -258,6 +261,107 @@ function buildGuessNumberPlan() {
   };
 }
 
+function advancedStep(titleAr, instructionAr, checks, runnable = true) {
+  return {
+    titleAr,
+    instructionAr,
+    appendCode: "",
+    hints: checks.map((item) => item.hint),
+    check: (code) =>
+      runChecks(
+        code,
+        checks.map((item) => ({ check: item.check, messageAr: item.messageAr })),
+      ),
+    runnable,
+  };
+}
+
+function buildAlgorithmLabPlan() {
+  const project = GRAPHIC_APP_PROJECTS.find((p) => p.id === "advanced-algorithm-lab");
+  const steps = [
+    advancedStep("المرحلة 1 — بيانات التجربة", "أنشئ دالة تنسخ القائمة وحالة تحفظ الخطوة والعدادات.", [
+      { check: (c) => /def\s+copy_\w*\s*\(/.test(c), messageAr: "أضف دالة لنسخ البيانات", hint: "ابنِ قائمة جديدة بحلقة for بدل تعديل المصدر." },
+      { check: (c) => /state\s*=\s*\{/.test(c), messageAr: "احفظ حالة التجربة في قاموس", hint: "يحتاج state إلى الخطوة والمقارنات والحركات." },
+    ]),
+    advancedStep("المرحلة 2 — محرك الخوارزمية", "طبّق خوارزمية فرز تنتج snapshots بعد كل مقارنة أو حركة.", [
+      { check: (c) => /def\s+(bubble|selection|insertion)\w*\s*\(/i.test(c), messageAr: "أضف دالة خوارزمية فرز", hint: "ابدأ بـ Bubble Sort ثم أضف خوارزمية ثانية." },
+      { check: (c) => /\bwhile\b|\bfor\b/.test(c), messageAr: "استخدم حلقات لتنفيذ الخوارزمية", hint: "أضف snapshot إلى قائمة الخطوات داخل الحلقة." },
+      { check: (c) => /comparisons/.test(c), messageAr: "احسب المقارنات", hint: "زد العداد عند كل مقارنة فعلية." },
+    ]),
+    advancedStep("المرحلة 3 — المقارنة وإعادة اللعب", "اربط الخطوات باللوحة، وأضف reset وتجربتين على الأقل.", [
+      { check: (c) => /ui\.GameBoard\s*\(/.test(c), messageAr: "استخدم GameBoard", hint: "اعرض snapshot الحالي في GameBoard." },
+      { check: (c) => /def\s+reset_\w*\s*\(/.test(c), messageAr: "أضف إعادة تجربة", hint: "أعد البيانات والعدادات ومؤشر الخطوة." },
+      { check: (c) => /ui\.DataGrid\s*\(/.test(c), messageAr: "أضف تقرير مقارنة", hint: "اعرض اسم الخوارزمية وعدد عملياتها." },
+    ]),
+  ];
+  steps[0].initialCode = project?.studentStarterCode ?? project?.starterCode ?? project?.starter ?? "";
+  return {
+    ideaAr: "مختبر يعرض تغير البيانات خطوة بخطوة ويقارن كلفة خوارزميات الفرز.",
+    commandsAr: ["list", "dict", "for", "while", "function", "GameBoard", "DataGrid"],
+    stepsOverviewAr: ["مثّل البيانات والحالة", "ابنِ محرك snapshots", "اربط المقارنة وإعادة اللعب"],
+    expectedOutputAr: "تجارب فرز متعددة الحالات مع عدادات وتقرير قابل للإعادة",
+    fullSolution: null,
+    steps,
+  };
+}
+
+function buildCipherEscapePlan() {
+  const project = GRAPHIC_APP_PROJECTS.find((p) => p.id === "advanced-cipher-escape");
+  const steps = [
+    advancedStep("المرحلة 1 — قفل قيصر", "اكتب دالة إزاحة تلتف داخل A-Z وتولّد لغزًا جديدًا.", [
+      { check: (c) => /def\s+caesar\s*\(/.test(c), messageAr: "أضف دالة caesar", hint: "استخدم ord وchr وباقي القسمة 26." },
+      { check: (c) => /%\s*26/.test(c), messageAr: "أضف التفاف الأبجدية", hint: "((code - 65 + shift) % 26) + 65" },
+    ]),
+    advancedStep("المرحلة 2 — الثنائي والمراحل", "أضف تحويلًا ثنائيًا وحالة تمنع تخطي المحطات.", [
+      { check: (c) => /def\s+to_binary\s*\(/.test(c), messageAr: "أضف التحويل الثنائي", hint: "استخدم القسمة الصحيحة // والباقي %." },
+      { check: (c) => /state\s*\[\s*["']stage["']\s*\]/.test(c), messageAr: "حدّث مرحلة الغرفة", hint: "لا تنتقل إلا بعد تطابق الإجابة." },
+    ]),
+    advancedStep("المرحلة 3 — النتيجة وإعادة اللعب", "احسب أثر الأخطاء والتلميحات، ثم ولّد غرفة جديدة عند replay.", [
+      { check: (c) => /state\s*\[\s*["']hints["']\s*\]/.test(c), messageAr: "طبّق حد التلميحات", hint: "امنع الاستخدام عندما تصل hints إلى صفر." },
+      { check: (c) => /def\s+replay\s*\(/.test(c), messageAr: "أضف replay", hint: "صفّر المرحلة والنتيجة وولّد ألغازًا جديدة." },
+      { check: (c) => /ui\.StepIndicator\s*\(/.test(c), messageAr: "اعرض تقدم المحطات", hint: "اربط StepIndicator بقيمة stage." },
+    ]),
+  ];
+  steps[0].initialCode = project?.studentStarterCode ?? project?.starterCode ?? project?.starter ?? "";
+  return {
+    ideaAr: "غرفة هروب تربط قيصر والثنائي والمنطق في حالة لعب واحدة.",
+    commandsAr: ["ord", "chr", "%", "//", "random", "MapPanel", "StepIndicator"],
+    stepsOverviewAr: ["ابنِ قفل قيصر", "أضف ASCII وإدارة المراحل", "احسب النتيجة وأعد اللعب"],
+    expectedOutputAr: "ثلاث محطات متسلسلة بقيم متغيرة وتلميحات محدودة",
+    fullSolution: null,
+    steps,
+  };
+}
+
+function buildSmartCityPlan() {
+  const project = GRAPHIC_APP_PROJECTS.find((p) => p.id === "advanced-smart-city-ops");
+  const steps = [
+    advancedStep("المرحلة 1 — نموذج المدينة", "عرّف المؤشرات والحوادث وآثار كل بديل في قواميس.", [
+      { check: (c) => /INCIDENTS\s*=\s*\[/.test(c), messageAr: "أضف قائمة INCIDENTS", hint: "كل حادث يحتاج عنوانًا وبديلين وآثارًا رقمية." },
+      { check: (c) => /stability/.test(c) && /budget/.test(c) && /satisfaction/.test(c), messageAr: "أضف المؤشرات الثلاثة", hint: "ضع المؤشرات داخل state." },
+    ]),
+    advancedStep("المرحلة 2 — قرارات ذات كلفة", "طبّق القرار بعد فحص الميزانية والفرق وحدّث كل المؤشرات.", [
+      { check: (c) => /def\s+apply_\w*\s*\(/.test(c), messageAr: "أضف دالة تطبيق القرار", hint: "مرّر اختيار أ أو ب إلى دالة واحدة." },
+      { check: (c) => /budget/.test(c) && /teams/.test(c), messageAr: "افحص الميزانية والفرق", hint: "ارفض القرار قبل أي تغيير إن لم تكف الموارد." },
+      { check: (c) => /history.*append/.test(c), messageAr: "سجّل القرار", hint: "أضف صفًا إلى history بعد نجاح القرار." },
+    ]),
+    advancedStep("المرحلة 3 — التقرير والوردية الجديدة", "أنهِ الجولة الثالثة بتقرير محسوب وأعد كل الحالة في replay.", [
+      { check: (c) => /def\s+finish_\w*\s*\(/.test(c), messageAr: "أضف تقرير النهاية", hint: "احسب نتيجة موزونة من المؤشرات." },
+      { check: (c) => /ui\.DataGrid\s*\(/.test(c), messageAr: "اعرض سجل القرارات", hint: "مرّر history إلى DataGrid." },
+      { check: (c) => /def\s+replay\s*\(/.test(c), messageAr: "أضف وردية جديدة", hint: "أعد المؤشرات والموارد واختر حوادث جديدة." },
+    ]),
+  ];
+  steps[0].initialCode = project?.studentStarterCode ?? project?.starterCode ?? project?.starter ?? "";
+  return {
+    ideaAr: "محاكاة موارد وقرارات مترابطة عبر ثلاث جولات متغيرة.",
+    commandsAr: ["dict", "list", "random", "if", "function", "MetricCard", "DataGrid"],
+    stepsOverviewAr: ["نمذج المدينة والحوادث", "طبّق trade-offs", "أنشئ التقرير وإعادة اللعب"],
+    expectedOutputAr: "ثلاث جولات بقرارات لها كلفة وأثر وسجل نهائي",
+    fullSolution: null,
+    steps,
+  };
+}
+
 /** @param {string} exerciseId */
 function buildGenericConsolePlan(exerciseId) {
   const ex = pythonExercises.find((e) => e.id === exerciseId);
@@ -290,57 +394,59 @@ function buildGenericConsolePlan(exerciseId) {
 
 /** @param {typeof GRAPHIC_APP_PROJECTS[0]} project */
 function buildGenericAppPlan(project) {
-  const sol = project.starter;
   return {
     ideaAr: project.edu?.description ?? project.titleAr,
-    commandsAr: ["appkit", "if", "def"],
+    commandsAr: ["skui", "App", "Button", "on_click", "app.run"],
     stepsOverviewAr: (project.edu?.usageSteps ?? []).slice(0, 4),
     expectedOutputAr: "تطبيق تفاعلي في المعاينة",
+    // الحل الكامل للمعلم فقط عبر API — لا يُضمَّن في حزمة الطالب
+    fullSolution: null,
     steps: [
       {
         titleAr: "الخطوة 1 — الاستيراد",
-        instructionAr: "ابدأ بكتابة import appkit (وأي import آخر تحتاجه).",
-        initialCode: `# اكتب import appkit\nimport ______`,
+        instructionAr: `ابدأ مشروع «${project.titleAr}» باستيراد مكتبة skui باسم ui.`,
+        initialCode: `# مشروع: ${project.titleAr}\n# أكمل الخطوات تدريجيًا (أو استخدم النسخة الجاهزة من تبويب المشروع)\nimport skui as ______`,
         appendCode: "",
         hints: [
-          "أول سطر: import appkit",
+          "أول سطر: import skui as ui",
           "إن احتجت random: import random",
-          "import appkit",
+          "import skui as ui",
         ],
         check: (code) =>
-          runChecks(code, [{ check: (c) => /import\s+appkit/.test(c), messageAr: "import appkit" }]),
+          runChecks(code, [{ check: (c) => /import\s+skui\s+as\s+ui/.test(c), messageAr: "import skui as ui" }]),
         runnable: false,
       },
       {
-        titleAr: "الخطوة 2 — الدوال",
-        instructionAr: "اكتب def للدوال الرئيسية (on_start أو ما يشبهها).",
-        appendCode: `\n# اكتب def start_game(): أو def on_start():\ndef ______:\n    pass`,
+        titleAr: "الخطوة 2 — إنشاء التطبيق",
+        instructionAr: "أنشئ App بعنوان المشروع ثم أضف عنصر نص أو تنبيه.",
+        appendCode: `\napp = ui.App(title="${project.titleAr}", theme="modern", appearance="dark")\nmessage = ui.Alert(text="جاهز للبناء", variant="info")`,
         hints: [
-          "def اسم_الدالة(): ثم مسافة بادئة.",
-          "ضع pass مؤقتاً ثم أكمل المنطق.",
-          "def on_start():\\n    pass",
-        ],
-        check: (code) =>
-          runChecks(code, [{ check: (c) => /\bdef\s+\w+/.test(c), messageAr: "اكتب def" }]),
-        runnable: false,
-      },
-      {
-        titleAr: "الخطوة 3 — الواجهة",
-        instructionAr: "أضف appkit.button أو appkit.input ثم appkit.build().",
-        appendCode: `\nappkit.button("btn", "زر", ______)\nappkit.build()`,
-        hints: [
-          "appkit.button(\"id\", \"نص\", الدالة)",
-          "appkit.build() في آخر السطر.",
-          "appkit.build()",
+          "أنشئ التطبيق عبر ui.App(title=...)",
+          "أضف ui.Alert أو ui.Text",
+          "احفظ المرجع في متغير مثل message",
         ],
         check: (code) =>
           runChecks(code, [
-            { check: (c) => /appkit\.build\s*\(\s*\)/.test(c), messageAr: "appkit.build()" },
+            { check: (c) => /ui\.App\s*\(/.test(c), messageAr: "أنشئ ui.App" },
+          ]),
+        runnable: false,
+      },
+      {
+        titleAr: "الخطوة 3 — زر وتشغيل",
+        instructionAr: "أضف Button مع on_click ثم app.add وapp.run().",
+        appendCode: `\ndef on_action():\n    message.set_text("تم التنفيذ")\n\nbutton = ui.Button(text="تشغيل", variant="primary", depth="raised", on_click=on_action)\napp.add(button)\napp.add(message)\napp.run()`,
+        hints: [
+          "ui.Button(text=\"...\", on_click=اسم_الدالة)",
+          "أضف المكونات بواسطة app.add",
+          "app.run() في النهاية",
+        ],
+        check: (code) =>
+          runChecks(code, [
+            { check: (c) => /app\.run\s*\(\s*\)/.test(c), messageAr: "app.run()" },
           ]),
         runnable: true,
       },
     ],
-    fullSolution: sol,
   };
 }
 

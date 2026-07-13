@@ -18,6 +18,31 @@ export async function loginStudent(page, nid = STUDENT_NID) {
   await expect(page).toHaveURL(/\/student/);
 }
 
+/** Completes required onboarding so gated routes like /python are reachable. */
+export async function completeRequiredOnboardingViaApi(page) {
+  const cookies = await page.context().cookies();
+  const csrf = cookies.find((c) => c.name === "platform_csrf")?.value || "";
+  const headers = { "X-CSRF-Token": csrf };
+  const bingo = await page.request.post("/api/onboarding/bingo", {
+    headers,
+    data: { cells: { c0: "زميل" }, status: "submitted", submittedAt: new Date().toISOString() },
+  });
+  expect(bingo.ok()).toBeTruthy();
+  for (const docType of ["honor_code", "acceptable_use", "honor_agreement", "tech_contract"]) {
+    const agreement = await page.request.post("/api/onboarding/agreement", {
+      headers,
+      data: { docType, signatureText: "توقيع تجريبي", version: "1.0" },
+    });
+    expect(agreement.ok()).toBeTruthy();
+  }
+}
+
+/** Login student and unlock gated labs/hubs used by skui and pilot smoke. */
+export async function loginStudentWithOnboarding(page, nid = STUDENT_NID) {
+  await loginStudent(page, nid);
+  await completeRequiredOnboardingViaApi(page);
+}
+
 export async function loginDemoStudent(page) {
   await page.goto("/login");
   await page.getByTestId("demo-student-login").click();
