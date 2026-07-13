@@ -4,6 +4,7 @@ import http from "node:http";
 import { Buffer } from "node:buffer";
 import { unzipSync } from "fflate";
 import { E2E_CALCULATOR_APP, E2E_EXAMPLES, E2E_WELCOME_APP } from "./fixtures/skuiApps.js";
+import { SKUI_ADVANCED_APPS } from "../src/data/skuiAdvancedApps.js";
 
 async function loginStudent(page) {
   await page.goto("/login");
@@ -55,6 +56,10 @@ test("selecting a project syncs title hints and clears previous preview", async 
   await loginStudent(page);
   await page.goto("/python?mode=app&app=app-guess-number");
   await expect(page.getByTestId("skui-project-title")).toContainText("لعبة تخمين الرقم");
+  await expect(page.getByRole("heading", { name: "المشروعات النهائية المتقدمة" })).toBeVisible();
+  await expect(page.getByText("ستظهر المشروعات النهائية هنا عند اعتمادها للنشر.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "نماذج متقدمة قيد التقييم" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "تمارين ومشروعات تدريبية مصغرة" })).toBeVisible();
   await page.getByTestId("start-project-app-calculator").click();
   await expect(page.getByTestId("skui-project-title")).toContainText("آلة حاسبة");
   await page.getByTestId("app-tab-code").click();
@@ -326,6 +331,49 @@ app.run()`,
   await expect(status).toContainText("click");
 });
 
+test("value and Canvas callbacks preserve typed payloads", async ({ page }) => {
+  await loginStudent(page);
+  await openAppLab(page);
+  await runCode(
+    page,
+    `import skui as ui
+app = ui.App(title="عقد الأحداث")
+slider_status = ui.Text("slider:waiting")
+timer_status = ui.Text("timer:waiting")
+canvas_status = ui.Text("canvas:waiting")
+
+def slider_changed(value):
+    slider_status.set_text("slider:" + str(int(value)))
+
+def timer_changed(count):
+    timer_status.set_text("timer:" + str(int(count)))
+    timer.set_running(False)
+
+def canvas_clicked(point):
+    canvas_status.set_text("canvas:" + str(int(point["x"])))
+
+slider = ui.Slider(value=5, min=0, max=10, on_input=slider_changed)
+timer = ui.Timer(value=0, interval=100, running=True, on_change=timer_changed)
+canvas = ui.Canvas(width=240, height=120, on_click=canvas_clicked)
+canvas.draw_circle(80, 60, 18, "#7c3aed")
+app.add(slider)
+app.add(slider_status)
+app.add(timer)
+app.add(timer_status)
+app.add(canvas)
+app.add(canvas_status)
+app.run()`,
+  );
+  const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  const slider = frame.locator('input[type="range"]');
+  await slider.fill("8");
+  await expect(frame.getByText("slider:8")).toBeVisible();
+  await expect(frame.getByText(/timer:\d+/)).toBeVisible({ timeout: 5_000 });
+  await frame.locator("canvas").click({ position: { x: 80, y: 60 } });
+  await expect(frame.getByText(/canvas:\d+/)).toBeVisible();
+  await expect(page.getByText(/TypeError|حدث خطأ داخل دالة/)).toHaveCount(0);
+});
+
 test("exported WebApp ZIP runs with local runtime; PWA and Windows stay gated", async ({ page }) => {
   await loginStudent(page);
   await openAppLab(page);
@@ -412,4 +460,84 @@ test("teacher solution API rejects students and serves teachers", async ({ reque
   const body = await allowed.json();
   expect(body.code).toContain("import skui as ui");
   expect(body.code).toContain("آلة حاسبة");
+
+  const advanced = await request.get("/api/teacher/skui-projects/advanced-algorithm-lab/solution", {
+    headers: { "x-user-role": "teacher" },
+  });
+  expect(advanced.ok()).toBeTruthy();
+  expect((await advanced.json()).code).toContain("def bubble_steps");
+});
+
+test("visual algorithm lab completes, reports, and resets a run", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await loginStudent(page);
+  await openAppLab(page, "advanced-algorithm-lab");
+  await runCode(page, SKUI_ADVANCED_APPS["advanced-algorithm-lab"]);
+
+  const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(frame.getByText("مختبر الخوارزميات", { exact: true }).first()).toBeVisible({ timeout: 20_000 });
+  await frame.getByRole("button", { name: "تشغيل للنهاية" }).click();
+  await expect(frame.getByRole("dialog").getByText(/تقرير: Bubble Sort/)).toBeVisible();
+  await frame.getByRole("dialog").getByRole("button", { name: "إغلاق" }).click();
+  await frame.getByRole("button", { name: "إعادة التجربة" }).click();
+  await expect(frame.getByText("أعيدت التجربة من البداية")).toBeVisible();
+});
+
+test("cipher escape completes all generated stages and replays", async ({ page }) => {
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await loginStudent(page);
+  await openAppLab(page, "advanced-cipher-escape");
+  await runCode(page, SKUI_ADVANCED_APPS["advanced-cipher-escape"]);
+
+  const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  const answer = frame.getByPlaceholder("اكتب رمز الفتح هنا");
+  const mission = frame.locator(".sk-MissionCard p");
+
+  const caesarClue = await mission.textContent();
+  const caesarMatch = caesarClue.match(/([A-Z]+).*?(\d+)/);
+  expect(caesarMatch).toBeTruthy();
+  const shift = Number(caesarMatch[2]);
+  const decoded = [...caesarMatch[1]]
+    .map((character) => String.fromCharCode(((character.charCodeAt(0) - 65 - shift + 26) % 26) + 65))
+    .join("");
+  await answer.fill(decoded);
+  await frame.getByRole("button", { name: "تحقق من الرمز" }).click();
+  await expect(mission).toContainText("حوّل");
+
+  const binaryClue = await mission.textContent();
+  const binary = binaryClue.match(/[01]{7,8}/)?.[0];
+  expect(binary).toBeTruthy();
+  await answer.fill(String.fromCharCode(Number.parseInt(binary, 2)));
+  await frame.getByRole("button", { name: "تحقق من الرمز" }).click();
+  await expect(mission).toContainText("أكمل النمط");
+
+  const patternClue = await mission.textContent();
+  const values = patternClue.match(/\d+/g)?.map(Number) ?? [];
+  expect(values.length).toBeGreaterThanOrEqual(4);
+  await answer.fill(String(values.at(-1) + 2));
+  await frame.getByRole("button", { name: "تحقق من الرمز" }).click();
+
+  await expect(frame.getByRole("dialog").getByText(/الهروب رقم 1/)).toBeVisible();
+  await frame.getByRole("dialog").getByRole("button", { name: "إغلاق" }).click();
+  await frame.getByRole("button", { name: "غرفة جديدة" }).click();
+  await expect(frame.getByText("تغيّرت رموز الغرفة؛ بدأت جولة جديدة")).toBeVisible();
+});
+
+test("smart city operations completes three decisions and starts a new shift", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await loginStudent(page);
+  await openAppLab(page, "advanced-smart-city-ops");
+  await runCode(page, SKUI_ADVANCED_APPS["advanced-smart-city-ops"]);
+
+  const frame = page.frameLocator('[data-testid="skui-preview-frame"]');
+  await expect(frame.getByText("مركز عمليات المدينة", { exact: true }).first()).toBeVisible({ timeout: 20_000 });
+  await frame.locator(".sk-Scene > button").first().click();
+  await expect(frame.getByText("الجولة 2 / 3")).toBeVisible();
+  await frame.locator(".sk-Scene > button").nth(1).click();
+  await expect(frame.getByText("الجولة 3 / 3")).toBeVisible();
+  await frame.locator(".sk-Scene > button").nth(1).click();
+  await expect(frame.getByRole("dialog").getByText(/مؤشر المدينة/)).toBeVisible();
+  await frame.getByRole("dialog").getByRole("button", { name: "إغلاق" }).click();
+  await frame.getByRole("button", { name: "وردية جديدة" }).click();
+  await expect(frame.getByText("بدأت وردية جديدة بحوادث مختلفة")).toBeVisible();
 });

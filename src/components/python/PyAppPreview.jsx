@@ -7,7 +7,7 @@ export function PyAppPreview({ ui, onChange, onButton, onEvent, loading }) {
       loading={loading}
       onEvent={(id, eventName, value, allValues) => {
         if (eventName === "on_click") {
-          onButton?.(id, allValues);
+          onButton?.(id, allValues, value);
           return;
         }
         onChange?.(id, value);

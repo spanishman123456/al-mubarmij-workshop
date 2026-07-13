@@ -3,6 +3,7 @@
  * starterCode = تطبيق قابل للتشغيل فورًا (مصدر مشترك مع حل المعلم).
  */
 import { SKUI_DEMO_APPS } from "./skuiDemoApps.js";
+import { SKUI_ADVANCED_PROJECTS } from "./skuiAdvancedProjects.js";
 
 export const SKUI_PROJECT_TYPES = Object.freeze({
   app: "تطبيق",
@@ -36,14 +37,17 @@ app.run()
  * @property {string[]} components
  * @property {string[]} usageSteps
  * @property {string} starterCode
+ * @property {string} studentStarterCode
  * @property {string} teacherSolutionId
  * @property {string[]} tests
+ * @property {"training"|"advanced"} category
+ * @property {"training"|"qa"|"blocked"} status
  * @property {string} [dayId]
  * @property {string} [curriculumTopic]
  */
 
 /** @type {SkuiProject[]} */
-export const SKUI_PROJECTS = [
+const TRAINING_SKUI_PROJECTS = [
   {
     id: "app-guess-number",
     exportSlug: "number-guessing-game",
@@ -306,6 +310,19 @@ export const SKUI_PROJECTS = [
     dayId: "day-03",
     curriculumTopic: "Python — أنظمة العد",
   },
+];
+
+const BLOCKED_TRAINING_PROJECTS = new Set(["app-timer", "app-colors"]);
+
+/** @type {SkuiProject[]} */
+export const SKUI_PROJECTS = [
+  ...TRAINING_SKUI_PROJECTS.map((project) => ({
+    ...project,
+    studentStarterCode: project.starterCode,
+    category: "training",
+    status: BLOCKED_TRAINING_PROJECTS.has(project.id) ? "blocked" : "training",
+  })),
+  ...SKUI_ADVANCED_PROJECTS,
 ];
 
 export function getSkuiProject(id) {

@@ -1,5 +1,5 @@
 import { createSkuiModuleFiles } from "./moduleSources.js";
-import { SKUI_LIMITS } from "./manifest.js";
+import { SKUI_LIMITS, SKUI_VERSION } from "./manifest.js";
 
 export function buildSkuiWorkerSource() {
   const moduleFiles = JSON.stringify(createSkuiModuleFiles());
@@ -36,7 +36,7 @@ function serializeUi(state) {
     var node = state.nodes[id];
     nodes[id] = { id: id, type: node.type, props: Object.assign({}, node.props), children: node.children.slice() };
   });
-  return { version: "1.1.0", appId: state.appId, roots: state.roots.slice(), nodes: nodes };
+  return { version: "${SKUI_VERSION}", appId: state.appId, roots: state.roots.slice(), nodes: nodes };
 }
 
 function resetExecBudget(timeoutMs) {
@@ -125,32 +125,27 @@ async function dispatchEvent(message) {
     node.props.value = message.value;
     if (node.type === "Checkbox") node.props.checked = Boolean(message.value);
   }
-  var handler = state.handlers[message.id + ":" + message.event];
-  if (!handler) {
+  var binding = state.handlers[message.id + ":" + message.event];
+  if (!binding) {
     self.postMessage({ type: "event-complete", console: "" });
     return;
   }
+  var handler = binding.callback || binding;
+  var acceptsPayload = binding.callback ? binding.acceptsPayload === true : false;
   output = [];
   self.__skuiDeferSnapshot = true;
   self.__skuiSnapshotDirty = false;
   resetExecBudget(LIMITS.eventTimeoutMs);
   try {
     await Sk.misceval.asyncToPromise(function() {
-      var needsValue = ["on_key_press", "on_change", "on_input", "on_select", "on_submit"].indexOf(message.event) >= 0;
-      var argCount = 0;
-      try {
-        var fn = handler.im_func || handler;
-        if (fn && fn.func_code && typeof fn.func_code.co_argcount === "number") {
-          argCount = fn.func_code.co_argcount;
-          if (handler.im_self) argCount = Math.max(0, argCount - 1);
-        }
-      } catch (arityErr) {
-        argCount = 0;
-      }
-      if (needsValue && argCount >= 1) {
+      var valueEvent = ["on_key_press", "on_change", "on_input", "on_select", "on_submit"].indexOf(message.event) >= 0;
+      var canvasEvent = node.type === "Canvas" && Object.prototype.hasOwnProperty.call(message, "value");
+      if (acceptsPayload && (valueEvent || canvasEvent)) {
+        var payload = message.value;
+        if (payload === undefined && valueEvent) payload = node.props.value;
         return Sk.misceval.callsimOrSuspend(
           handler,
-          new Sk.builtin.str(String(message.value == null ? "" : message.value))
+          Sk.ffi.remapToPy(payload === undefined ? null : payload)
         );
       }
       return Sk.misceval.callsimOrSuspend(handler);

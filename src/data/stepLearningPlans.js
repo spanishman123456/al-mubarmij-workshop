@@ -156,6 +156,9 @@ export const CONSOLE_STEP_PLANS = {
 /** @type {Record<string, StepPlan>} */
 export const APP_STEP_PLANS = {
   "app-guess-number": buildGuessNumberPlan(),
+  "advanced-algorithm-lab": buildAlgorithmLabPlan(),
+  "advanced-cipher-escape": buildCipherEscapePlan(),
+  "advanced-smart-city-ops": buildSmartCityPlan(),
 };
 
 function buildGuessNumberPlan() {
@@ -255,6 +258,107 @@ function buildGuessNumberPlan() {
       },
     ],
     fullSolution: full,
+  };
+}
+
+function advancedStep(titleAr, instructionAr, checks, runnable = true) {
+  return {
+    titleAr,
+    instructionAr,
+    appendCode: "",
+    hints: checks.map((item) => item.hint),
+    check: (code) =>
+      runChecks(
+        code,
+        checks.map((item) => ({ check: item.check, messageAr: item.messageAr })),
+      ),
+    runnable,
+  };
+}
+
+function buildAlgorithmLabPlan() {
+  const project = GRAPHIC_APP_PROJECTS.find((p) => p.id === "advanced-algorithm-lab");
+  const steps = [
+    advancedStep("المرحلة 1 — بيانات التجربة", "أنشئ دالة تنسخ القائمة وحالة تحفظ الخطوة والعدادات.", [
+      { check: (c) => /def\s+copy_\w*\s*\(/.test(c), messageAr: "أضف دالة لنسخ البيانات", hint: "ابنِ قائمة جديدة بحلقة for بدل تعديل المصدر." },
+      { check: (c) => /state\s*=\s*\{/.test(c), messageAr: "احفظ حالة التجربة في قاموس", hint: "يحتاج state إلى الخطوة والمقارنات والحركات." },
+    ]),
+    advancedStep("المرحلة 2 — محرك الخوارزمية", "طبّق خوارزمية فرز تنتج snapshots بعد كل مقارنة أو حركة.", [
+      { check: (c) => /def\s+(bubble|selection|insertion)\w*\s*\(/i.test(c), messageAr: "أضف دالة خوارزمية فرز", hint: "ابدأ بـ Bubble Sort ثم أضف خوارزمية ثانية." },
+      { check: (c) => /\bwhile\b|\bfor\b/.test(c), messageAr: "استخدم حلقات لتنفيذ الخوارزمية", hint: "أضف snapshot إلى قائمة الخطوات داخل الحلقة." },
+      { check: (c) => /comparisons/.test(c), messageAr: "احسب المقارنات", hint: "زد العداد عند كل مقارنة فعلية." },
+    ]),
+    advancedStep("المرحلة 3 — المقارنة وإعادة اللعب", "اربط الخطوات باللوحة، وأضف reset وتجربتين على الأقل.", [
+      { check: (c) => /ui\.GameBoard\s*\(/.test(c), messageAr: "استخدم GameBoard", hint: "اعرض snapshot الحالي في GameBoard." },
+      { check: (c) => /def\s+reset_\w*\s*\(/.test(c), messageAr: "أضف إعادة تجربة", hint: "أعد البيانات والعدادات ومؤشر الخطوة." },
+      { check: (c) => /ui\.DataGrid\s*\(/.test(c), messageAr: "أضف تقرير مقارنة", hint: "اعرض اسم الخوارزمية وعدد عملياتها." },
+    ]),
+  ];
+  steps[0].initialCode = project?.studentStarterCode ?? project?.starterCode ?? project?.starter ?? "";
+  return {
+    ideaAr: "مختبر يعرض تغير البيانات خطوة بخطوة ويقارن كلفة خوارزميات الفرز.",
+    commandsAr: ["list", "dict", "for", "while", "function", "GameBoard", "DataGrid"],
+    stepsOverviewAr: ["مثّل البيانات والحالة", "ابنِ محرك snapshots", "اربط المقارنة وإعادة اللعب"],
+    expectedOutputAr: "تجارب فرز متعددة الحالات مع عدادات وتقرير قابل للإعادة",
+    fullSolution: null,
+    steps,
+  };
+}
+
+function buildCipherEscapePlan() {
+  const project = GRAPHIC_APP_PROJECTS.find((p) => p.id === "advanced-cipher-escape");
+  const steps = [
+    advancedStep("المرحلة 1 — قفل قيصر", "اكتب دالة إزاحة تلتف داخل A-Z وتولّد لغزًا جديدًا.", [
+      { check: (c) => /def\s+caesar\s*\(/.test(c), messageAr: "أضف دالة caesar", hint: "استخدم ord وchr وباقي القسمة 26." },
+      { check: (c) => /%\s*26/.test(c), messageAr: "أضف التفاف الأبجدية", hint: "((code - 65 + shift) % 26) + 65" },
+    ]),
+    advancedStep("المرحلة 2 — الثنائي والمراحل", "أضف تحويلًا ثنائيًا وحالة تمنع تخطي المحطات.", [
+      { check: (c) => /def\s+to_binary\s*\(/.test(c), messageAr: "أضف التحويل الثنائي", hint: "استخدم القسمة الصحيحة // والباقي %." },
+      { check: (c) => /state\s*\[\s*["']stage["']\s*\]/.test(c), messageAr: "حدّث مرحلة الغرفة", hint: "لا تنتقل إلا بعد تطابق الإجابة." },
+    ]),
+    advancedStep("المرحلة 3 — النتيجة وإعادة اللعب", "احسب أثر الأخطاء والتلميحات، ثم ولّد غرفة جديدة عند replay.", [
+      { check: (c) => /state\s*\[\s*["']hints["']\s*\]/.test(c), messageAr: "طبّق حد التلميحات", hint: "امنع الاستخدام عندما تصل hints إلى صفر." },
+      { check: (c) => /def\s+replay\s*\(/.test(c), messageAr: "أضف replay", hint: "صفّر المرحلة والنتيجة وولّد ألغازًا جديدة." },
+      { check: (c) => /ui\.StepIndicator\s*\(/.test(c), messageAr: "اعرض تقدم المحطات", hint: "اربط StepIndicator بقيمة stage." },
+    ]),
+  ];
+  steps[0].initialCode = project?.studentStarterCode ?? project?.starterCode ?? project?.starter ?? "";
+  return {
+    ideaAr: "غرفة هروب تربط قيصر والثنائي والمنطق في حالة لعب واحدة.",
+    commandsAr: ["ord", "chr", "%", "//", "random", "MapPanel", "StepIndicator"],
+    stepsOverviewAr: ["ابنِ قفل قيصر", "أضف ASCII وإدارة المراحل", "احسب النتيجة وأعد اللعب"],
+    expectedOutputAr: "ثلاث محطات متسلسلة بقيم متغيرة وتلميحات محدودة",
+    fullSolution: null,
+    steps,
+  };
+}
+
+function buildSmartCityPlan() {
+  const project = GRAPHIC_APP_PROJECTS.find((p) => p.id === "advanced-smart-city-ops");
+  const steps = [
+    advancedStep("المرحلة 1 — نموذج المدينة", "عرّف المؤشرات والحوادث وآثار كل بديل في قواميس.", [
+      { check: (c) => /INCIDENTS\s*=\s*\[/.test(c), messageAr: "أضف قائمة INCIDENTS", hint: "كل حادث يحتاج عنوانًا وبديلين وآثارًا رقمية." },
+      { check: (c) => /stability/.test(c) && /budget/.test(c) && /satisfaction/.test(c), messageAr: "أضف المؤشرات الثلاثة", hint: "ضع المؤشرات داخل state." },
+    ]),
+    advancedStep("المرحلة 2 — قرارات ذات كلفة", "طبّق القرار بعد فحص الميزانية والفرق وحدّث كل المؤشرات.", [
+      { check: (c) => /def\s+apply_\w*\s*\(/.test(c), messageAr: "أضف دالة تطبيق القرار", hint: "مرّر اختيار أ أو ب إلى دالة واحدة." },
+      { check: (c) => /budget/.test(c) && /teams/.test(c), messageAr: "افحص الميزانية والفرق", hint: "ارفض القرار قبل أي تغيير إن لم تكف الموارد." },
+      { check: (c) => /history.*append/.test(c), messageAr: "سجّل القرار", hint: "أضف صفًا إلى history بعد نجاح القرار." },
+    ]),
+    advancedStep("المرحلة 3 — التقرير والوردية الجديدة", "أنهِ الجولة الثالثة بتقرير محسوب وأعد كل الحالة في replay.", [
+      { check: (c) => /def\s+finish_\w*\s*\(/.test(c), messageAr: "أضف تقرير النهاية", hint: "احسب نتيجة موزونة من المؤشرات." },
+      { check: (c) => /ui\.DataGrid\s*\(/.test(c), messageAr: "اعرض سجل القرارات", hint: "مرّر history إلى DataGrid." },
+      { check: (c) => /def\s+replay\s*\(/.test(c), messageAr: "أضف وردية جديدة", hint: "أعد المؤشرات والموارد واختر حوادث جديدة." },
+    ]),
+  ];
+  steps[0].initialCode = project?.studentStarterCode ?? project?.starterCode ?? project?.starter ?? "";
+  return {
+    ideaAr: "محاكاة موارد وقرارات مترابطة عبر ثلاث جولات متغيرة.",
+    commandsAr: ["dict", "list", "random", "if", "function", "MetricCard", "DataGrid"],
+    stepsOverviewAr: ["نمذج المدينة والحوادث", "طبّق trade-offs", "أنشئ التقرير وإعادة اللعب"],
+    expectedOutputAr: "ثلاث جولات بقرارات لها كلفة وأثر وسجل نهائي",
+    fullSolution: null,
+    steps,
   };
 }
 
@@ -362,5 +466,7 @@ export function getStepPlan(mode, resourceId) {
 
 // خطط مخصصة إضافية للمشاريع الرسومية
 for (const p of GRAPHIC_APP_PROJECTS) {
-  APP_STEP_PLANS[p.id] = buildGenericAppPlan(p);
+  if (!APP_STEP_PLANS[p.id]) {
+    APP_STEP_PLANS[p.id] = buildGenericAppPlan(p);
+  }
 }
