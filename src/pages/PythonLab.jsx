@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { pythonExercises } from "../data/pythonExercises";
-import { GRAPHIC_APP_PROJECTS } from "../data/graphicAppProjects";
+import { getSkuiProjectOrDefault, SKUI_PROJECTS } from "../data/skuiProjectsRegistry";
 import { curriculumUnits } from "../data/curriculum";
 import { formatSkulptError } from "../lib/pythonErrorHelp";
 import { ensureSkulptLoaded, runPythonWithSkulpt } from "../lib/skulptRun";
 import { PythonAppSession } from "../lib/skulptAppRun";
+import { checkProjectReadiness } from "../lib/projectReadiness";
+import { sha256Hex } from "../lib/projectExport";
 import { usePlatform } from "../context/PlatformContext";
 import { GraphicProjectFrame } from "../components/python/GraphicProjectFrame";
 import { PyAppPreview } from "../components/python/PyAppPreview";
@@ -13,6 +15,7 @@ import { ProjectExportPanel } from "../components/python/ProjectExportPanel";
 import { AppModeHelp } from "../components/python/AppModeHelp";
 import { StepLearningPanel } from "../components/python/StepLearningPanel";
 import { PythonCodeEditor } from "../components/python/PythonCodeEditor";
+import { SkuiProjectGallery } from "../components/python/SkuiProjectGallery";
 import {
   CODE_ASSIST_LABELS_AR,
   getBuildTimeAssistMode,
@@ -43,6 +46,14 @@ import {
 const MODES = [
   { id: "console", label: "تشغيل نصي (Console)" },
   { id: "app", label: "مشروع رسومي (App)" },
+];
+
+const APP_TABS = [
+  { id: "project", label: "المشروع" },
+  { id: "code", label: "الكود" },
+  { id: "preview", label: "المعاينة" },
+  { id: "export", label: "التصدير" },
+  { id: "solution", label: "الحل النموذجي", teacherOnly: true },
 ];
 
 function autoFixIndentationSimple(code) {
@@ -87,10 +98,18 @@ export default function PythonLab() {
 
   const [runMode, setRunMode] = useState(modeFromUrl === "app" ? "app" : "console");
   const [activeId, setActiveId] = useState(pythonExercises[0].id);
-  const [activeAppId, setActiveAppId] = useState(GRAPHIC_APP_PROJECTS[0].id);
+  const [activeAppId, setActiveAppId] = useState(SKUI_PROJECTS[0].id);
   const [unitFilter, setUnitFilter] = useState("all");
   const [savedProjectId, setSavedProjectId] = useState(null);
-  const [projectTitle, setProjectTitle] = useState("");
+  const [projectTitle, setProjectTitle] = useState(SKUI_PROJECTS[0].titleAr);
+  const [appTab, setAppTab] = useState("project");
+  const [runStatus, setRunStatus] = useState(null);
+  const [lastRunOk, setLastRunOk] = useState(false);
+  const [lastRunCodeHash, setLastRunCodeHash] = useState(null);
+  const [readiness, setReadiness] = useState(null);
+  const [teacherSolution, setTeacherSolution] = useState(null);
+  const [teacherSolutionBusy, setTeacherSolutionBusy] = useState(false);
+  const [teacherSolutionError, setTeacherSolutionError] = useState(null);
   const [assistMode, setAssistMode] = useState(getBuildTimeAssistMode);
   const [assistSaving, setAssistSaving] = useState(false);
   const [teacherSnippets, setTeacherSnippets] = useState([]);
@@ -106,10 +125,7 @@ export default function PythonLab() {
     () => pythonExercises.find((e) => e.id === activeId) ?? pythonExercises[0],
     [activeId],
   );
-  const appTemplate = useMemo(
-    () => GRAPHIC_APP_PROJECTS.find((p) => p.id === activeAppId) ?? GRAPHIC_APP_PROJECTS[0],
-    [activeAppId],
-  );
+  const appTemplate = useMemo(() => getSkuiProjectOrDefault(activeAppId), [activeAppId]);
 
   const [code, setCode] = useState(() =>
     getInitialCode(getStepPlan("console", pythonExercises[0].id)),
@@ -133,11 +149,13 @@ export default function PythonLab() {
   const [appConsole, setAppConsole] = useState("");
   const savedPanelRef = useRef(null);
 
+  const isTeacher = user?.role === "teacher";
   const stepPlan = useMemo(
     () => getStepPlan(runMode === "app" ? "app" : "console", runMode === "app" ? activeAppId : activeId),
     [runMode, activeAppId, activeId],
   );
   const myGraphicProjects = myProgress?.graphicProjects ?? [];
+  const visibleAppTabs = APP_TABS.filter((tab) => !tab.teacherOnly || isTeacher);
   const myStudentSnippets = myProgress?.pythonSnippets ?? [];
   const teacherSnippetsStorageKey = user?.id ? `teacher-python-snippets:${user.id}` : null;
   const snippetsSource = user?.role === "teacher" ? teacherSnippets : myStudentSnippets;
@@ -161,14 +179,14 @@ export default function PythonLab() {
     [visibleSnippets, snippetPage],
   );
 
-  function applyStepReset(plan) {
+  function applyStepReset(plan, { loadCode = true } = {}) {
     const s = resetStepState();
     setStepIndex(s.stepIndex);
     setStepHintLevel(s.stepHintLevel);
     setStepCheckResult(s.stepCheckResult);
     setStepCheckAttempts(s.stepCheckAttempts);
     setSolutionRevealed(s.solutionRevealed);
-    if (plan) setCode(getInitialCode(plan));
+    if (plan && loadCode) setCode(getInitialCode(plan));
   }
 
   const persistTeacherSnippets = useCallback(
@@ -198,6 +216,47 @@ export default function PythonLab() {
     sessionRef.current = null;
   }, []);
 
+  const clearPreviewState = useCallback(() => {
+    setAppUi(null);
+    setAppValues({});
+    setAppConsole("");
+    setRunStatus(null);
+    setLastRunOk(false);
+    setLastRunCodeHash(null);
+    setReadiness(null);
+    setTeacherSolution(null);
+    setTeacherSolutionError(null);
+  }, []);
+
+  const selectProject = useCallback(
+    (id, { codeOverride = null, savedId = null, titleOverride = null } = {}) => {
+      const project = getSkuiProjectOrDefault(id);
+      stopAppSession();
+      clearPreviewState();
+      setActiveAppId(project.id);
+      setProjectTitle(titleOverride ?? project.titleAr);
+      setSavedProjectId(savedId);
+      setFeedback(null);
+      setRunMode("app");
+      if (codeOverride != null) {
+        setCode(codeOverride);
+        applyStepReset(null);
+      } else {
+        setCode(project.studentStarterCode ?? project.starterCode ?? "");
+        applyStepReset(getStepPlan("app", project.id), { loadCode: false });
+      }
+      trackGuiEvent?.("gui_project_started");
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("mode", "app");
+        next.set("app", project.id);
+        return next;
+      });
+      setAppTab(codeOverride != null ? "code" : "project");
+    },
+    [clearPreviewState, setSearchParams, stopAppSession, trackGuiEvent],
+  );
+
   const pick = useCallback(
     (id) => {
       const ex = pythonExercises.find((e) => e.id === id);
@@ -219,47 +278,26 @@ export default function PythonLab() {
 
   const pickApp = useCallback(
     (id) => {
-      const tpl = GRAPHIC_APP_PROJECTS.find((p) => p.id === id);
-      if (!tpl) return;
-      stopAppSession();
-      setActiveAppId(id);
-      const plan = getStepPlan("app", id);
-      applyStepReset(plan);
-      setProjectTitle(tpl.titleAr);
-      setSavedProjectId(null);
-      setAppUi(null);
-      setAppValues({});
-      setAppConsole("");
-      setFeedback(null);
-      trackGuiEvent?.("gui_project_started");
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.set("mode", "app");
-        next.set("app", id);
-        return next;
-      });
+      if (!SKUI_PROJECTS.some((project) => project.id === id)) return;
+      selectProject(id);
     },
-    [setSearchParams, stopAppSession, trackGuiEvent],
+    [selectProject],
   );
 
   const loadSavedProject = useCallback(
     (project) => {
-      stopAppSession();
-      setRunMode("app");
-      setCode(project.code);
-      setProjectTitle(project.title);
-      setSavedProjectId(project.id);
-      setAppUi(null);
-      setAppValues({});
-      setAppConsole("");
-      setFeedback(null);
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.set("mode", "app");
-        return next;
+      const templateId =
+        project.templateId && SKUI_PROJECTS.some((candidate) => candidate.id === project.templateId)
+          ? project.templateId
+          : activeAppId;
+      selectProject(templateId, {
+        codeOverride: project.code,
+        savedId: project.id,
+        titleOverride: project.title,
       });
+      setAppTab("code");
     },
-    [setSearchParams, stopAppSession],
+    [activeAppId, selectProject],
   );
 
   function switchMode(next) {
@@ -345,11 +383,12 @@ export default function PythonLab() {
     }
     if (modeFromUrl === "app") {
       setRunMode("app");
-      if (appFromUrl && GRAPHIC_APP_PROJECTS.some((p) => p.id === appFromUrl)) {
-        const tpl = GRAPHIC_APP_PROJECTS.find((p) => p.id === appFromUrl);
+      if (appFromUrl && SKUI_PROJECTS.some((p) => p.id === appFromUrl)) {
+        const tpl = getSkuiProjectOrDefault(appFromUrl);
         setActiveAppId(appFromUrl);
         const plan = getStepPlan("app", appFromUrl);
-        applyStepReset(plan);
+        setCode(tpl.studentStarterCode ?? tpl.starterCode ?? "");
+        applyStepReset(plan, { loadCode: false });
         setProjectTitle(tpl.titleAr);
       }
     }
@@ -494,10 +533,24 @@ export default function PythonLab() {
     setFeedback(null);
     setAppConsole("");
     setAppUi(null);
+    setLastRunOk(false);
+    setLastRunCodeHash(null);
+    setReadiness(null);
+    setRunStatus({ kind: "loading", message: "جاري بناء واجهة التطبيق..." });
+    setAppTab("preview");
     try {
       const session = new PythonAppSession();
       session.onSnapshot = (nextUi) => setAppUi(nextUi);
-      session.onError = (nextFeedback) => setFeedback(nextFeedback);
+      session.onError = (nextFeedback) => {
+        setFeedback(nextFeedback);
+        setRunStatus({
+          kind: "code-error",
+          message:
+            nextFeedback?.line != null
+              ? `تعذر تشغيل المشروع بسبب خطأ في السطر رقم ${nextFeedback.line}`
+              : nextFeedback?.headlineAr || "تعذر تشغيل المشروع بسبب خطأ في الكود.",
+        });
+      };
       sessionRef.current = session;
       const result = await session.load(code);
       setAppUi(result.ui);
@@ -507,19 +560,41 @@ export default function PythonLab() {
       trackGuiEvent?.("gui_project_run");
       const componentCount = Object.keys(result.ui?.nodes || {}).length;
       if (componentCount > 0) trackGuiEvent?.("gui_component_created");
+      if (componentCount === 0) {
+        setRunStatus({
+          kind: "engine-error",
+          message: "لا توجد مكونات للعرض — تأكد من app.add(...) وapp.run().",
+        });
+      } else {
+        setRunStatus({ kind: "success", message: "يعمل التطبيق في المعاينة." });
+        setLastRunOk(true);
+        setLastRunCodeHash(await sha256Hex(code));
+      }
     } catch (e) {
-      setFeedback(e?.feedback ?? formatSkulptError(e, { appMode: true }));
+      const nextFeedback = e?.feedback ?? formatSkulptError(e, { appMode: true });
+      setFeedback(nextFeedback);
+      const isEngineError = /worker|timeout|preview|محرك|Skulpt/i.test(
+        `${nextFeedback?.headlineAr || ""} ${nextFeedback?.detail || ""} ${e?.message || ""}`,
+      );
+      setRunStatus({
+        kind: isEngineError ? "engine-error" : "code-error",
+        message: isEngineError
+          ? "حدث خطأ في أداة المعاينة، وليس بالضرورة في كود الطالب."
+          : nextFeedback?.line != null
+            ? `تعذر تشغيل المشروع بسبب خطأ في السطر رقم ${nextFeedback.line}`
+            : nextFeedback?.headlineAr || "تعذر تشغيل المشروع بسبب خطأ في الكود.",
+      });
     } finally {
       setBusy(false);
     }
   }
 
-  async function onAppButton(btnId, currentValues = appValues) {
+  async function onAppButton(btnId, currentValues = appValues, value = undefined) {
     if (!sessionRef.current) return;
     setBusy(true);
     setFeedback(null);
     try {
-      const result = await sessionRef.current.click(btnId, currentValues);
+      const result = await sessionRef.current.click(btnId, currentValues, value);
       setAppUi(result.ui);
       setAppValues(result.ui.values || {});
       if (result.console) setAppConsole((prev) => prev + result.console);
@@ -545,15 +620,14 @@ export default function PythonLab() {
 
   function resetApp() {
     stopAppSession();
-    setAppUi(null);
-    setAppValues({});
-    setAppConsole("");
+    clearPreviewState();
     setFeedback(null);
     if (runMode === "app") {
-      const tpl = GRAPHIC_APP_PROJECTS.find((p) => p.id === activeAppId);
+      const tpl = getSkuiProjectOrDefault(activeAppId);
       if (tpl && !savedProjectId) {
         const plan = getStepPlan("app", activeAppId);
-        applyStepReset(plan);
+        setCode(tpl.studentStarterCode ?? tpl.starterCode ?? "");
+        applyStepReset(plan, { loadCode: false });
       }
     }
   }
@@ -603,7 +677,7 @@ export default function PythonLab() {
       return;
     }
     const title = projectTitle.trim() || appTemplate.titleAr;
-    const id = saveGraphicProject(title, code, savedProjectId);
+    const id = saveGraphicProject(title, code, savedProjectId, { templateId: activeAppId });
     if (id) setSavedProjectId(id);
     trackGuiEvent?.("gui_project_saved");
     window.alert("تم حفظ المشروع الرسومي في حسابك.");
@@ -697,12 +771,64 @@ export default function PythonLab() {
       return;
     }
     const title = projectTitle.trim() || appTemplate.titleAr;
-    const id = saveGraphicProject(title, code, savedProjectId) || savedProjectId;
+    const id =
+      saveGraphicProject(title, code, savedProjectId, { templateId: activeAppId }) ||
+      savedProjectId;
     if (!id) return;
     setSavedProjectId(id);
     const ok = submitGraphicProject(id);
     if (ok) trackGuiEvent?.("gui_project_completed");
     window.alert(ok ? "تم إرسال المشروع للمعلم بنجاح." : "تعذر الإرسال — احفظ المشروع أولاً.");
+  }
+
+  async function handleReadinessCheck() {
+    const result = await checkProjectReadiness({
+      title: projectTitle.trim() || appTemplate.titleAr,
+      code,
+      mode: "app",
+      lastRunOk,
+      lastRunCodeHash,
+    });
+    setReadiness(result);
+    setAppTab("export");
+  }
+
+  async function loadTeacherSolution() {
+    if (!isTeacher) return;
+    setTeacherSolutionBusy(true);
+    setTeacherSolutionError(null);
+    try {
+      const solutionId = appTemplate.teacherSolutionId || activeAppId;
+      const response = await fetch(
+        `/api/teacher/skui-projects/${encodeURIComponent(solutionId)}/solution`,
+        { headers: { "X-User-Role": "teacher" } },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.code) {
+        throw new Error(data?.error || "تعذر جلب الحل النموذجي.");
+      }
+      setTeacherSolution(data.code);
+    } catch (error) {
+      setTeacherSolutionError(error.message || "تعذر جلب الحل.");
+      setTeacherSolution(null);
+    } finally {
+      setTeacherSolutionBusy(false);
+    }
+  }
+
+  function openTeacherSolutionInEditor() {
+    if (!isTeacher || !teacherSolution) return;
+    stopAppSession();
+    clearPreviewState();
+    setCode(teacherSolution);
+    setSavedProjectId(null);
+    setAppTab("code");
+    setFeedback({
+      headlineAr: "معاينة المعلم",
+      hintAr: "تم فتح الحل النموذجي في المحرر. لن يُحفظ كمحاولة طالب.",
+      detail: "",
+      line: null,
+    });
   }
 
   async function handleAssistModeChange(next) {
@@ -823,21 +949,51 @@ export default function PythonLab() {
                 واجهات أصلية لـ Skulpt تعمل داخل معاينة معزولة.
               </p>
             </div>
-            <AppModeHelp variant="dark" onInsertExample={(ex) => setCode(ex)} />
-            <div className="mb-4 flex flex-wrap gap-2">
-              {GRAPHIC_APP_PROJECTS.map((p) => (
+            <div className="mb-4 flex flex-wrap gap-2 border-b border-white/10 pb-3">
+              {visibleAppTabs.map((tab) => (
                 <button
-                  key={p.id}
+                  key={tab.id}
                   type="button"
-                  onClick={() => pickApp(p.id)}
-                  className={`rounded-full px-4 py-2 text-sm transition ${
-                    p.id === activeAppId ? "bg-violet-600 text-white" : "bg-white/10 text-slate-200 hover:bg-white/20"
+                  data-testid={`app-tab-${tab.id}`}
+                  onClick={() => {
+                    setAppTab(tab.id);
+                    if (tab.id === "solution" && !teacherSolution) loadTeacherSolution();
+                  }}
+                  className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
+                    appTab === tab.id
+                      ? "bg-violet-600 text-white"
+                      : "bg-white/10 text-slate-300 hover:bg-white/15"
                   }`}
                 >
-                  {p.titleAr}
+                  {tab.label}
                 </button>
               ))}
             </div>
+            <div className="mb-4 rounded-xl border border-violet-500/25 bg-violet-950/30 px-4 py-3 text-center">
+              <p className="text-lg font-bold text-violet-100">
+                {appTemplate.icon} {projectTitle.trim() || appTemplate.titleAr}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">{appTemplate.description}</p>
+            </div>
+            {appTab === "project" ? (
+              <div className="mb-6 space-y-4">
+                <SkuiProjectGallery
+                  selectedId={activeAppId}
+                  onSelect={pickApp}
+                  role={user?.role}
+                />
+                <AppModeHelp
+                  variant="dark"
+                  onInsertExample={(example) => {
+                    if (example?.id) pickApp(example.id);
+                    else if (typeof example === "string") {
+                      setCode(example);
+                      setAppTab("code");
+                    }
+                  }}
+                />
+              </div>
+            ) : null}
             {user?.role === "student" && myGraphicProjects.length > 0 ? (
               <div className="mb-6 rounded-xl border border-cyan-500/25 bg-cyan-950/20 p-4">
                 <p className="mb-2 text-sm font-bold text-cyan-200">مشاريعي المحفوظة</p>
@@ -859,7 +1015,11 @@ export default function PythonLab() {
                         title="إعادة تسمية"
                         onClick={() => {
                           const next = window.prompt("اسم المشروع الجديد", p.title);
-                          if (next?.trim()) saveGraphicProject(next.trim(), p.code, p.id);
+                          if (next?.trim()) {
+                            saveGraphicProject(next.trim(), p.code, p.id, {
+                              templateId: p.templateId || activeAppId,
+                            });
+                          }
                         }}
                       >
                         تسمية
@@ -868,7 +1028,11 @@ export default function PythonLab() {
                         type="button"
                         className="px-2 text-xs text-emerald-200"
                         title="إنشاء نسخة"
-                        onClick={() => saveGraphicProject(`${p.title} (نسخة)`, p.code)}
+                        onClick={() =>
+                          saveGraphicProject(`${p.title} (نسخة)`, p.code, null, {
+                            templateId: p.templateId || activeAppId,
+                          })
+                        }
                       >
                         نسخ
                       </button>
@@ -927,6 +1091,7 @@ export default function PythonLab() {
           ) : null}
         </div>
 
+        {runMode === "console" || appTab === "code" ? (
         <div className="grid gap-6 lg:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm text-slate-400">الكود</label>
@@ -990,9 +1155,7 @@ export default function PythonLab() {
                     type="button"
                     onClick={() => {
                       stopAppSession();
-                      setAppUi(null);
-                      setAppValues({});
-                      setAppConsole("");
+                      clearPreviewState();
                     }}
                     disabled={busy}
                     className="rounded-xl border border-white/20 px-4 py-3 text-sm font-bold text-slate-200 hover:bg-white/10 disabled:opacity-50"
@@ -1024,20 +1187,7 @@ export default function PythonLab() {
               </div>
             ) : null}
 
-            {runMode === "app" ? (
-              <div className="mt-4">
-                <ProjectExportPanel
-                  title={projectTitle.trim() || appTemplate.titleAr}
-                  code={code}
-                  mode="app"
-                  templateId={activeAppId}
-                  authorName={user?.nameAr}
-                  ownerId={user?.id}
-                  projectId={savedProjectId || activeAppId}
-                  variant="dark"
-                />
-              </div>
-            ) : (
+            {runMode === "console" ? (
               <div className="mt-4">
                 <ProjectExportPanel
                   title={exercise?.titleAr || "كود بايثون"}
@@ -1049,7 +1199,7 @@ export default function PythonLab() {
                   variant="dark"
                 />
               </div>
-            )}
+            ) : null}
 
             {stepPlan && !savedProjectId ? (
               <StepLearningPanel
@@ -1099,7 +1249,7 @@ export default function PythonLab() {
                 <label className="mb-2 block text-sm text-slate-400">معاينة المشروع (Preview)</label>
                 {errorPanel}
                 <div ref={previewRef}>
-                <GraphicProjectFrame project={appTemplate}>
+                <GraphicProjectFrame project={appTemplate} runStatus={runStatus}>
                   <PyAppPreview
                     ui={appUi}
                     values={appValues}
@@ -1133,6 +1283,7 @@ export default function PythonLab() {
             </p>
           </div>
         </div>
+        ) : null}
 
         <section
           ref={savedPanelRef}

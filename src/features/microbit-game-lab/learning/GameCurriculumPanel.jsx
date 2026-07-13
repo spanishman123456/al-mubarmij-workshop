@@ -41,7 +41,7 @@ export default function GameCurriculumPanel({ gameId }) {
         <div className="mgl-details__block">
           <h4 className="mgl-details__label">خطوات التنفيذ</h4>
           <ol className="mgl-curriculum__steps">
-            {curriculum.steps.map((s) => (
+            {curriculum.steps.map((s, i) => (
               <li key={s}>{s}</li>
             ))}
           </ol>

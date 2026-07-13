@@ -34,6 +34,8 @@ import { day14TeacherAnswers } from "../src/content/teacher/day14TeacherAnswers.
 import { day15TeacherAnswers } from "../src/content/teacher/day15TeacherAnswers.js";
 import { requirePublishedTeacherDay } from "./auth/publishedContent.js";
 import { registerPublicationRoutes } from "./routes/publicationRoutes.js";
+import { registerExportRoutes } from "./routes/exportRoutes.js";
+import { registerSkuiTeacherRoutes } from "./routes/skuiTeacherRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");
@@ -63,15 +65,31 @@ export function logError(scope, err, extra = {}) {
   console.error(JSON.stringify({ scope, message: err?.message || String(err), ...extra, at: new Date().toISOString() }));
 }
 
-export function createApp() {
+export function createApp({ exportStore } = {}) {
   const app = express();
   if (process.env.NODE_ENV === "production") {
     app.set("trust proxy", 1);
   }
   app.use(corsMiddleware());
+  app.use("/api/exports", express.json({ limit: "18mb" }));
   app.use(express.json({ limit: "512kb" }));
 
   registerAuthRoutes(app, logError);
+  registerExportRoutes(app, logError, exportStore);
+  registerSkuiTeacherRoutes(app);
+
+  app.use("/api/exports", (error, _req, res, _next) => {
+    void _next;
+    if (error?.type === "entity.too.large") {
+      return res.status(413).json({
+        ok: false,
+        error: "request payload is too large",
+        code: "PAYLOAD_TOO_LARGE",
+      });
+    }
+    logError("exports.request", error);
+    return res.status(400).json({ ok: false, error: "invalid request body", code: "INVALID_BODY" });
+  });
 
   app.get("/api/health", (_req, res) => {
     const isProd = process.env.NODE_ENV === "production";

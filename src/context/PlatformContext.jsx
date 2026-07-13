@@ -126,7 +126,7 @@ function scheduleActivitySync(studentId, analytics) {
 
 export function PlatformProvider({ children }) {
   const [state, setState] = useState(() => loadValidatedPlatformState());
-  const [authReady] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
   const [remoteAnalyticsByStudent, setRemoteAnalyticsByStudent] = useState({});
   const [analyticsSyncStatus, setAnalyticsSyncStatus] = useState({ loading: false, error: null, fetchedAt: null });
   const [serverStatsByStudent, setServerStatsByStudent] = useState({});
@@ -157,6 +157,8 @@ export function PlatformProvider({ children }) {
   }, [refreshPublicationConfig]);
 
   useEffect(() => {
+    setAuthReady(true);
+
     function onPageShow(event) {
       if (!event.persisted) return;
       const fresh = loadValidatedPlatformState();

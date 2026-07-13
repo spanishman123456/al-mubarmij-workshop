@@ -3,6 +3,7 @@ import { registerGracefulShutdown } from "./shutdown.js";
 import { assertProductionAuthConfig } from "./auth/password.js";
 import { deleteSessionsForRole } from "./auth/sessionRepository.js";
 import { getDbPath } from "./db/index.js";
+import { startExportJobsCleanup } from "./routes/exportRoutes.js";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -37,6 +38,7 @@ async function start() {
     }));
   });
 
+  startExportJobsCleanup(logError);
   registerGracefulShutdown(server);
 }
 
