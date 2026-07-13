@@ -1,13 +1,20 @@
+import { TechnicalValue } from "./BilingualTextBlocks";
+
 /**
  * عرض أرقام ونسب في سياق RTL دون قلب ترتيبها.
  */
-export function LtrValue({ children, className = "" }) {
+export function LtrValue({ children, className = "", ...props }) {
   return (
-    <span dir="ltr" className={`inline-block unicode-bidi-isolate ${className}`.trim()}>
+    <TechnicalValue
+      className={`inline-block unicode-bidi-isolate ${className}`.trim()}
+      {...props}
+    >
       {children}
-    </span>
+    </TechnicalValue>
   );
 }
+
+export { BinaryValue, TechnicalValue } from "./BilingualTextBlocks";
 
 export function formatFraction(numerator, denominator) {
   return `${numerator} / ${denominator}`;

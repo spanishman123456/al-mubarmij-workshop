@@ -13,6 +13,7 @@ import {
   LogicExpressionBuilderPanel,
   useLogicExpressionBuilder,
 } from "./LogicExpressionBuilder.jsx";
+import { KarnaughGrid } from "../logic/KarnaughGrid.jsx";
 
 const DIFF_VARS = { easy: 2, medium: 3, advanced: 4, expert: 5 };
 
@@ -96,17 +97,6 @@ export function KarnaughMapSim() {
     setImportError("");
   }
 
-  const grid = useMemo(() => {
-    const rows = layout.rowLabels.length;
-    const cols = layout.colLabels.length;
-    /** @type {string[][]} */
-    const g = Array.from({ length: rows }, () => Array(cols).fill("0"));
-    layout.cells.forEach((cell) => {
-      g[cell.row][cell.col] = values[cell.index] ?? "0";
-    });
-    return g;
-  }, [layout, values]);
-
   return (
     <div className="space-y-4" dir="rtl">
       <div className="flex flex-wrap gap-2">
@@ -156,54 +146,34 @@ export function KarnaughMapSim() {
 
       <div className="flex flex-wrap items-start gap-8 justify-center">
         <div>
-          <div className="mb-2 flex justify-center gap-6 text-xs text-cyan-300">
-            {layout.colLabels.map((l) => (
-              <span key={l}>
-                {layout.colVars.map((v, i) => `${v}=${l[layout.colBits - 1 - i]}`).join(" ")}
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <div className="flex flex-col justify-around text-xs text-cyan-300">
-              {layout.rowLabels.map((l) => (
-                <span key={l}>
-                  {layout.rowVars.map((v, i) => `${v}=${l[layout.rowBits - 1 - i]}`).join(" ")}
-                </span>
-              ))}
-            </div>
-            <div
-              className="grid gap-1"
-              style={{ gridTemplateColumns: `repeat(${layout.colLabels.length}, minmax(0, 1fr))` }}
-            >
-              {grid.flatMap((row, r) =>
-                row.map((v, c) => {
-                  const cell = layout.cells.find((x) => x.row === r && x.col === c);
-                  const idx = cell?.index ?? 0;
-                  const selected = selectedGroup.includes(idx);
-                  const inGroup = groups.some((g) => g.includes(idx));
-                  return (
-                    <button
-                      key={`${r}-${c}`}
-                      type="button"
-                      onClick={() => toggleSelect(idx)}
-                      className={`flex h-14 w-14 items-center justify-center rounded-lg border-2 text-lg font-bold transition sm:h-16 sm:w-16 ${
-                        selected || inGroup
-                          ? "border-cyan-400 ring-2 ring-cyan-400/50"
-                          : v === "1"
-                            ? "border-emerald-400 bg-emerald-900/50 text-emerald-300"
-                            : v === "X"
-                              ? "border-amber-400 bg-amber-900/40 text-amber-200"
-                              : "border-slate-600 bg-slate-800 text-slate-500"
-                      }`}
-                      onDoubleClick={() => cycleCell(idx)}
-                      title="نقرة = تحديد مجموعة — نقرتان = تغيير القيمة"
-                    >
-                      {v}
-                    </button>
-                  );
-                }),
-              )}
-            </div>
+          <div className="overflow-x-auto">
+            <KarnaughGrid
+              layout={layout}
+              values={values}
+              renderCell={({ cell, value }) => {
+                const selected = selectedGroup.includes(cell.index);
+                const inGroup = groups.some((group) => group.includes(cell.index));
+                return (
+                  <button
+                    type="button"
+                    onClick={() => toggleSelect(cell.index)}
+                    className={`flex h-14 w-14 items-center justify-center rounded-lg border-2 text-lg font-bold transition sm:h-16 sm:w-16 ${
+                      selected || inGroup
+                        ? "border-cyan-400 ring-2 ring-cyan-400/50"
+                        : value === "1"
+                          ? "border-emerald-400 bg-emerald-900/50 text-emerald-300"
+                          : value === "X"
+                            ? "border-amber-400 bg-amber-900/40 text-amber-200"
+                            : "border-slate-600 bg-slate-800 text-slate-500"
+                    }`}
+                    onDoubleClick={() => cycleCell(cell.index)}
+                    title="نقرة = تحديد مجموعة — نقرتان = تغيير القيمة"
+                  >
+                    {value}
+                  </button>
+                );
+              }}
+            />
           </div>
           <p className="mt-2 text-xs text-slate-400">Gray Code — انقر مرتين لتغيير 0/1/X</p>
         </div>

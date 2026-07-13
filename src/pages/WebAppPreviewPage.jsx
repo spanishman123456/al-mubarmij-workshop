@@ -12,6 +12,8 @@ export default function WebAppPreviewPage() {
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(Boolean(project));
   const sessionRef = useRef(null);
+  const projectLang = project?.lang === "en" ? "en" : "ar";
+  const projectDirection = project?.direction === "ltr" ? "ltr" : "rtl";
 
   const resolveCode = useCallback(() => {
     if (!project) return "";
@@ -97,7 +99,11 @@ export default function WebAppPreviewPage() {
       : "تعذر عرض الواجهة. اضغط إعادة التشغيل.";
 
   return (
-    <main className="min-h-screen bg-[#070b18] p-3 text-white sm:p-6" dir="rtl">
+    <main
+      className="min-h-screen bg-[#070b18] p-3 text-white sm:p-6"
+      lang={projectLang}
+      dir={projectDirection}
+    >
       <header className="mx-auto mb-4 flex max-w-6xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
         <div>
           <p className="text-xs font-bold text-cyan-300">معاينة WebApp مباشرة</p>
@@ -131,6 +137,8 @@ export default function WebAppPreviewPage() {
           title={`WebApp — ${project.title}`}
           minHeight="calc(100vh - 150px)"
           emptyMessage={emptyHint}
+          lang={projectLang}
+          direction={projectDirection}
         />
       </section>
     </main>

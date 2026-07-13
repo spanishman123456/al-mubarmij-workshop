@@ -1,7 +1,7 @@
 /** خريطة كارنوف — Gray Code والتبسيط */
 
 import { buildTruthTable } from "./truthTable.js";
-import { varsForCount } from "./variables.js";
+import { displayVarsForCount, varsForCount } from "./variables.js";
 
 /** @param {number} bits */
 export function grayCode(bits) {
@@ -22,22 +22,24 @@ export function kMapLayout(varCount) {
   const colGray = grayCode(colBits || 1);
   const rowLabels = rowBits ? rowGray : ["0"];
   const colLabels = colBits ? colGray : ["0"];
-  const vars = varsForCount(varCount);
-  const rowVars = vars.slice(colBits);
-  const colVars = vars.slice(0, colBits);
+  const sourceVars = varsForCount(varCount);
+  const vars = displayVarsForCount(varCount);
+  const rowVars = vars.slice(0, rowBits);
+  const colVars = vars.slice(rowBits);
 
-  /** @type {{ index: number, row: number, col: number, rowLabel: string, colLabel: string, minterm: string }[]} */
+  /** @type {{ index: number, truthTableIndex: number, row: number, col: number, rowLabel: string, colLabel: string, minterm: string }[]} */
   const cells = [];
   let idx = 0;
   for (let r = 0; r < rowLabels.length; r += 1) {
     for (let c = 0; c < colLabels.length; c += 1) {
       const rowVal = rowBits ? parseInt(rowLabels[r], 2) : 0;
       const colVal = colBits ? parseInt(colLabels[c], 2) : 0;
-      const combined = (rowVal << colBits) | colVal;
-      const bits = combined.toString(2).padStart(varCount, "0");
+      const truthTableIndex = (rowVal << colBits) | colVal;
+      const bits = truthTableIndex.toString(2).padStart(varCount, "0");
       const minterm = vars.map((v, i) => (bits[i] === "1" ? v : `${v}̄`)).join("");
       cells.push({
         index: idx,
+        truthTableIndex,
         row: r,
         col: c,
         rowLabel: rowLabels[r],
@@ -54,6 +56,8 @@ export function kMapLayout(varCount) {
     colBits: colBits || 1,
     rowVars,
     colVars,
+    sourceVars,
+    vars,
     rowLabels,
     colLabels,
     cells,
@@ -77,7 +81,7 @@ export function truthTableToKMap(expr, varCount) {
   if (!table.ok) return { ok: false, error: table.error };
   const layout = kMapLayout(varCount);
   const values = layout.cells.map((cell) => {
-    const row = table.rows[cell.index];
+    const row = table.rows[cell.truthTableIndex];
     return row ? String(row.result) : "0";
   });
   return { ok: true, layout, values, expr: table.expr };
@@ -85,8 +89,11 @@ export function truthTableToKMap(expr, varCount) {
 
 /** @param {string[]} values @param {ReturnType<typeof kMapLayout>} layout */
 export function kMapToTruthTableValues(values, layout) {
-  const ordered = [...values];
-  return layout.cells.map((cell) => ordered[cell.index] ?? "0");
+  const ordered = Array(layout.size).fill("0");
+  layout.cells.forEach((cell) => {
+    ordered[cell.truthTableIndex] = values[cell.index] ?? "0";
+  });
+  return ordered;
 }
 
 /** @param {string[]} values */
@@ -130,14 +137,14 @@ export function simplifyFromGroups(groups, layout, values) {
     const parts = [];
     if (colLabel !== null && layout.colVars.length) {
       layout.colVars.forEach((v, i) => {
-        const bit = colLabel[layout.colBits - 1 - i];
+        const bit = colLabel[i];
         if (bit === "0") parts.push(`${v}̄`);
         else if (bit === "1") parts.push(v);
       });
     }
     if (rowLabel !== null && layout.rowVars.length) {
       layout.rowVars.forEach((v, i) => {
-        const bit = rowLabel[layout.rowBits - 1 - i];
+        const bit = rowLabel[i];
         if (bit === "0") parts.push(`${v}̄`);
         else if (bit === "1") parts.push(v);
       });

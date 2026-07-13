@@ -13,7 +13,7 @@ function PartFeedback({ result, part }) {
     (typeof part.feedback === "string" ? part.feedback : null) ||
     part.explanationAr ||
     "راجع إجابتك وحاول مرة أخرى.";
-  return <p className="mt-1 text-xs text-amber-800">{hint}</p>;
+  return <p className="mt-1 text-xs text-amber-800">{renderMixedDirectionText(hint)}</p>;
 }
 
 function McqOptions({ part, value, onChange, disabled, namePrefix }) {

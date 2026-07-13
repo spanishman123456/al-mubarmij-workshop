@@ -1,6 +1,14 @@
 import { splitDirectionalParts } from "../lib/bidi/directionalTokens";
 import { normalizeExecutablePythonCode } from "../lib/text/codeNormalization";
 
+const TECHNICAL_STYLE = {
+  unicodeBidi: "isolate",
+  direction: "ltr",
+  textAlign: "left",
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  fontVariantNumeric: "tabular-nums",
+};
+
 const TECH_KEYWORD_RE =
   /\b(AND|OR|NOT|XOR|NAND|NOR|if|else|elif|for|while|range|print|input|return|True|False|binary|decimal|hex|ASCII|Unicode|UTF-8|RGB)\b/i;
 const ASSIGNMENT_RE = /\b([A-Za-z_]\w*)\s*=\s*([#A-Za-z0-9_.+-]+)\b/g;
@@ -82,15 +90,45 @@ function inferPromptStructure(promptAr) {
   };
 }
 
+export function TechnicalValue({
+  children,
+  as,
+  display = "inline",
+  className = "",
+  style,
+  ...props
+}) {
+  const Component = as || (display === "block" ? "div" : "span");
+  const displayClass = display === "block" ? "technical-value--block" : "technical-value--inline";
+  return (
+    <Component
+      {...props}
+      dir="ltr"
+      className={`technical-value ${displayClass} ${className}`.trim()}
+      style={{ ...style, ...TECHNICAL_STYLE }}
+    >
+      {children}
+    </Component>
+  );
+}
+
+export function BinaryValue({ value, children, className = "", ...props }) {
+  return (
+    <TechnicalValue
+      className={`technical-value--binary ${className}`.trim()}
+      data-technical-kind="binary"
+      {...props}
+    >
+      {children ?? value}
+    </TechnicalValue>
+  );
+}
+
 export function LtrInlineToken({ token, className = "" }) {
   return (
-    <span
-      dir="ltr"
-      className={`inline-block ${className}`.trim()}
-      style={{ unicodeBidi: "isolate", direction: "ltr", textAlign: "left" }}
-    >
+    <TechnicalValue className={`inline-block ${className}`.trim()}>
       {token}
-    </span>
+    </TechnicalValue>
   );
 }
 
@@ -98,20 +136,17 @@ export function LtrCodeBlock({ code, className = "" }) {
   if (!code) return null;
   const normalizedCode = normalizeExecutablePythonCode(String(code));
   return (
-    <pre
-      dir="ltr"
-      className={`overflow-x-auto rounded-lg border border-white/15 bg-slate-950/90 p-3 text-left font-mono text-sm text-emerald-200 ${className}`.trim()}
+    <TechnicalValue
+      as="pre"
+      display="block"
+      className={`technical-code-block overflow-x-auto rounded-lg border border-white/15 bg-slate-950/90 p-3 text-left font-mono text-sm text-emerald-200 ${className}`.trim()}
       style={{
-        unicodeBidi: "isolate",
-        direction: "ltr",
-        textAlign: "left",
         whiteSpace: "pre",
         tabSize: 4,
-        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
       }}
     >
       {normalizedCode}
-    </pre>
+    </TechnicalValue>
   );
 }
 
@@ -121,13 +156,36 @@ export function CodeExpression({ expression, className = "" }) {
 }
 
 export function LogicExpression({ expression, className = "" }) {
-  if (!expression) return null;
-  return <LtrCodeBlock code={expression} className={className} />;
+  return <LogicExpressionBlock expression={expression} className={className} />;
 }
 
 export function MathExpression({ expression, className = "" }) {
   if (!expression) return null;
   return <LtrCodeBlock code={expression} className={className} />;
+}
+
+export function LogicExpressionBlock({ expression, children, className = "" }) {
+  const value = expression ?? children;
+  if (value == null || value === "") return null;
+  return (
+    <LtrCodeBlock
+      code={String(value)}
+      className={`technical-logic-expression ${className}`.trim()}
+    />
+  );
+}
+
+export function TechnicalTable({ children, className = "", style, ...props }) {
+  return (
+    <table
+      {...props}
+      dir="ltr"
+      className={`technical-table ${className}`.trim()}
+      style={{ ...style, ...TECHNICAL_STYLE }}
+    >
+      {children}
+    </table>
+  );
 }
 
 export function ArabicText({ text, className = "" }) {
@@ -156,9 +214,11 @@ export function BilingualPrompt({
   promptAr,
   expression,
   values,
+  cell,
   code,
   expressionLabel = "التعبير:",
   valuesLabel = "القيم المعطاة:",
+  cellLabel = "الخلية:",
   className = "",
 }) {
   const inferred = typeof promptAr === "string" ? inferPromptStructure(promptAr) : null;
@@ -168,7 +228,7 @@ export function BilingualPrompt({
 
   return (
     <div dir="rtl" className={`space-y-2 text-right ${className}`.trim()}>
-      {finalPrompt ? <ArabicText text={finalPrompt} className="text-slate-900" /> : null}
+      {finalPrompt ? <ArabicText text={finalPrompt} /> : null}
       {finalExpression ? (
         <div className="rounded-lg bg-white/50 p-2">
           <p className="mb-1 text-xs font-bold text-slate-600">{expressionLabel}</p>
@@ -188,14 +248,20 @@ export function BilingualPrompt({
             {valueRows.map((row, idx) => (
               <div
                 key={`${row.name}-${row.value}-${idx}`}
-                dir="ltr"
-                className="font-mono text-sm text-slate-800"
-                style={{ unicodeBidi: "isolate", direction: "ltr", textAlign: "left" }}
+                className="text-sm text-slate-800"
               >
-                {row.name ? `${row.name} = ${row.value}` : String(row.value)}
+                <TechnicalValue display="block">
+                  {row.name ? `${row.name} = ${row.value}` : String(row.value)}
+                </TechnicalValue>
               </div>
             ))}
           </div>
+        </div>
+      ) : null}
+      {cell != null && cell !== "" ? (
+        <div className="rounded-lg bg-white/50 p-2">
+          <p className="mb-1 text-xs font-bold text-slate-600">{cellLabel}</p>
+          <BinaryValue value={String(cell)} />
         </div>
       ) : null}
     </div>

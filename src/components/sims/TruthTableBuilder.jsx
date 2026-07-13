@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import { buildTruthTable } from "../../lib/logic/truthTable.js";
+import { displayVarsForCount, toDisplayLogicExpression } from "../../lib/logic/variables.js";
+import { TechnicalTable } from "../BilingualTextBlocks.jsx";
 import { LogicTableHeader } from "./LogicNotation.jsx";
 import {
   LogicExpressionBuilderPanel,
@@ -14,14 +16,24 @@ function TruthTableView({ table }) {
     "result",
   ];
   const labels = {
-    ...Object.fromEntries(table.variables.map((v) => [v, v])),
-    ...Object.fromEntries(table.intermediateColumns.map((c) => [c.id, c.label])),
-    result: "الناتج",
+    ...Object.fromEntries(
+      table.variables.map((variable, index) => [
+        variable,
+        displayVarsForCount(table.variables.length)[index],
+      ]),
+    ),
+    ...Object.fromEntries(
+      table.intermediateColumns.map((column) => [
+        column.id,
+        toDisplayLogicExpression(column.label),
+      ]),
+    ),
+    result: "V",
   };
 
   return (
     <div className="truth-table-scroll overflow-x-auto rounded-lg border border-slate-600">
-      <table className="truth-table w-full min-w-[280px] border-collapse text-sm">
+      <TechnicalTable className="truth-table w-full min-w-[280px] border-collapse text-sm">
         <thead>
           <tr className="bg-slate-800">
             {cols.map((col) => (
@@ -48,7 +60,7 @@ function TruthTableView({ table }) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </TechnicalTable>
     </div>
   );
 }

@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageShell, EduCard } from "../../components/layout/PageShell";
+import {
+  AssessmentAnswer,
+  AssessmentPrompt,
+} from "../../components/quiz/QuizQuestionRenderer";
 
 async function teacherFetch(path) {
   const res = await fetch(path, { credentials: "include", cache: "no-store" });
@@ -68,8 +72,10 @@ export default function TeacherQuizReviewPage() {
               .filter((q) => q.gradingStatus === "pending_teacher_review")
               .map((q) => (
                 <li key={q.id} className="rounded-lg border border-violet-100 bg-violet-50/40 p-3">
-                  <p className="font-bold">{q.questionAr}</p>
-                  <p className="mt-2 whitespace-pre-wrap text-slate-700">{String(q.userAnswer || "—")}</p>
+                  <AssessmentPrompt question={q} className="font-bold text-slate-900" />
+                  <div className="mt-2 whitespace-pre-wrap text-slate-700">
+                    <AssessmentAnswer question={q}>{String(q.userAnswer || "—")}</AssessmentAnswer>
+                  </div>
                 </li>
               ))}
           </ul>

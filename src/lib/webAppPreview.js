@@ -14,6 +14,8 @@ export function saveWebAppPreview(payload, storage = globalThis.localStorage) {
       title: String(payload.title || "مشروع skui").slice(0, 120),
       code: String(payload.code || ""),
       templateId: payload.templateId ? String(payload.templateId) : null,
+      lang: payload.lang === "en" ? "en" : "ar",
+      direction: payload.direction === "ltr" ? "ltr" : "rtl",
       createdAt: Date.now(),
     }),
   );

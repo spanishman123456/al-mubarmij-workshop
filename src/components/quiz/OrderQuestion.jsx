@@ -1,3 +1,5 @@
+import { renderMixedDirectionText } from "../MixedDirectionText";
+
 function parseOrderAnswer(raw, length) {
   if (Array.isArray(raw)) return raw;
   if (typeof raw === "string" && raw.trim()) {
@@ -26,9 +28,6 @@ export function OrderQuestion({ question, value, onChange, disabled }) {
 
   return (
     <div className="space-y-3" dir="rtl" data-testid="quiz-order">
-      {question.instructionAr ? (
-        <p className="rounded-lg bg-violet-950/40 px-3 py-2 text-sm text-violet-100">{question.instructionAr}</p>
-      ) : null}
       <ol className="space-y-2">
         {order.map((itemIdx, pos) => (
           <li
@@ -38,7 +37,7 @@ export function OrderQuestion({ question, value, onChange, disabled }) {
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-600 text-sm font-bold">
               {pos + 1}
             </span>
-            <span className="flex-1 text-sm text-white">{items[itemIdx]}</span>
+            <span className="flex-1 text-sm text-white">{renderMixedDirectionText(items[itemIdx])}</span>
             <div className="flex gap-1">
               <button
                 type="button"

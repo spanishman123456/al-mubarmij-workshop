@@ -214,6 +214,7 @@ export function LessonPractice({ exercises, mode, lessonId, userId, onStepComple
           promptAr={ex.promptAr}
           expression={ex.expression}
           values={ex.values}
+          cell={ex.cell}
           code={ex.code}
         />
       </div>

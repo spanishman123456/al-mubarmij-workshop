@@ -59,6 +59,13 @@ export const karnaughMapsLesson = {
       id: "ex-ab-and",
       titleAr: "A AND B — متغيران",
       difficulty: "سهل",
+      promptAr: "بسّط الدالة المنطقية لمتغيرين باستخدام خريطة كارنوف.",
+      expression: "A AND B",
+      values: [
+        { name: "A", value: "1" },
+        { name: "B", value: "1" },
+      ],
+      cell: "11",
       steps: [
         "جدول: 1 فقط عند A=1,B=1 → خلية واحدة 1.",
         "مجموعة واحدة بحجم 1 عند (11).",
@@ -70,6 +77,9 @@ export const karnaughMapsLesson = {
       id: "ex-ab-or",
       titleAr: "A OR B",
       difficulty: "سهل",
+      promptAr: "بسّط الدالة التي يكون ناتجها واحدًا في كل خلية ما عدا الصفر.",
+      expression: "A OR B",
+      values: ["01", "10", "11"],
       steps: [
         "ثلاث خلايا = 1 (كل صف ما عدا 00).",
         "مجموعة عمودية أو أفقية بحجم 2+2 ممكنة.",
@@ -81,6 +91,9 @@ export const karnaughMapsLesson = {
       id: "ex-three-var",
       titleAr: "مثال ثلاث متغيرات",
       difficulty: "متوسط",
+      promptAr: "رتّب خلايا الدالة ذات المتغيرات الثلاثة وفق ترميز غراي.",
+      expression: "(A AND B) OR C",
+      values: ["000", "001", "011", "010", "110", "111", "101", "100"],
       steps: [
         "خريطة 2×4 لـ A,B,C.",
         "جمّع أزواج متجاورة على حافة Gray.",
@@ -100,19 +113,26 @@ export const karnaughMapsLesson = {
     { titleAr: "مجموعات صغيرة جدًا", bodyAr: "لم تُكوّن أكبر مجموعة ممكنة.", step: "group" },
   ],
   quickCheck: {
-    questions: [{ id: "q1", promptAr: "حجم مجموعة صالح؟", answer: "4", hintAr: "قوة 2" }],
+    questions: [{
+      id: "q1",
+      promptAr: "هل هذا الحجم صالح لمجموعة كارنوف؟",
+      cell: "4",
+      answer: "4",
+      hintAr: "قوة 2",
+    }],
   },
   guidedPractice: [
-    { id: "g1", promptAr: "خريطة 2×2 — كم خلية؟", answer: "4", hints: ["صفان × عمودان"] },
-    { id: "g2", promptAr: "Gray لـ bitين — أول ترتيبين؟", answer: "00,01", hints: ["فرق بت واحد"] },
-    { id: "g3", promptAr: "1 خلية فقط = 1 — كم minterm؟", answer: "1", hints: [] },
+    { id: "g1", promptAr: "كم خلية في الخريطة؟", values: ["2", "2"], answer: "4", hints: ["صفان × عمودان"] },
+    { id: "g2", promptAr: "اكتب أول ترتيبين في ترميز غراي لبتين.", values: ["00", "01"], answer: "00,01", hints: ["فرق بت واحد"] },
+    { id: "g3", promptAr: "إذا كانت خلية واحدة فقط تساوي واحدًا، فكم حدًا أصغر يوجد؟", cell: "1", answer: "1", hints: [] },
   ],
   independentPractice: [
-    { id: "i1", promptAr: "NOT A — كم 1 في خريطة 2×2؟", answer: "2", hints: ["نصف الخلايا"] },
-    { id: "i2", promptAr: "A XOR B — كم 1؟", answer: "2", hints: ["01 و 10"] },
-    { id: "i3", promptAr: "أكبر مجموعة في 4×4؟", answer: "16", hints: ["كل الخريطة"] },
+    { id: "i1", promptAr: "كم خلية ناتجها واحد في خريطة من متغيرين؟", expression: "NOT A", answer: "2", hints: ["نصف الخلايا"] },
+    { id: "i2", promptAr: "كم خلية ناتجها واحد؟", expression: "A XOR B", values: ["01", "10"], answer: "2", hints: ["الخليتان المعروضتان"] },
+    { id: "i3", promptAr: "ما حجم أكبر مجموعة في خريطة بأربعة متغيرات؟", values: ["4", "4"], answer: "16", hints: ["كل الخريطة"] },
   ],
   challengeAr: "ابنِ خريطة 3 متغيرات من التعبير (A AND B) OR C وبيّن خطوات التجميع يدويًا.",
+  challengeExpression: "(A AND B) OR C",
   summary:
     "كارنوف = جدول حقيقة بترتيب Gray + تجميع مستطيلات قوة 2 → تعبير أبسط. راجع محاكاة كارنوف في المنصة.",
   linkedActivity: "/simulations#karnaugh",

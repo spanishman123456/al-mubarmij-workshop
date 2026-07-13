@@ -97,6 +97,15 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
         <h2 className="text-xl font-bold">أمثلة محلولة ({L.workedExamples.length})</h2>
         {L.workedExamples.map((ex) => (
           <EduCard key={ex.id} title={ex.titleAr} accent="emerald">
+            {ex.promptAr || ex.expression || ex.values?.length || ex.cell ? (
+              <BilingualPrompt
+                promptAr={ex.promptAr}
+                expression={ex.expression}
+                values={ex.values}
+                cell={ex.cell}
+                className="mb-3"
+              />
+            ) : null}
             {ex.code ? (
               <LtrCodeBlock code={ex.code} className="mb-3" />
             ) : null}
@@ -172,6 +181,7 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
                 promptAr={q.promptAr}
                 expression={q.expression}
                 values={q.values}
+                cell={q.cell}
                 code={q.code}
               />
               {q.hintAr ? <p className="mt-1 text-xs text-slate-500">تلميح: {renderMixedDirectionText(q.hintAr)}</p> : null}
@@ -184,7 +194,12 @@ export function StandardLessonPage({ lesson: L, subtitle, backTo = "/path/day/da
 
       {L.challengeAr ? (
         <EduCard title="تحدٍ للمتقدمين" className="mt-4" accent="violet">
-          <ArabicText text={L.challengeAr} className="text-sm text-slate-700" />
+          <BilingualPrompt
+            promptAr={L.challengeAr}
+            expression={L.challengeExpression}
+            values={L.challengeValues}
+            cell={L.challengeCell}
+          />
         </EduCard>
       ) : null}
 

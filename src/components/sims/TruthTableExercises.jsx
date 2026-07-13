@@ -4,6 +4,9 @@ import {
   LOGIC_OPS,
   validateDrillAnswers,
 } from "../../lib/logic/truthTableDrills.js";
+import { displayVarsForCount, toDisplayLogicExpression } from "../../lib/logic/variables.js";
+import { TechnicalTable } from "../BilingualTextBlocks.jsx";
+import { LogicExpression, LogicTableHeader } from "./LogicNotation.jsx";
 
 const LEVEL_LABELS = { easy: "سهل", medium: "متوسط", advanced: "متقدم" };
 
@@ -40,9 +43,15 @@ export function TruthTableExercises() {
   }
 
   const answerCols = drill.answerColumns;
+  const displayVariables = displayVarsForCount(drill.variables.length);
   const colLabels = {
-    ...Object.fromEntries(drill.intermediateColumns.map((c) => [c.id, c.label])),
-    result: "الناتج",
+    ...Object.fromEntries(
+      drill.intermediateColumns.map((column) => [
+        column.id,
+        toDisplayLogicExpression(column.label),
+      ]),
+    ),
+    result: "V",
   };
 
   return (
@@ -114,28 +123,26 @@ export function TruthTableExercises() {
         <p className="text-lg font-bold text-white">
           أكمل جدول الحقيقة للتعبير:
         </p>
-        <p className="mt-1 font-mono text-base text-cyan-200" dir="ltr">
-          {drill.expr}
-        </p>
+        <div className="mt-1 text-base text-cyan-200">
+          <LogicExpression expr={toDisplayLogicExpression(drill.expr)} />
+        </div>
         <p className="mt-2 text-sm text-slate-300">
-          المتغيرات: {drill.variables.join(", ")} — {drill.rows.length} صف
+          المتغيرات: <span dir="ltr">{displayVariables.join(", ")}</span> — {drill.rows.length} صف
         </p>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[320px] border-collapse text-center text-sm">
+        <TechnicalTable className="w-full min-w-[320px] border-collapse text-center text-sm">
           <thead>
             <tr className="bg-slate-800">
-              {drill.variables.map((v) => (
+              {drill.variables.map((v, index) => (
                 <th key={v} className="border border-slate-600 px-3 py-2 text-cyan-300">
-                  {v}
+                  {displayVariables[index]}
                 </th>
               ))}
               {answerCols.map((col) => (
                 <th key={col} className="border border-slate-600 px-3 py-2 text-violet-300">
-                  <span className="block max-w-[7rem] truncate text-xs" dir="ltr" title={colLabels[col]}>
-                    {colLabels[col] ?? col}
-                  </span>
+                  <LogicTableHeader label={colLabels[col] ?? col} size="sm" />
                 </th>
               ))}
             </tr>
@@ -178,7 +185,7 @@ export function TruthTableExercises() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </TechnicalTable>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -221,9 +228,9 @@ export function TruthTableExercises() {
           <p className="mt-2 text-slate-300">عدد المحاولات: {attempts}</p>
           <details className="mt-3">
             <summary className="cursor-pointer font-semibold text-violet-300">شرح الحل</summary>
-            <p className="mt-2 text-slate-300" dir="ltr">
-              {drill.expr}
-            </p>
+            <div className="mt-2 text-slate-300">
+              <LogicExpression expr={toDisplayLogicExpression(drill.expr)} />
+            </div>
             <ul className="mt-2 list-disc pr-5 text-slate-400">
               {drill.hints.map((h) => (
                 <li key={h}>{h}</li>

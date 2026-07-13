@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { unzipSync } from "fflate";
+import { strFromU8, unzipSync } from "fflate";
 import {
   analyzeExportCapabilities,
   createExportBundle,
@@ -7,7 +7,13 @@ import {
   stripSensitiveData,
   validateExportProject,
 } from "./projectExport.js";
-import { buildPwaManifest, buildServiceWorker, buildWebAppHtml } from "./webAppBundle.js";
+import {
+  buildOfflineHtml,
+  buildPreviewHtml,
+  buildPwaManifest,
+  buildServiceWorker,
+  buildWebAppHtml,
+} from "./webAppBundle.js";
 
 const CODE = `import skui as ui
 app = ui.App(title="اختبار")
@@ -55,6 +61,26 @@ describe("project export", () => {
     expect(html).not.toMatch(/cdn\.|jsdelivr|https?:\/\//);
   });
 
+  it.each([
+    { lang: "ar", direction: "rtl" },
+    { lang: "en", direction: "ltr" },
+  ])("applies $direction to generated HTML and manifest artifacts", ({ lang, direction }) => {
+    const documentAttributes = `<html lang="${lang}" dir="${direction}">`;
+    expect(buildWebAppHtml({ title: "Direction", lang, direction })).toContain(documentAttributes);
+    expect(buildPreviewHtml({ lang, direction })).toContain(documentAttributes);
+    expect(buildOfflineHtml("Direction", { lang, direction })).toContain(documentAttributes);
+    expect(JSON.parse(buildPwaManifest({ title: "Direction", lang, direction }))).toMatchObject({
+      lang,
+      dir: direction,
+    });
+  });
+
+  it("keeps RTL as the default across generated artifacts", () => {
+    expect(buildWebAppHtml({ title: "افتراضي" })).toContain('<html lang="ar" dir="rtl">');
+    expect(buildPreviewHtml()).toContain('<html lang="ar" dir="rtl">');
+    expect(buildOfflineHtml()).toContain('<html lang="ar" dir="rtl">');
+  });
+
   it("does not advertise Windows when validation fails", () => {
     const caps = analyzeExportCapabilities("print('x')", "console", { title: "x" });
     expect(caps.exe.ok).toBe(false);
@@ -86,5 +112,33 @@ describe("project export", () => {
       }
       expect(bundle.checksum).toMatch(/^[0-9a-f]{64}$/);
     }
+  });
+
+  it.each([
+    { lang: "ar", direction: "rtl" },
+    { lang: "en", direction: "ltr" },
+  ])("keeps $direction consistent in PWA ZIP artifacts", async ({ lang, direction }) => {
+    const bundle = await createExportBundle({
+      title: "Direction App",
+      code: CODE,
+      target: "pwa",
+      lang,
+      direction,
+      runtimeFiles: { runtime: new Uint8Array([1]), stdlib: new Uint8Array([2]) },
+      iconFiles: { icon192: new Uint8Array([3]), icon512: new Uint8Array([4]) },
+      now: "2026-07-12T00:00:00.000Z",
+      buildId: `build-${direction}`,
+    });
+    const files = unzipSync(bundle.bytes);
+    const read = (suffix) => {
+      const name = Object.keys(files).find((file) => file.endsWith(suffix));
+      return strFromU8(files[name]);
+    };
+    const attributes = `<html lang="${lang}" dir="${direction}">`;
+    expect(read("/index.html")).toContain(attributes);
+    expect(read("/preview.html")).toContain(attributes);
+    expect(read("/offline.html")).toContain(attributes);
+    expect(JSON.parse(read("/manifest.webmanifest"))).toMatchObject({ lang, dir: direction });
+    expect(JSON.parse(read("/project.json"))).toMatchObject({ lang, direction });
   });
 });

@@ -18,6 +18,20 @@ describe("direct WebApp preview", () => {
     expect(loadWebAppPreview(id, storage, before + 1)).toMatchObject({
       title: "آلة حاسبة",
       code: "import skui",
+      lang: "ar",
+      direction: "rtl",
+    });
+  });
+
+  it("stores explicit LTR preview settings", () => {
+    const storage = memoryStorage();
+    const id = saveWebAppPreview(
+      { title: "Calculator", code: "import skui", lang: "en", direction: "ltr" },
+      storage,
+    );
+    expect(loadWebAppPreview(id, storage)).toMatchObject({
+      lang: "en",
+      direction: "ltr",
     });
   });
 

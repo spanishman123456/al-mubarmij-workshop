@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { QuizQuestionRenderer, questionTypeLabel } from "../components/quiz/QuizQuestionRenderer";
+import {
+  AssessmentAnswer,
+  AssessmentPrompt,
+  QuizQuestionRenderer,
+  questionTypeLabel,
+} from "../components/quiz/QuizQuestionRenderer";
+import { ArabicText, TechnicalValue } from "../components/BilingualTextBlocks";
 import {
   PRE_ASSESSMENT_DEFER_CONFIRM_AR,
   PRE_ASSESSMENT_DEFERRED_AR,
@@ -293,16 +299,7 @@ export function ServerQuizTakePage({ quizId }) {
             <span className="mr-2 text-xs font-normal text-violet-300">({questionTypeLabel(qType)})</span>
           </legend>
           <p className="mb-1 text-xs text-slate-400">{currentQuestion.sectionTitle}</p>
-          <p className="mb-4 whitespace-pre-wrap text-right leading-relaxed text-slate-200">{currentQuestion.questionAr}</p>
-
-          {currentQuestion.codeSnippetAr ? (
-            <pre
-              className="mb-4 overflow-x-auto rounded-xl border border-white/10 bg-black/50 p-4 text-left text-sm text-emerald-200"
-              dir="ltr"
-            >
-              {currentQuestion.codeSnippetAr}
-            </pre>
-          ) : null}
+          <AssessmentPrompt question={currentQuestion} className="mb-4 text-slate-200" />
 
           <QuizQuestionRenderer
             question={currentQuestion}
@@ -418,15 +415,17 @@ function TeacherQuestionMetaPanel({ question, qType }) {
     <div className="mt-4 space-y-3 border-t border-white/10 pt-4" data-testid="teacher-question-meta">
       <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-sm">
         <p className="font-bold text-emerald-200">الإجابة النموذجية</p>
-        <p className="mt-2 whitespace-pre-wrap text-emerald-100" dir="auto">
+        <div className="mt-2 whitespace-pre-wrap text-emerald-100">
+          <AssessmentAnswer question={question}>
           {formatModelAnswer(question)}
-        </p>
+          </AssessmentAnswer>
+        </div>
       </div>
       {question.explainAr ? (
-        <p className="text-sm text-slate-300">
+        <div className="text-sm text-slate-300">
           <span className="font-semibold text-violet-300">الشرح: </span>
-          {question.explainAr}
-        </p>
+          <ArabicText text={question.explainAr} className="inline text-slate-300" />
+        </div>
       ) : null}
       <div className="flex flex-wrap gap-3 text-xs text-slate-400">
         <span>
@@ -531,27 +530,29 @@ export function QuizReviewPageContent({ attemptId }) {
                   : "○";
           return (
             <li key={q.id} className="rounded-2xl border border-white/10 bg-black/30 p-5" dir="rtl">
-              <p className="font-bold text-white">
-                {idx + 1}. {badge} {q.questionAr}
-              </p>
+              <div className="font-bold text-white">
+                <span>{idx + 1}. {badge} </span>
+                <AssessmentPrompt question={q} className="inline text-white" />
+              </div>
               <p className="mt-2 text-sm text-slate-400">
                 إجابتك:{" "}
-                <span className="whitespace-pre-wrap text-slate-200" dir="auto">
+                <AssessmentAnswer question={q} className="text-slate-200">
                   {formatReviewAnswer(q)}
-                </span>
+                </AssessmentAnswer>
               </p>
               {q.autoGraded && q.gradingStatus === "incorrect" && q.modelAnswer ? (
                 <p className="mt-1 text-sm text-emerald-300">
-                  الإجابة النموذجية: <span dir="ltr">{String(q.modelAnswer)}</span>
+                  الإجابة النموذجية:{" "}
+                  <AssessmentAnswer question={q}>{String(q.modelAnswer)}</AssessmentAnswer>
                 </p>
               ) : null}
               {q.gradingStatus === "pending_teacher_review" ? (
                 <p className="mt-1 text-sm text-violet-300">تم حفظ إجابتك — بانتظار مراجعة المعلم.</p>
               ) : null}
-              <p className="mt-3 border-t border-white/10 pt-3 text-sm text-slate-300">
+              <div className="mt-3 border-t border-white/10 pt-3 text-sm text-slate-300">
                 <span className="font-semibold text-violet-300">الشرح: </span>
-                {q.explainAr}
-              </p>
+                <ArabicText text={q.explainAr} className="inline text-slate-300" />
+              </div>
               {q.lessonLink ? (
                 <Link to={q.lessonLink} className="mt-2 inline-block text-sm text-violet-300 hover:text-white">
                   ← راجع الدرس المرتبط

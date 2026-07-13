@@ -1,4 +1,6 @@
 import { MIN_ATTEMPTS_BEFORE_SOLUTION } from "../../lib/stepLearningEngine.js";
+import { ArabicText, TechnicalValue } from "../BilingualTextBlocks";
+import { renderMixedDirectionText } from "../MixedDirectionText";
 
 /**
  * @param {{
@@ -55,25 +57,25 @@ export function StepLearningPanel({
 
       <div className="rounded-xl border border-white/10 bg-black/25 p-3 text-sm">
         <p className="font-bold text-emerald-300">💡 فكرة المشروع</p>
-        <p className="mt-1 text-slate-200">{plan.ideaAr}</p>
+        <ArabicText text={plan.ideaAr} className="mt-1 text-slate-200" />
         <p className="mt-2 font-bold text-cyan-300">أوامر ستتعلمها</p>
-        <p className="mt-1 text-slate-300" dir="ltr">
+        <TechnicalValue display="block" className="mt-1 text-slate-300">
           {plan.commandsAr.join(" · ")}
-        </p>
+        </TechnicalValue>
         <p className="mt-2 font-bold text-amber-300">المخرج المتوقع</p>
-        <p className="mt-1 text-slate-300">{plan.expectedOutputAr}</p>
+        <p className="mt-1 text-slate-300">{renderMixedDirectionText(plan.expectedOutputAr)}</p>
       </div>
 
       {step ? (
         <div className="rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-3">
           <p className="font-bold text-emerald-200">{step.titleAr}</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-200">{step.instructionAr}</p>
+          <ArabicText text={step.instructionAr} className="mt-2 text-sm text-slate-200" />
           {step.commandsLearned?.length ? (
             <p className="mt-2 text-xs text-slate-400">
               أوامر هذه الخطوة:{" "}
-              <span dir="ltr" className="text-emerald-300">
+              <TechnicalValue className="text-emerald-300">
                 {step.commandsLearned.join(", ")}
-              </span>
+              </TechnicalValue>
             </p>
           ) : null}
         </div>
@@ -127,7 +129,7 @@ export function StepLearningPanel({
               className="rounded-lg border border-amber-500/20 bg-amber-950/20 px-3 py-2 text-amber-100"
             >
               <span className="font-bold text-amber-300">تلميح {i + 1}: </span>
-              {h}
+              {renderMixedDirectionText(h)}
             </li>
           ))}
         </ul>
@@ -142,9 +144,11 @@ export function StepLearningPanel({
           }`}
         >
           <p className="font-bold">{checkResult.ok ? "✓ صحيح!" : "✗ يحتاج تعديلاً"}</p>
-          <p className="mt-1">{checkResult.messageAr}</p>
+          <p className="mt-1">{renderMixedDirectionText(checkResult.messageAr)}</p>
           {!checkResult.ok && checkResult.fixHintAr ? (
-            <p className="mt-2 text-xs text-amber-200">💡 {checkResult.fixHintAr}</p>
+            <p className="mt-2 text-xs text-amber-200">
+              💡 {renderMixedDirectionText(checkResult.fixHintAr)}
+            </p>
           ) : null}
           <button type="button" onClick={onClearCheck} className="mt-2 text-xs text-slate-400 underline">
             إخفاء الرسالة

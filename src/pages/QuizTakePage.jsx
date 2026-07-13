@@ -3,7 +3,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { getQuizById } from "../data/quizzes";
 import { usePlatform } from "../context/PlatformContext";
 import { computeQuizResult, prepareQuizForAttempt } from "../lib/quizEngine";
-import { QuizQuestionRenderer, questionTypeLabel } from "../components/quiz/QuizQuestionRenderer";
+import {
+  AssessmentAnswer,
+  AssessmentPrompt,
+  QuizQuestionRenderer,
+  questionTypeLabel,
+} from "../components/quiz/QuizQuestionRenderer";
+import { ArabicText } from "../components/BilingualTextBlocks";
 import {
   formatModelAnswerDisplay,
   formatUserAnswerDisplay,
@@ -202,16 +208,7 @@ function LegacyQuizTakePage({ quizId }) {
                       ({questionTypeLabel(qType)})
                     </span>
                   </legend>
-                  <p className="mb-4 whitespace-pre-wrap text-right leading-relaxed text-slate-200">{q.questionAr}</p>
-
-                  {q.codeSnippetAr && (
-                    <pre
-                      className="mb-4 overflow-x-auto rounded-xl border border-white/10 bg-black/50 p-4 text-left text-sm text-emerald-200"
-                      dir="ltr"
-                    >
-                      {q.codeSnippetAr}
-                    </pre>
-                  )}
+                  <AssessmentPrompt question={q} className="mb-4 text-slate-200" />
 
                   <QuizQuestionRenderer
                     question={q}
@@ -334,7 +331,6 @@ function LegacyQuizTakePage({ quizId }) {
                 const graded = gradeQuestion(q, userAns);
                 const auto = graded.autoGraded;
                 const ok = auto ? graded.correct === true : hasAnswerValue(userAns);
-                const qType = q.type || "mcq";
                 return (
                   <li
                     key={q.id}
@@ -347,17 +343,15 @@ function LegacyQuizTakePage({ quizId }) {
                     }`}
                     dir="rtl"
                   >
-                    <p className="font-bold text-white">
-                      {idx + 1}. {auto ? (ok ? "✓" : "✗") : "◆"} {q.questionAr}
-                    </p>
+                    <div className="font-bold text-white">
+                      <span>{idx + 1}. {auto ? (ok ? "✓" : "✗") : "◆"} </span>
+                      <AssessmentPrompt question={q} className="inline text-white" />
+                    </div>
                     <p className="mt-2 text-sm text-slate-400">
                       إجابتك:{" "}
-                      <span
-                        dir={qType === "fill" || qType === "code" ? "ltr" : "rtl"}
-                        className="whitespace-pre-wrap text-slate-200"
-                      >
+                      <AssessmentAnswer question={q} className="text-slate-200">
                         {formatUserAnswerDisplay(q, userAns)}
-                      </span>
+                      </AssessmentAnswer>
                     </p>
                     {!auto && (
                       <p className="mt-1 text-sm text-violet-300/90">
@@ -366,13 +360,14 @@ function LegacyQuizTakePage({ quizId }) {
                     )}
                     {auto && !ok && (
                       <p className="mt-1 text-sm text-emerald-300/90">
-                        الصحيح: <span dir="ltr">{formatModelAnswerDisplay(q)}</span>
+                        الصحيح:{" "}
+                        <AssessmentAnswer question={q}>{formatModelAnswerDisplay(q)}</AssessmentAnswer>
                       </p>
                     )}
-                    <p className="mt-3 border-t border-white/10 pt-3 text-sm leading-relaxed text-slate-300">
+                    <div className="mt-3 border-t border-white/10 pt-3 text-sm leading-relaxed text-slate-300">
                       <span className="font-semibold text-violet-300">لماذا؟ </span>
-                      {q.explainAr}
-                    </p>
+                      <ArabicText text={q.explainAr} className="inline text-slate-300" />
+                    </div>
                   </li>
                 );
               })}

@@ -4,6 +4,8 @@ import { PageShell, EduCard } from "../../components/layout/PageShell";
 import { BinaryCardsLab } from "../../components/lesson/BinaryCardsLab";
 import { LessonProgressFooter } from "../../components/lesson/LessonProgressFooter";
 import { usePlatform } from "../../context/PlatformContext";
+import { ArabicText, BinaryValue } from "../../components/BilingualTextBlocks";
+import { renderMixedDirectionText } from "../../components/MixedDirectionText";
 
 const CARD_EXERCISES = [
   { id: "g1", target: 5, promptAr: "مثّل العدد 5" },
@@ -22,15 +24,15 @@ export default function BinaryCardsLessonPage() {
       </Link>
 
       <EduCard title="ما ستتعلمه">
-        <ul className="list-disc pr-5">{L.learningObjectives.map((o) => <li key={o}>{o}</li>)}</ul>
+        <ul className="list-disc pr-5">{L.learningObjectives.map((o) => <li key={o}>{renderMixedDirectionText(o)}</li>)}</ul>
       </EduCard>
 
       <EduCard title="الشرح" className="mt-4">
-        <p className="mb-4 text-slate-700">{L.conceptSimple}</p>
+        <ArabicText text={L.conceptSimple} className="mb-4 text-slate-700" />
         {L.deepSections?.map((s) => (
           <div key={s.id} className="mb-3 rounded-lg border border-violet-100 bg-violet-50/50 p-3 text-sm">
             <p className="font-bold text-violet-900">{s.titleAr}</p>
-            <p className="mt-1 text-slate-700">{s.bodyAr}</p>
+            <ArabicText text={s.bodyAr} className="mt-1 text-slate-700" />
           </div>
         ))}
         <p className="text-sm text-slate-600">
@@ -45,12 +47,10 @@ export default function BinaryCardsLessonPage() {
             <p className="font-bold text-emerald-900">{ex.titleAr}</p>
             <ol className="mt-2 list-decimal pr-5 text-sm text-slate-700">
               {ex.steps.map((s, i) => (
-                <li key={i}>{s}</li>
+                <li key={i}>{renderMixedDirectionText(s)}</li>
               ))}
             </ol>
-            <p className="mt-2 font-mono font-bold" dir="ltr">
-              {ex.result}₂
-            </p>
+            <BinaryValue value={`${ex.result}₂`} className="mt-2 font-bold" />
           </div>
         ))}
       </EduCard>

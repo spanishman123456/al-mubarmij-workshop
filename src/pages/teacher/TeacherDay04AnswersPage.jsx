@@ -1,24 +1,25 @@
 import { Link } from "react-router-dom";
 import { PageShell, EduCard } from "../../components/layout/PageShell";
 import { day04TeacherAnswers } from "../../content/teacher/day04TeacherAnswers";
+import { renderMixedDirectionText } from "../../components/MixedDirectionText";
 
 function TeacherItem({ item }) {
   return (
     <div className="mb-3 rounded border border-amber-100 bg-amber-50/50 p-3 text-sm">
-      <p className="font-bold">{item.q}</p>
-      <p className="mt-1 text-emerald-800">الإجابة: {item.a}</p>
+      <p className="font-bold">{renderMixedDirectionText(item.q)}</p>
+      <p className="mt-1 text-emerald-800">الإجابة: {renderMixedDirectionText(item.a)}</p>
       {item.steps?.length ? (
         <ol className="mt-2 list-decimal pr-5 text-slate-700">
           {item.steps.map((s, j) => (
-            <li key={j}>{s}</li>
+            <li key={j}>{renderMixedDirectionText(s)}</li>
           ))}
         </ol>
       ) : null}
-      {item.teachingNotes ? <p className="mt-2 text-xs text-slate-600">📝 {item.teachingNotes}</p> : null}
+      {item.teachingNotes ? <p className="mt-2 text-xs text-slate-600">📝 {renderMixedDirectionText(item.teachingNotes)}</p> : null}
       {item.expectedErrors?.length ? (
-        <p className="mt-1 text-xs text-rose-700">أخطاء متوقعة: {item.expectedErrors.join("؛ ")}</p>
+        <p className="mt-1 text-xs text-rose-700">أخطاء متوقعة: {renderMixedDirectionText(item.expectedErrors.join("؛ "))}</p>
       ) : null}
-      {item.feedback ? <p className="mt-1 text-xs text-violet-700">تغذية راجعة: {item.feedback}</p> : null}
+      {item.feedback ? <p className="mt-1 text-xs text-violet-700">تغذية راجعة: {renderMixedDirectionText(item.feedback)}</p> : null}
     </div>
   );
 }
@@ -39,17 +40,17 @@ export default function TeacherDay04AnswersPage() {
           className="mb-4"
           accent="violet"
         >
-          {teacherGuidance.overviewAr ? <p className="mb-2 text-sm text-slate-800">{teacherGuidance.overviewAr}</p> : null}
+          {teacherGuidance.overviewAr ? <p className="mb-2 text-sm text-slate-800">{renderMixedDirectionText(teacherGuidance.overviewAr)}</p> : null}
           {teacherGuidance.pacingAr ? (
             <p className="mb-2 text-sm text-slate-700">
               <span className="font-semibold">الإيقاع: </span>
-              {teacherGuidance.pacingAr}
+              {renderMixedDirectionText(teacherGuidance.pacingAr)}
             </p>
           ) : null}
           {teacherGuidance.sequenceAr?.length ? (
             <ol className="mb-2 list-decimal pr-5 text-sm text-slate-700">
               {teacherGuidance.sequenceAr.map((s, i) => (
-                <li key={i}>{s}</li>
+                <li key={i}>{renderMixedDirectionText(s)}</li>
               ))}
             </ol>
           ) : null}

@@ -6,7 +6,36 @@ import { QuizCodeEditorQuestion } from "./QuizCodeEditorQuestion";
 import { QuizFlowchartBuilderQuestion } from "./QuizFlowchartBuilderQuestion";
 import { QuizLogicCircuitQuestion } from "./QuizLogicCircuitQuestion";
 import { renderMixedDirectionText } from "../MixedDirectionText";
-import { BilingualPrompt } from "../BilingualTextBlocks";
+import { BilingualPrompt, TechnicalValue } from "../BilingualTextBlocks";
+
+const TECHNICAL_ANSWER_TYPES = new Set(["fill", "code", "code-editor", "truth-table"]);
+
+export function AssessmentPrompt({ question, className = "" }) {
+  return (
+    <BilingualPrompt
+      promptAr={question.questionAr || question.promptAr || question.instructionAr}
+      expression={question.expression}
+      values={question.values}
+      code={question.codeSnippetAr || question.code}
+      className={className}
+    />
+  );
+}
+
+export function AssessmentAnswer({ question, children, className = "" }) {
+  const qType = question?.type || "mcq";
+  if (TECHNICAL_ANSWER_TYPES.has(qType) || question?.answerDirection === "ltr") {
+    return (
+      <TechnicalValue
+        className={`whitespace-pre-wrap ${className}`.trim()}
+        data-technical-kind={qType === "code" || qType === "code-editor" ? "code" : undefined}
+      >
+        {children}
+      </TechnicalValue>
+    );
+  }
+  return <span className={className}>{renderMixedDirectionText(children)}</span>;
+}
 
 export function questionTypeLabel(type) {
   if (type === "fill") return "إكمال";
@@ -54,7 +83,7 @@ export function QuizQuestionRenderer({ question, value, onChange, disabled, show
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          dir="auto"
+          dir={question.answerDirection === "rtl" ? "rtl" : "ltr"}
         />
       ) : qType === "essay" ? (
         <textarea

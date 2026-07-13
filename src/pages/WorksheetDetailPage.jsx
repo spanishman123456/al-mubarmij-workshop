@@ -5,6 +5,7 @@ import { WORKSHEET_MODEL_ANSWERS } from "../content/teacher/worksheetModelAnswer
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { ArabicText } from "../components/BilingualTextBlocks";
+import { renderMixedDirectionText } from "../components/MixedDirectionText";
 import { registerDraftSaver } from "../lib/draftFlush.js";
 import { isTeacherRole, TEACHER_PREVIEW_BADGE_AR } from "../config/publication";
 import {
@@ -214,7 +215,7 @@ export default function WorksheetDetailPage() {
                   {modelTask.stepsAr?.length ? (
                     <ol className="mt-2 list-decimal pr-5 text-emerald-700">
                       {modelTask.stepsAr.map((step) => (
-                        <li key={step}>{step}</li>
+                        <li key={step}>{renderMixedDirectionText(step)}</li>
                       ))}
                     </ol>
                   ) : null}

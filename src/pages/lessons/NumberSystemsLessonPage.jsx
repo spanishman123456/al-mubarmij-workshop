@@ -14,6 +14,8 @@ import {
 import { AFTER_MAX_HINTS_AR } from "../../lib/exerciseFeedbackPolicy.js";
 import { recordLessonAttemptApi, saveLessonProgressApi } from "../../lib/platformApi";
 import { PageShell, EduCard } from "../../components/layout/PageShell";
+import { ArabicText, TechnicalValue } from "../../components/BilingualTextBlocks";
+import { renderMixedDirectionText } from "../../components/MixedDirectionText";
 import { useState } from "react";
 
 function ConverterLab({ userId, lessonId }) {
@@ -90,7 +92,7 @@ function ConverterLab({ userId, lessonId }) {
         <input className="rounded border px-3 py-2" value={answer} onChange={(e) => setAnswer(e.target.value)} dir="ltr" />
         <button type="button" className="edu-btn edu-btn-primary text-sm" onClick={check}>تحقق</button>
       </div>
-      {feedback ? <p className="mt-2 text-sm">{feedback}</p> : null}
+      {feedback ? <p className="mt-2 text-sm">{renderMixedDirectionText(feedback)}</p> : null}
     </EduCard>
   );
 }
@@ -103,18 +105,18 @@ export default function NumberSystemsLessonPage() {
       <Link to="/path/day/day-01" className="mb-4 inline-block text-sm font-semibold text-violet-700">← اليوم الأول</Link>
 
       <EduCard title="ما الذي ستتعلمه؟" accent="violet">
-        <ul className="list-disc space-y-1 pr-5 text-slate-700">{L.learningObjectives.map((o) => <li key={o}>{o}</li>)}</ul>
+        <ul className="list-disc space-y-1 pr-5 text-slate-700">{L.learningObjectives.map((o) => <li key={o}>{renderMixedDirectionText(o)}</li>)}</ul>
       </EduCard>
 
-      <EduCard title="لماذا نتعلم هذا؟" className="mt-4"><p className="text-slate-700">{L.whyLearn}</p></EduCard>
-      <EduCard title="المعرفة السابقة" className="mt-4"><ul className="list-disc pr-5">{L.prerequisites.map((p) => <li key={p}>{p}</li>)}</ul></EduCard>
-      <EduCard title="المفهوم الأساسي" className="mt-4"><p className="leading-relaxed text-slate-700">{L.conceptSimple}</p></EduCard>
+      <EduCard title="لماذا نتعلم هذا؟" className="mt-4"><ArabicText text={L.whyLearn} className="text-slate-700" /></EduCard>
+      <EduCard title="المعرفة السابقة" className="mt-4"><ul className="list-disc pr-5">{L.prerequisites.map((p) => <li key={p}>{renderMixedDirectionText(p)}</li>)}</ul></EduCard>
+      <EduCard title="المفهوم الأساسي" className="mt-4"><ArabicText text={L.conceptSimple} className="text-slate-700" /></EduCard>
 
       <section className="mt-6 space-y-4">
         <h2 className="text-xl font-bold">شرح تفصيلي</h2>
         {L.deepSections.map((s) => (
           <EduCard key={s.id} title={s.titleAr}>
-            <p className="text-slate-700 leading-relaxed">{s.bodyAr}</p>
+            <ArabicText text={s.bodyAr} className="text-slate-700" />
           </EduCard>
         ))}
       </section>
@@ -125,7 +127,10 @@ export default function NumberSystemsLessonPage() {
           <tbody>
             {L.systemsTable.map((r) => (
               <tr key={r.base} className="border-b border-slate-100">
-                <td className="py-2">{r.nameAr}</td><td>{r.base}</td><td dir="ltr">{r.digits}</td><td className="text-slate-600">{r.whyAr}</td>
+                <td className="py-2">{r.nameAr}</td>
+                <td><TechnicalValue>{r.base}</TechnicalValue></td>
+                <td><TechnicalValue>{r.digits}</TechnicalValue></td>
+                <td className="text-slate-600">{renderMixedDirectionText(r.whyAr)}</td>
               </tr>
             ))}
           </tbody>
@@ -143,8 +148,8 @@ export default function NumberSystemsLessonPage() {
                 mode={ex.placeValue.mode}
               />
             ) : null}
-            <ol className="mt-3 list-decimal space-y-1 pr-5 text-sm">{ex.steps.map((st, i) => <li key={i}>{st}</li>)}</ol>
-            {ex.result ? <p className="mt-2 font-bold" dir="ltr">= {ex.result}</p> : null}
+            <ol className="mt-3 list-decimal space-y-1 pr-5 text-sm">{ex.steps.map((st, i) => <li key={i}>{renderMixedDirectionText(st)}</li>)}</ol>
+            {ex.result ? <TechnicalValue display="block" className="mt-2 font-bold">= {ex.result}</TechnicalValue> : null}
           </EduCard>
         ))}
       </section>
@@ -153,7 +158,7 @@ export default function NumberSystemsLessonPage() {
 
       <EduCard title="أخطاء شائعة ونوع الخطأ" className="mt-6" accent="amber">
         <ul className="space-y-2 text-sm">{L.commonMistakes.map((m) => (
-          <li key={m.titleAr}><strong>{m.titleAr}</strong> ({m.step}): {m.bodyAr}</li>
+          <li key={m.titleAr}><strong>{renderMixedDirectionText(m.titleAr)}</strong> ({renderMixedDirectionText(m.step)}): {renderMixedDirectionText(m.bodyAr)}</li>
         ))}</ul>
       </EduCard>
 
@@ -166,7 +171,7 @@ export default function NumberSystemsLessonPage() {
       </EduCard>
 
       <EduCard title="ملخص + النشاط التالي" className="mt-6">
-        <p className="text-slate-700">{L.summary}</p>
+        <ArabicText text={L.summary} className="text-slate-700" />
         <div className="mt-4 flex flex-wrap gap-2">
           <Link to={L.linkedActivity} className="edu-btn edu-btn-outline inline-flex">محاكاة المحوّل</Link>
           <Link to="/lessons/hex-colors" className="edu-btn edu-btn-primary inline-flex">التالي: ألوان Hex →</Link>
