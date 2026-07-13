@@ -25,6 +25,14 @@ app.run()
   );
 }
 
+/** هيكل أولي للطالب — يُكمَّل عبر خطوات «تعلّم خطوة بخطوة» وليس الحل الكامل. */
+function studentProgressStarter(title) {
+  return `# مشروع: ${title}
+# أكمل الخطوات تدريجيًا من لوحة «تعلّم خطوة بخطوة»
+import skui as ui
+`;
+}
+
 /**
  * @typedef {object} SkuiProject
  * @property {string} id
@@ -318,7 +326,7 @@ const BLOCKED_TRAINING_PROJECTS = new Set(["app-timer", "app-colors"]);
 export const SKUI_PROJECTS = [
   ...TRAINING_SKUI_PROJECTS.map((project) => ({
     ...project,
-    studentStarterCode: project.starterCode,
+    studentStarterCode: studentProgressStarter(project.titleAr),
     category: "training",
     status: BLOCKED_TRAINING_PROJECTS.has(project.id) ? "blocked" : "training",
   })),

@@ -9,6 +9,7 @@ import {
   getPublishedDaysFromClientEnv,
   getPublishedDaysFromServerEnv,
 } from "../../config/publicationPolicy.js";
+import { getInitialCode } from "../stepLearningEngine.js";
 import { validateSkuiProject, SKUI_COMPONENTS } from "./manifest.js";
 import { getSuggestions, parseCompletionContext } from "../python/autocomplete.js";
 import { getSkuiTeacherSolution } from "../../../server/teacher/skuiSolutions.js";
@@ -68,5 +69,14 @@ describe("batch19 and skui integration guard", () => {
     const ctx = parseCompletionContext(code, code.length);
     const { items } = getSuggestions(ctx, { code, appMode: true });
     expect(items.some((item) => item.label === "Button" && item.kind === "skui-component")).toBe(true);
+  });
+
+  it("loads progressive app code for students instead of the full runnable starter", () => {
+    const guess = SKUI_PROJECTS.find((project) => project.id === "app-guess-number");
+    const plan = getStepPlan("app", "app-guess-number");
+    expect(guess?.starterCode).toMatch(/def start_round/);
+    expect(getInitialCode(plan)).toMatch(/import skui as ______/);
+    expect(getInitialCode(plan)).not.toMatch(/def start_round/);
+    expect(plan?.fullSolution).toBeNull();
   });
 });

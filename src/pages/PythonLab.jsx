@@ -231,6 +231,7 @@ export default function PythonLab() {
   const selectProject = useCallback(
     (id, { codeOverride = null, savedId = null, titleOverride = null } = {}) => {
       const project = getSkuiProjectOrDefault(id);
+      const plan = getStepPlan("app", project.id);
       stopAppSession();
       clearPreviewState();
       setActiveAppId(project.id);
@@ -241,9 +242,11 @@ export default function PythonLab() {
       if (codeOverride != null) {
         setCode(codeOverride);
         applyStepReset(null);
+      } else if (isTeacher) {
+        setCode(project.starterCode ?? "");
+        applyStepReset(plan, { loadCode: false });
       } else {
-        setCode(project.studentStarterCode ?? project.starterCode ?? "");
-        applyStepReset(getStepPlan("app", project.id), { loadCode: false });
+        applyStepReset(plan);
       }
       trackGuiEvent?.("gui_project_started");
       setSearchParams((prev) => {
@@ -254,7 +257,7 @@ export default function PythonLab() {
       });
       setAppTab(codeOverride != null ? "code" : "project");
     },
-    [clearPreviewState, setSearchParams, stopAppSession, trackGuiEvent],
+    [clearPreviewState, isTeacher, setSearchParams, stopAppSession, trackGuiEvent],
   );
 
   const pick = useCallback(
@@ -387,12 +390,16 @@ export default function PythonLab() {
         const tpl = getSkuiProjectOrDefault(appFromUrl);
         setActiveAppId(appFromUrl);
         const plan = getStepPlan("app", appFromUrl);
-        setCode(tpl.studentStarterCode ?? tpl.starterCode ?? "");
-        applyStepReset(plan, { loadCode: false });
+        if (user?.role === "teacher") {
+          setCode(tpl.starterCode ?? "");
+          applyStepReset(plan, { loadCode: false });
+        } else {
+          applyStepReset(plan);
+        }
         setProjectTitle(tpl.titleAr);
       }
     }
-  }, [exFromUrl, modeFromUrl, appFromUrl]);
+  }, [exFromUrl, modeFromUrl, appFromUrl, user?.role]);
 
   useEffect(() => {
     if (user?.role !== "teacher" || !teacherSnippetsStorageKey) return;
@@ -626,8 +633,12 @@ export default function PythonLab() {
       const tpl = getSkuiProjectOrDefault(activeAppId);
       if (tpl && !savedProjectId) {
         const plan = getStepPlan("app", activeAppId);
-        setCode(tpl.studentStarterCode ?? tpl.starterCode ?? "");
-        applyStepReset(plan, { loadCode: false });
+        if (isTeacher) {
+          setCode(tpl.starterCode ?? "");
+          applyStepReset(plan, { loadCode: false });
+        } else {
+          applyStepReset(plan);
+        }
       }
     }
   }
