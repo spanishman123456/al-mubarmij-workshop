@@ -10,6 +10,7 @@ import {
   getPublishedDaysFromServerEnv,
 } from "../../config/publicationPolicy.js";
 import { validateSkuiProject, SKUI_COMPONENTS } from "./manifest.js";
+import { getSuggestions, parseCompletionContext } from "../python/autocomplete.js";
 import { getSkuiTeacherSolution } from "../../../server/teacher/skuiSolutions.js";
 
 describe("batch19 and skui integration guard", () => {
@@ -60,5 +61,12 @@ describe("batch19 and skui integration guard", () => {
     expect(training.length).toBeGreaterThanOrEqual(10);
     expect(training.every((project) => project.category !== "advanced")).toBe(true);
     expect(SKUI_PROJECTS.some((project) => project.id === "app-calculator")).toBe(true);
+  });
+
+  it("wires skui import autocomplete into the batch-19 python editor catalog", () => {
+    const code = "import skui as ui\nui.Bu";
+    const ctx = parseCompletionContext(code, code.length);
+    const { items } = getSuggestions(ctx, { code, appMode: true });
+    expect(items.some((item) => item.label === "Button" && item.kind === "skui-component")).toBe(true);
   });
 });

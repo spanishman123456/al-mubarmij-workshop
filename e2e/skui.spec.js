@@ -108,8 +108,10 @@ test("skui autocomplete and unsupported component feedback are educational", asy
   await openAppLab(page);
 
   const editor = page.getByTestId("python-code-editor");
-  await editor.fill("import skui as ui\nui.Bu");
-  await expect(page.getByTestId("python-autocomplete").getByText("Button")).toBeVisible();
+  await editor.fill("import skui as ui\n");
+  await editor.pressSequentially("ui.Bu", { delay: 40 });
+  await expect(page.getByTestId("python-autocomplete-list")).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId("python-autocomplete-item-Button")).toBeVisible();
 
   await editor.fill("import skui as ui\nui.UnknownWidget()");
   await page.getByRole("button", { name: "تشغيل المشروع" }).click();

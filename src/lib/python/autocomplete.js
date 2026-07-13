@@ -1,9 +1,27 @@
 import {
+  getSkuiAutocompleteSuggestions,
+  getSkuiConstructorProps,
+} from "../skui/manifest.js";
+import {
   CONTEXT_AFTER_KEYWORD,
   getAllCatalogItems,
   getMethodCatalog,
   UNIT_PRIORITY_BOOST,
 } from "./skulptCatalog.js";
+
+/**
+ * Detects whether `objectName` refers to the skui module in the current buffer
+ * (e.g. `import skui as ui` → `ui`, or bare `skui`).
+ * @param {string} code
+ * @param {string} objectName
+ */
+export function isSkuiNamespace(code, objectName) {
+  if (!objectName) return false;
+  if (objectName === "skui") return true;
+  const asAlias = [...code.matchAll(/\bimport\s+skui\s+as\s+([A-Za-z_]\w*)/g)].map((m) => m[1]);
+  if (asAlias.includes(objectName)) return true;
+  return false;
+}
 
 const IDENT = /[A-Za-z_\u0080-\uFFFF][\w\u0080-\uFFFF]*/;
 
@@ -186,8 +204,17 @@ export function getSuggestions(ctx, { code, unitId, appMode = false, limit = 12 
   let pool = [];
 
   if (ctx.kind === "member") {
-    const inferred = inferVariableType(code, ctx.objectName);
-    pool = getMethodCatalog(inferred).map((item) => ({ ...item, source: "method" }));
+    if (appMode && isSkuiNamespace(code, ctx.objectName)) {
+      pool = getSkuiAutocompleteSuggestions(ctx.prefix || "").map((item) => ({
+        label: item.label,
+        kind: "skui-component",
+        descriptionAr: `مكوّن skui — ${item.detail || item.label}`,
+        source: "skui",
+      }));
+    } else {
+      const inferred = inferVariableType(code, ctx.objectName);
+      pool = getMethodCatalog(inferred).map((item) => ({ ...item, source: "method" }));
+    }
   } else {
     pool = getAllCatalogItems({ appMode }).map((item) => ({ ...item, source: "catalog" }));
 
@@ -209,6 +236,29 @@ export function getSuggestions(ctx, { code, unitId, appMode = false, limit = 12 
     }
     if (ctx.afterKeyword) {
       pool = [...ctx.afterKeyword.map((item) => ({ ...item, source: "context" })), ...pool];
+    }
+
+    // Inside ui.Component(…): suggest constructor kwargs when app mode is on.
+    const ctorPropMatch = appMode
+      ? code
+          .slice(0, ctx.replaceEnd)
+          .match(/([A-Za-z_]\w*)\s*\.\s*([A-Za-z_]\w*)\s*\(\s*(?:[^)]*,\s*)*([A-Za-z_]*)$/)
+      : null;
+    if (
+      ctorPropMatch &&
+      isSkuiNamespace(code, ctorPropMatch[1]) &&
+      getSkuiAutocompleteSuggestions(ctorPropMatch[2]).some((item) => item.label === ctorPropMatch[2])
+    ) {
+      const propPrefix = ctorPropMatch[3] || "";
+      const skuiProps = getSkuiConstructorProps(ctorPropMatch[2])
+        .filter((name) => !propPrefix || name.toLowerCase().startsWith(propPrefix.toLowerCase()))
+        .map((name) => ({
+          label: name,
+          kind: "skui-property",
+          descriptionAr: `خاصية skui.${ctorPropMatch[2]}`,
+          source: "skui-prop",
+        }));
+      pool = [...skuiProps, ...pool];
     }
   }
 
@@ -276,5 +326,7 @@ export function kindLabelAr(kind) {
   if (kind === "variable") return "متغير";
   if (kind === "function") return "دالة (تعريفك)";
   if (kind === "module") return "وحدة";
+  if (kind === "skui-component") return "مكوّن skui";
+  if (kind === "skui-property") return "خاصية skui";
   return "اقتراح";
 }
