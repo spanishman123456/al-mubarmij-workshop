@@ -1091,7 +1091,7 @@ export default function PythonLab() {
           ) : null}
         </div>
 
-        {runMode === "console" || appTab === "code" ? (
+        {runMode === "console" ? (
         <div className="grid gap-6 lg:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm text-slate-400">الكود</label>
@@ -1100,70 +1100,30 @@ export default function PythonLab() {
               onChange={setCode}
               assistMode={assistMode}
               unitId={activeUnitId}
-              appMode={runMode === "app"}
+              appMode={false}
             />
-            {runMode === "console" ? (
-              <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                برامج متعددة الأسطر: <span dir="ltr">if</span>، <span dir="ltr">for</span>،{" "}
-                <span dir="ltr">while</span>، دوال، وقوائم.
-              </p>
-            ) : (
-              <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                مثال: <span dir="ltr">ui.Button</span>، <span dir="ltr">on_click</span>،{" "}
-                <span dir="ltr">app.run()</span> في نهاية الكود.
-              </p>
-            )}
+            <p className="mt-2 text-xs leading-relaxed text-slate-500">
+              برامج متعددة الأسطر: <span dir="ltr">if</span>، <span dir="ltr">for</span>،{" "}
+              <span dir="ltr">while</span>، دوال، وقوائم.
+            </p>
 
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={runMode === "console" ? runConsole : runApp}
+                onClick={runConsole}
                 disabled={busy}
                 className="flex-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-3 text-sm font-bold text-white shadow-lg disabled:opacity-60"
               >
-                {busy ? "جارٍ التشغيل…" : runMode === "console" ? "تشغيل الكود" : "تشغيل المشروع"}
+                {busy ? "جارٍ التشغيل…" : "تشغيل الكود"}
               </button>
-              {runMode === "console" ? (
-                <button
-                  type="button"
-                  onClick={handleAutoFixIndentation}
-                  disabled={busy}
-                  className="rounded-xl border border-amber-400/50 px-4 py-3 text-sm font-bold text-amber-200 hover:bg-amber-900/30 disabled:opacity-50"
-                >
-                  إصلاح المسافات تلقائيًا
-                </button>
-              ) : null}
-              {runMode === "app" ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={stopAppSession}
-                    disabled={busy}
-                    className="rounded-xl border border-red-500/40 px-4 py-3 text-sm font-bold text-red-300 hover:bg-red-950/30 disabled:opacity-50"
-                  >
-                    إيقاف
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetApp}
-                    disabled={busy}
-                    className="rounded-xl border border-white/20 px-4 py-3 text-sm font-bold text-slate-200 hover:bg-white/10 disabled:opacity-50"
-                  >
-                    إعادة تشغيل
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      stopAppSession();
-                      clearPreviewState();
-                    }}
-                    disabled={busy}
-                    className="rounded-xl border border-white/20 px-4 py-3 text-sm font-bold text-slate-200 hover:bg-white/10 disabled:opacity-50"
-                  >
-                    مسح المعاينة
-                  </button>
-                </>
-              ) : null}
+              <button
+                type="button"
+                onClick={handleAutoFixIndentation}
+                disabled={busy}
+                className="rounded-xl border border-amber-400/50 px-4 py-3 text-sm font-bold text-amber-200 hover:bg-amber-900/30 disabled:opacity-50"
+              >
+                إصلاح المسافات تلقائيًا
+              </button>
             </div>
 
             {user ? (
@@ -1173,33 +1133,22 @@ export default function PythonLab() {
                   onClick={handleSave}
                   className="flex-1 rounded-xl border border-white/20 py-2 text-sm text-slate-200 hover:bg-white/10"
                 >
-                  حفظ {runMode === "app" ? "المشروع" : "الكود"} {user.role === "teacher" ? "(المعلم)" : ""}
+                  حفظ الكود {user.role === "teacher" ? "(المعلم)" : ""}
                 </button>
-                {runMode === "app" && user.role === "student" ? (
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    className="flex-1 rounded-xl border border-violet-500/40 bg-violet-950/30 py-2 text-sm font-bold text-violet-200 hover:bg-violet-900/40"
-                  >
-                    إرسال للمعلم
-                  </button>
-                ) : null}
               </div>
             ) : null}
 
-            {runMode === "console" ? (
-              <div className="mt-4">
-                <ProjectExportPanel
-                  title={exercise?.titleAr || "كود بايثون"}
-                  code={code}
-                  mode="console"
-                  authorName={user?.nameAr}
-                  ownerId={user?.id}
-                  projectId={activeId}
-                  variant="dark"
-                />
-              </div>
-            ) : null}
+            <div className="mt-4">
+              <ProjectExportPanel
+                title={exercise?.titleAr || "كود بايثون"}
+                code={code}
+                mode="console"
+                authorName={user?.nameAr}
+                ownerId={user?.id}
+                projectId={activeId}
+                variant="dark"
+              />
+            </div>
 
             {stepPlan && !savedProjectId ? (
               <StepLearningPanel
@@ -1216,73 +1165,312 @@ export default function PythonLab() {
                 allowRevealSolution={false}
               />
             ) : null}
+          </div>
 
-            {runMode === "app" && !savedProjectId ? (
+          <div>
+            <label className="mb-2 block text-sm text-slate-400">المخرجات والملاحظات</label>
+            {errorPanel || (
+              <pre
+                dir="ltr"
+                className="min-h-[280px] whitespace-pre-wrap rounded-xl border border-white/10 bg-black/50 p-4 text-left font-mono text-sm text-emerald-200"
+              >
+                {out || "اضغط «تشغيل الكود»"}
+              </pre>
+            )}
+            {likelyIndentationIssue ? (
+              <button
+                type="button"
+                onClick={handleAutoFixIndentation}
+                className="mt-3 rounded-lg border border-amber-400/50 bg-amber-900/20 px-3 py-2 text-xs font-bold text-amber-200 hover:bg-amber-900/30"
+              >
+                اكتُشف خطأ مسافات — اضغط لإصلاحها تلقائيًا
+              </button>
+            ) : null}
+          </div>
+        </div>
+        ) : null}
+
+        {runMode === "app" && appTab === "code" ? (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm text-slate-400">الكود</label>
+            <PythonCodeEditor
+              value={code}
+              onChange={setCode}
+              assistMode={assistMode}
+              unitId={activeUnitId}
+              appMode
+            />
+            <p className="mt-2 text-xs leading-relaxed text-slate-500">
+              مثال: <span dir="ltr">ui.Button</span>، <span dir="ltr">on_click</span>،{" "}
+              <span dir="ltr">app.run()</span> في نهاية الكود.
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={runApp}
+                disabled={busy}
+                className="flex-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-3 text-sm font-bold text-white shadow-lg disabled:opacity-60"
+              >
+                {busy ? "جارٍ التشغيل…" : "تشغيل المشروع"}
+              </button>
+              <button
+                type="button"
+                onClick={stopAppSession}
+                disabled={busy}
+                className="rounded-xl border border-red-500/40 px-4 py-3 text-sm font-bold text-red-300 hover:bg-red-950/30 disabled:opacity-50"
+              >
+                إيقاف
+              </button>
+              <button
+                type="button"
+                onClick={resetApp}
+                disabled={busy}
+                className="rounded-xl border border-white/20 px-4 py-3 text-sm font-bold text-slate-200 hover:bg-white/10 disabled:opacity-50"
+              >
+                إعادة تشغيل
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  stopAppSession();
+                  clearPreviewState();
+                }}
+                disabled={busy}
+                className="rounded-xl border border-white/20 px-4 py-3 text-sm font-bold text-slate-200 hover:bg-white/10 disabled:opacity-50"
+              >
+                مسح المعاينة
+              </button>
+            </div>
+
+            {user ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="flex-1 rounded-xl border border-white/20 py-2 text-sm text-slate-200 hover:bg-white/10"
+                >
+                  حفظ المشروع {user.role === "teacher" ? "(المعلم)" : ""}
+                </button>
+                {user.role === "student" ? (
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    className="flex-1 rounded-xl border border-violet-500/40 bg-violet-950/30 py-2 text-sm font-bold text-violet-200 hover:bg-violet-900/40"
+                  >
+                    إرسال للمعلم
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
+            {stepPlan && !savedProjectId && !isTeacher ? (
+              <StepLearningPanel
+                plan={stepPlan}
+                stepIndex={stepIndex}
+                hintLevel={stepHintLevel}
+                checkResult={stepCheckResult}
+                checkAttempts={stepCheckAttempts}
+                solutionRevealed={solutionRevealed}
+                onHint={handleStepHint}
+                onCheck={handleStepCheck}
+                onRevealSolution={handleRevealSolution}
+                onClearCheck={clearStepCheck}
+                allowRevealSolution={false}
+              />
+            ) : isTeacher ? (
+              <p className="mt-4 rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-3 text-sm text-cyan-100">
+                وضع المعلم: يمكنك فتح الحل النموذجي من تبويب «الحل النموذجي» دون نظام الخطوات.
+              </p>
+            ) : null}
+
+            {!savedProjectId ? (
               <p className="mt-3 text-xs text-violet-200/90">{appTemplate.curriculumTopic}</p>
             ) : null}
           </div>
 
           <div>
-            {runMode === "console" ? (
-              <>
-                <label className="mb-2 block text-sm text-slate-400">المخرجات والملاحظات</label>
-                {errorPanel || (
-                  <pre
-                    dir="ltr"
-                    className="min-h-[280px] whitespace-pre-wrap rounded-xl border border-white/10 bg-black/50 p-4 text-left font-mono text-sm text-emerald-200"
-                  >
-                    {out || "اضغط «تشغيل الكود»"}
-                  </pre>
-                )}
-                {likelyIndentationIssue ? (
-                  <button
-                    type="button"
-                    onClick={handleAutoFixIndentation}
-                    className="mt-3 rounded-lg border border-amber-400/50 bg-amber-900/20 px-3 py-2 text-xs font-bold text-amber-200 hover:bg-amber-900/30"
-                  >
-                    اكتُشف خطأ مسافات — اضغط لإصلاحها تلقائيًا
-                  </button>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <label className="mb-2 block text-sm text-slate-400">معاينة المشروع (Preview)</label>
-                {errorPanel}
-                <div ref={previewRef}>
-                <GraphicProjectFrame project={appTemplate} runStatus={runStatus}>
-                  <PyAppPreview
-                    ui={appUi}
-                    values={appValues}
-                    onChange={(id, v) => setAppValues((prev) => ({ ...prev, [id]: v }))}
-                    onButton={onAppButton}
-                    onEvent={onAppEvent}
-                    loading={busy}
-                  />
-                </GraphicProjectFrame>
-                </div>
-                <button
-                  type="button"
-                  className="mt-2 rounded-lg border border-cyan-500/40 px-3 py-2 text-xs font-bold text-cyan-200"
-                  onClick={() => previewRef.current?.requestFullscreen?.()}
-                >
-                  فتح بملء الشاشة
-                </button>
-                {appConsole ? (
-                  <pre
-                    dir="ltr"
-                    className="mt-3 max-h-32 overflow-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/50 p-3 text-left font-mono text-xs text-emerald-200"
-                  >
-                    {appConsole}
-                  </pre>
-                ) : null}
-              </>
-            )}
+            <label className="mb-2 block text-sm text-slate-400">معاينة سريعة</label>
+            {errorPanel}
+            <div ref={previewRef}>
+              <GraphicProjectFrame project={appTemplate} runStatus={runStatus}>
+                <PyAppPreview
+                  ui={appUi}
+                  values={appValues}
+                  onChange={(id, v) => setAppValues((prev) => ({ ...prev, [id]: v }))}
+                  onButton={onAppButton}
+                  onEvent={onAppEvent}
+                  loading={busy}
+                />
+              </GraphicProjectFrame>
+            </div>
             <p className="mt-4 text-xs leading-relaxed text-slate-500">
               مكتبة skui مصممة خصيصًا لـ Skulpt والمتصفح، وليست Tkinter. تعمل الواجهة داخل iframe معزول،
               ويعمل كود Python داخل Web Worker قابل للإيقاف دون الوصول إلى DOM المنصة أو بياناتها.
             </p>
           </div>
         </div>
+        ) : null}
+
+        {runMode === "app" && appTab === "preview" ? (
+          <div className="space-y-4">
+            {errorPanel}
+            <div ref={previewRef}>
+              <GraphicProjectFrame project={appTemplate} runStatus={runStatus}>
+                <PyAppPreview
+                  ui={appUi}
+                  values={appValues}
+                  onChange={(id, v) => setAppValues((prev) => ({ ...prev, [id]: v }))}
+                  onButton={onAppButton}
+                  onEvent={onAppEvent}
+                  loading={busy}
+                />
+              </GraphicProjectFrame>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={runApp}
+                disabled={busy}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+              >
+                {busy ? "جاري بناء واجهة التطبيق..." : "تشغيل المشروع"}
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-cyan-500/40 px-3 py-2 text-xs font-bold text-cyan-200"
+                onClick={() => previewRef.current?.requestFullscreen?.()}
+              >
+                فتح بملء الشاشة
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  stopAppSession();
+                  clearPreviewState();
+                }}
+                className="rounded-lg border border-white/20 px-3 py-2 text-xs font-bold text-slate-200"
+              >
+                مسح المعاينة
+              </button>
+            </div>
+            {appConsole ? (
+              <pre
+                dir="ltr"
+                className="max-h-32 overflow-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/50 p-3 text-left font-mono text-xs text-emerald-200"
+              >
+                {appConsole}
+              </pre>
+            ) : null}
+          </div>
+        ) : null}
+
+        {runMode === "app" && appTab === "export" ? (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-emerald-200">فحص جاهزية المشروع</h3>
+                <button
+                  type="button"
+                  data-testid="project-readiness-check"
+                  onClick={handleReadinessCheck}
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white"
+                >
+                  فحص جاهزية المشروع
+                </button>
+              </div>
+              {readiness ? (
+                <ul className="mt-3 space-y-1 text-sm text-slate-200">
+                  {Object.entries(readiness.statuses).map(([key, value]) => (
+                    <li key={key}>
+                      <span className="font-bold text-emerald-300">{key}: </span>
+                      {value}
+                    </li>
+                  ))}
+                  {readiness.issues?.length ? (
+                    <li className="text-amber-200">مشكلات: {readiness.issues.join(" — ")}</li>
+                  ) : null}
+                </ul>
+              ) : (
+                <p className="mt-2 text-xs text-slate-400">شغّل المشروع ثم افحص الجاهزية قبل التصدير.</p>
+              )}
+            </div>
+            <ProjectExportPanel
+              title={projectTitle.trim() || appTemplate.titleAr}
+              code={code}
+              mode="app"
+              templateId={activeAppId}
+              authorName={user?.nameAr}
+              ownerId={user?.id}
+              projectId={savedProjectId || activeAppId}
+              variant="dark"
+              lastRunOk={lastRunOk}
+              lastRunCodeHash={lastRunCodeHash}
+            />
+          </div>
+        ) : null}
+
+        {runMode === "app" && appTab === "solution" && isTeacher ? (
+          <div className="space-y-4 rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-4">
+            <h3 className="text-base font-bold text-cyan-100">الحل النموذجي — {appTemplate.titleAr}</h3>
+            <p className="text-sm text-slate-300">
+              معاينة المعلم فقط. لن تُحفظ كمحاولة طالب ولن تظهر في تقدّم الطلاب.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={loadTeacherSolution}
+                disabled={teacherSolutionBusy}
+                className="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {teacherSolutionBusy ? "جاري التحميل…" : "تحميل الحل من الخادم"}
+              </button>
+              <button
+                type="button"
+                onClick={openTeacherSolutionInEditor}
+                disabled={!teacherSolution}
+                className="rounded-xl border border-violet-400/50 px-4 py-2 text-sm font-bold text-violet-100 disabled:opacity-40"
+              >
+                فتح الحل الكامل في المحرر
+              </button>
+              <button
+                type="button"
+                onClick={runApp}
+                disabled={!code || busy}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              >
+                معاينة المعلم
+              </button>
+            </div>
+            {teacherSolutionError ? <p className="text-sm text-amber-200">{teacherSolutionError}</p> : null}
+            {teacherSolution ? (
+              <pre
+                dir="ltr"
+                className="max-h-96 overflow-auto rounded-xl border border-white/10 bg-black/50 p-3 text-left font-mono text-xs text-emerald-100"
+              >
+                {teacherSolution}
+              </pre>
+            ) : (
+              <p className="text-xs text-slate-400">اضغط تحميل الحل لجلب الكود النموذجي الآمن من API المعلم.</p>
+            )}
+            <div>
+              <p className="mb-2 text-xs font-bold text-slate-400">مكونات skui المستخدمة</p>
+              <div className="flex flex-wrap gap-1">
+                {(appTemplate.components || []).map((c) => (
+                  <span key={c} dir="ltr" className="rounded bg-black/40 px-2 py-0.5 font-mono text-[11px] text-cyan-200">
+                    {c}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 text-xs font-bold text-slate-400">اختبارات المشروع</p>
+              <ul className="mt-1 list-inside list-disc text-xs text-slate-300">
+                {(appTemplate.tests || []).map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
         ) : null}
 
         <section
