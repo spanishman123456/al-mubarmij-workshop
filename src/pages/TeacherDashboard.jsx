@@ -337,6 +337,9 @@ export default function TeacherDashboard() {
           <Link to="/teacher/quiz-review" className="edu-btn edu-btn-outline text-sm">
             مراجعة الاختبارات
           </Link>
+          <Link to="/teacher/code-visibility" className="edu-btn edu-btn-primary text-sm">
+            التحكم في ظهور الكود
+          </Link>
           <button
             type="button"
             onClick={handleRefresh}

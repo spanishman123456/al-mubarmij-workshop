@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { pythonExercises } from "../data/pythonExercises";
 import { getSkuiProjectOrDefault, SKUI_PROJECTS } from "../data/skuiProjectsRegistry";
 import { curriculumUnits } from "../data/curriculum";
@@ -22,6 +22,11 @@ import {
   parseAssistMode,
 } from "../config/pythonLabSettings.js";
 import { fetchPlatformSettingsPublic, savePythonAssistMode } from "../lib/platformSettingsApi.js";
+import { fetchAllowedContent } from "../lib/codeVisibilityClient.js";
+import {
+  getLevelDef,
+  DEFAULT_CODE_VISIBILITY_LEVEL,
+} from "../config/codeVisibilityPolicy.js";
 import { getStepPlan } from "../data/stepLearningPlans.js";
 import {
   checkStep,
@@ -112,6 +117,7 @@ export default function PythonLab() {
   const [teacherSolutionError, setTeacherSolutionError] = useState(null);
   const [assistMode, setAssistMode] = useState(getBuildTimeAssistMode);
   const [assistSaving, setAssistSaving] = useState(false);
+  const [visibilityLevel, setVisibilityLevel] = useState(DEFAULT_CODE_VISIBILITY_LEVEL);
   const [teacherSnippets, setTeacherSnippets] = useState([]);
   const [snippetQuery, setSnippetQuery] = useState("");
   const [snippetFilter, setSnippetFilter] = useState("all");
@@ -156,6 +162,23 @@ export default function PythonLab() {
   );
   const myGraphicProjects = myProgress?.graphicProjects ?? [];
   const visibleAppTabs = APP_TABS.filter((tab) => !tab.teacherOnly || isTeacher);
+
+  useEffect(() => {
+    if (runMode !== "app" || !activeAppId) return;
+    let cancelled = false;
+    fetchAllowedContent(activeAppId, { mode: "app" })
+      .then((data) => {
+        if (!cancelled && data?.content?.level) setVisibilityLevel(data.content.level);
+      })
+      .catch(() => {
+        if (!cancelled) setVisibilityLevel(DEFAULT_CODE_VISIBILITY_LEVEL);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [runMode, activeAppId]);
+
+  const visibilityDef = getLevelDef(visibilityLevel);
   const myStudentSnippets = myProgress?.pythonSnippets ?? [];
   const teacherSnippetsStorageKey = user?.id ? `teacher-python-snippets:${user.id}` : null;
   const snippetsSource = user?.role === "teacher" ? teacherSnippets : myStudentSnippets;
@@ -1276,7 +1299,50 @@ export default function PythonLab() {
               </div>
             ) : null}
 
-            {stepPlan && !savedProjectId && !isTeacher ? (
+            {isTeacher ? (
+              <div
+                data-testid="cv-teacher-bar"
+                className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-3 text-sm text-cyan-100"
+              >
+                <span>
+                  الوضع الحالي للطالب:{" "}
+                  <span className="font-bold text-cyan-200" data-testid="cv-teacher-mode">
+                    {visibilityDef.labelAr}
+                  </span>
+                </span>
+                <Link
+                  data-testid="cv-change-link"
+                  to={`/teacher/code-visibility?project=${encodeURIComponent(activeAppId)}`}
+                  className="rounded-lg border border-cyan-400/50 px-3 py-1 text-xs font-bold text-cyan-100 hover:bg-cyan-900/40"
+                >
+                  تغيير الإعداد
+                </Link>
+              </div>
+            ) : (
+              <div
+                data-testid="cv-student-bar"
+                className="mt-4 rounded-xl border border-slate-500/30 bg-slate-800/40 p-3 text-xs text-slate-300"
+              >
+                يعرض لك المعلم المحتوى وفق الوضع الحالي:{" "}
+                <span className="font-bold text-slate-100" data-testid="cv-student-mode">
+                  {visibilityDef.labelAr}
+                </span>
+              </div>
+            )}
+
+            {!isTeacher && visibilityLevel === 1 ? (
+              <p
+                data-testid="cv-hide-notice"
+                className="mt-4 rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-sm text-amber-100"
+              >
+                حدّد المعلم بدء هذا النشاط من صفحة فارغة — اكتب الكود بنفسك دون كود ابتدائي أو تلميحات.
+              </p>
+            ) : !isTeacher && visibilityLevel === 2 ? (
+              <div className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-3 text-sm text-emerald-100">
+                <p className="font-bold text-emerald-200">المطلوب</p>
+                <p className="mt-1 text-slate-200">{stepPlan?.ideaAr || appTemplate.description}</p>
+              </div>
+            ) : stepPlan && !savedProjectId && !isTeacher ? (
               <StepLearningPanel
                 plan={stepPlan}
                 stepIndex={stepIndex}
@@ -1288,12 +1354,8 @@ export default function PythonLab() {
                 onCheck={handleStepCheck}
                 onRevealSolution={handleRevealSolution}
                 onClearCheck={clearStepCheck}
-                allowRevealSolution={false}
+                allowRevealSolution={visibilityLevel >= 7}
               />
-            ) : isTeacher ? (
-              <p className="mt-4 rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-3 text-sm text-cyan-100">
-                وضع المعلم: يمكنك فتح الحل النموذجي من تبويب «الحل النموذجي» دون نظام الخطوات.
-              </p>
             ) : null}
 
             {!savedProjectId ? (

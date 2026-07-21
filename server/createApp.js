@@ -36,6 +36,7 @@ import { requirePublishedTeacherDay } from "./auth/publishedContent.js";
 import { registerPublicationRoutes } from "./routes/publicationRoutes.js";
 import { registerExportRoutes } from "./routes/exportRoutes.js";
 import { registerSkuiTeacherRoutes } from "./routes/skuiTeacherRoutes.js";
+import { registerCodeVisibilityRoutes } from "./routes/codeVisibilityRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");
@@ -239,6 +240,7 @@ export function createApp({ exportStore } = {}) {
   );
 
   registerPublicationRoutes(app, logError);
+  registerCodeVisibilityRoutes(app, logError);
 
   app.post("/api/analytics/login", requireAuth, requireRole("student"), (req, res) => {
     try {

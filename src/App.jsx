@@ -147,6 +147,7 @@ import TeacherDay13AnswersPage from "./pages/teacher/TeacherDay13AnswersPage.jsx
 import TeacherDay14AnswersPage from "./pages/teacher/TeacherDay14AnswersPage.jsx";
 import TeacherDay15AnswersPage from "./pages/teacher/TeacherDay15AnswersPage.jsx";
 import TeacherQuizReviewPage from "./pages/teacher/TeacherQuizReviewPage.jsx";
+import CodeVisibilityPage from "./pages/teacher/CodeVisibilityPage.jsx";
 import { PublishedContentGate } from "./components/auth/PublishedContentGate.jsx";
 
 function NotFoundRedirect() {
@@ -421,6 +422,7 @@ function AppRoutes() {
         <Route path="/teacher/day-14-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay14AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/day-15-answers" element={<ProtectedRoute roles={["teacher"]}><TeacherDay15AnswersPage /></ProtectedRoute>} />
         <Route path="/teacher/quiz-review" element={<ProtectedRoute roles={["teacher"]}><TeacherQuizReviewPage /></ProtectedRoute>} />
+        <Route path="/teacher/code-visibility" element={<ProtectedRoute roles={["teacher"]}><CodeVisibilityPage /></ProtectedRoute>} />
 
         <Route
           path="/path"
