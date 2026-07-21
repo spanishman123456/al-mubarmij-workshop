@@ -15,6 +15,17 @@ const SETTINGS_PATH = fileURLToPath(new URL("./data/code-visibility.integration.
 const TEACHER_NID = "2297033843";
 const STUDENT_NID = "1165814631";
 const CONSOLE_RESOURCE = "intro-print";
+const APP_RESOURCE = "app-guess-number";
+
+async function teacherDelete(path, body) {
+  const res = await authFetch(baseUrl, path, {
+    method: "DELETE",
+    body: JSON.stringify(body || {}),
+    cookie: teacherAuth.cookie,
+    csrf: teacherAuth.csrf,
+  });
+  return { res, data: await res.json().catch(() => ({})) };
+}
 
 let baseUrl;
 let server;
@@ -189,5 +200,69 @@ describe("code-visibility revert/undo + preview", () => {
       csrf: studentAuth.csrf,
     });
     expect(res.status).toBe(403);
+  });
+});
+
+describe("code-visibility scope priority end-to-end (the reported bug)", () => {
+  it("general=8 → student gets solution; project=4 overrides; delete → back to 8", async () => {
+    // 1) general = 8 → الطالب يحصل على الحل الكامل للمشروع الرسومي.
+    await teacherPut("/api/config/code-visibility", { scope: "general", level: 8 });
+    let r = await studentGet(`/api/lab/${APP_RESOURCE}/allowed-content?mode=app`);
+    expect(r.data.content.level).toBe(8);
+    expect(r.data.content.resolvedScope).toBe("general");
+    expect(r.data.content.fullSolution).toBeTruthy();
+
+    // 4) project = 4 → يتغلب على العام، ويُخفي الحل.
+    await teacherPut("/api/config/code-visibility", {
+      scope: "project",
+      target: APP_RESOURCE,
+      level: 4,
+    });
+    r = await studentGet(`/api/lab/${APP_RESOURCE}/allowed-content?mode=app`);
+    expect(r.data.content.level).toBe(4);
+    expect(r.data.content.resolvedScope).toBe("project");
+    expect(r.data.content.fullSolution).toBeNull();
+
+    // 6) حذف إعداد المشروع → العودة للمستوى العام 8.
+    await teacherDelete("/api/config/code-visibility", { scope: "project", target: APP_RESOURCE });
+    r = await studentGet(`/api/lab/${APP_RESOURCE}/allowed-content?mode=app`);
+    expect(r.data.content.level).toBe(8);
+    expect(r.data.content.fullSolution).toBeTruthy();
+  });
+
+  it("teacher diagnose endpoint shows scope breakdown + deciding scope", async () => {
+    await teacherPut("/api/config/code-visibility", { scope: "general", level: 8 });
+    await teacherPut("/api/config/code-visibility", {
+      scope: "project",
+      target: APP_RESOURCE,
+      level: 3,
+    });
+    const { res, data } = await authFetch(
+      baseUrl,
+      `/api/config/code-visibility/diagnose?mode=app&resourceId=${APP_RESOURCE}`,
+      { cookie: teacherAuth.cookie },
+    ).then(async (r) => ({ res: r, data: await r.json() }));
+    expect(res.status).toBe(200);
+    expect(data.diagnostic.generalLevel).toBe(8);
+    expect(data.diagnostic.projectLevel).toBe(3);
+    expect(data.diagnostic.resolvedLevel).toBe(3);
+    expect(data.diagnostic.resolvedScope).toBe("project");
+    expect(data.diagnostic.fullSolutionAvailable).toBe(true);
+  });
+
+  it("student cannot access the diagnose endpoint", async () => {
+    const res = await authFetch(
+      baseUrl,
+      `/api/config/code-visibility/diagnose?mode=app&resourceId=${APP_RESOURCE}`,
+      { cookie: studentAuth.cookie },
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("allowed-content responses are not cached (no-store)", async () => {
+    const res = await authFetch(baseUrl, `/api/lab/${APP_RESOURCE}/allowed-content?mode=app`, {
+      cookie: studentAuth.cookie,
+    });
+    expect(res.headers.get("cache-control")).toMatch(/no-store/);
   });
 });

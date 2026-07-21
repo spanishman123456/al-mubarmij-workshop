@@ -7,6 +7,7 @@ const PORT = 5173;
 const API_PORT = 3011;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const E2E_DB = path.join(__dirname, "server", "data", "platform.e2e.db");
+const E2E_SETTINGS = path.join(__dirname, "server", "data", "platform-settings.e2e.json");
 const E2E_TEACHER_PASSWORD = process.env.E2E_TEACHER_PASSWORD || "__e2e-teacher-local__";
 const E2E_TEACHER_HASH =
   process.env.TEACHER_BCRYPT_HASH || bcrypt.hashSync(E2E_TEACHER_PASSWORD, 4);
@@ -34,6 +35,7 @@ export default defineConfig({
       env: {
         PORT: String(API_PORT),
         PLATFORM_DB_PATH: E2E_DB,
+        PLATFORM_SETTINGS_PATH: E2E_SETTINGS,
         TEACHER_BCRYPT_HASH: E2E_TEACHER_HASH,
         PUBLISHED_DAYS: process.env.PUBLISHED_DAYS || "4",
         STUDENT_UNLOCK_POLICY: process.env.STUDENT_UNLOCK_POLICY || "sequential",

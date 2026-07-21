@@ -14,7 +14,7 @@ import {
   DEFAULT_CODE_VISIBILITY_LEVEL,
   FALLBACK_CODE_VISIBILITY_LEVEL,
 } from "../../src/config/codeVisibilityPolicy.js";
-import { getResourceMeta } from "../../src/data/codeVisibilityCatalog.js";
+import { getResourceMeta, isKnownProjectId } from "../../src/data/codeVisibilityCatalog.js";
 import { getStepPlan } from "../../src/data/stepLearningPlans.js";
 import { getSkuiTeacherSolution } from "../teacher/skuiSolutions.js";
 import { getSkuiProjectOrDefault } from "../../src/data/skuiProjectsRegistry.js";
@@ -44,6 +44,41 @@ export function resolveLevelForResource(mode, resourceId, config = getCodeVisibi
     config,
   );
   return { level, scope, meta };
+}
+
+/**
+ * تفكيك السياسة الفعّالة لمورد عبر كل النطاقات — لأغراض تشخيص المعلم.
+ * لا يكشف الحل الكامل، فقط توفره من عدمه.
+ * @param {"console"|"app"} mode
+ * @param {string} resourceId
+ */
+export function diagnoseResource(mode, resourceId, config = getCodeVisibilityConfig()) {
+  const meta = getResourceMeta(mode, resourceId);
+  const generalLevel = normalizeLevel(config.general);
+  const dayLevel =
+    meta.dayId && isValidLevel(config.days?.[meta.dayId]) ? normalizeLevel(config.days[meta.dayId]) : null;
+  const projectLevel = isValidLevel(config.projects?.[meta.projectId])
+    ? normalizeLevel(config.projects[meta.projectId])
+    : null;
+  const { level, scope } = resolveEffectiveLevel(
+    { projectId: meta.projectId, dayId: meta.dayId },
+    config,
+  );
+  return {
+    resourceId: meta.resourceId,
+    mode,
+    projectId: meta.projectId,
+    dayId: meta.dayId,
+    titleAr: meta.titleAr,
+    generalLevel,
+    dayLevel,
+    projectLevel,
+    resolvedLevel: level,
+    resolvedScope: scope,
+    catalogMatch: mode === "console" ? true : isKnownProjectId(meta.projectId),
+    fullSolutionAvailable: Boolean(getServerFullSolution(mode, meta)),
+    fetchedAt: new Date().toISOString(),
+  };
 }
 
 function cloneMap(map) {
@@ -213,13 +248,25 @@ export function buildAllowedContent(mode, resourceId, ctx = {}) {
   let level;
   let scope;
   let meta;
+  let policyFailed = false;
+  const config = (() => {
+    try {
+      return getCodeVisibilityConfig();
+    } catch {
+      policyFailed = true;
+      return null;
+    }
+  })();
+
   try {
-    const resolved = resolveLevelForResource(mode, resourceId);
+    if (policyFailed) throw new Error("policy_load_failed");
+    const resolved = resolveLevelForResource(mode, resourceId, config);
     level = resolved.level;
     scope = resolved.scope;
     meta = resolved.meta;
   } catch {
     // فشل تحميل السياسة → المستوى الاحتياطي الآمن (إخفاء الحل).
+    policyFailed = true;
     level = FALLBACK_CODE_VISIBILITY_LEVEL;
     scope = "general";
     meta = getResourceMeta(mode, resourceId);
@@ -236,12 +283,31 @@ export function buildAllowedContent(mode, resourceId, ctx = {}) {
   if (def.fullSolution === "immediate") fullSolutionAllowed = true;
   else if (def.fullSolution === "after" && meetsAfterCondition) fullSolutionAllowed = true;
 
+  const serverSolution = fullSolutionAllowed && !isTeacher ? getServerFullSolution(mode, meta) : null;
+  // المستوى يسمح بالحل لكن لا يوجد حل مربوط بالمشروع → رسالة آمنة، دون كشف تفاصيل.
+  const fullSolutionMissing = fullSolutionAllowed && !isTeacher && !serverSolution;
+
+  // تشخيص per-scope (غير حسّاس) لتوضيح أي نطاق حسم المستوى.
+  const cfg = config || {};
+  const generalLevel = normalizeLevel(cfg.general);
+  const dayLevel =
+    meta.dayId && isValidLevel(cfg.days?.[meta.dayId]) ? normalizeLevel(cfg.days[meta.dayId]) : null;
+  const projectLevel = isValidLevel(cfg.projects?.[meta.projectId])
+    ? normalizeLevel(cfg.projects[meta.projectId])
+    : null;
+
   const payload = {
     resourceId: meta.resourceId,
     mode,
     level,
     levelKey: def.key,
     scope,
+    resolvedScope: scope,
+    generalLevel: policyFailed ? null : generalLevel,
+    dayLevel: policyFailed ? null : dayLevel,
+    projectLevel: policyFailed ? null : projectLevel,
+    catalogMatch: mode === "console" ? true : isKnownProjectId(meta.projectId),
+    policyFailed,
     titleAr: meta.titleAr,
     taskDescriptionAr: def.showsTask ? meta.taskDescriptionAr : null,
     hints: def.showsHints ? meta.hints : [],
@@ -249,12 +315,23 @@ export function buildAllowedContent(mode, resourceId, ctx = {}) {
     partialCode: def.showsPartial ? meta.partialCode : null,
     stepsEnabled: def.showsSteps,
     fullSolutionAvailable: fullSolutionAllowed,
-    fullSolution: null,
+    fullSolutionMissing,
+    fullSolution: serverSolution,
+    notice: fullSolutionMissing
+      ? "المحتوى الكامل غير متاح لهذا المشروع حاليًا. تم إبقاء كود البداية."
+      : null,
   };
 
-  // الحل الكامل يُرسَل فقط عند السماح به. المعلمون يحصلون عليه عبر مسار المعلم المخصص.
-  if (fullSolutionAllowed && !isTeacher) {
-    payload.fullSolution = getServerFullSolution(mode, meta);
+  // سجل تشخيصي على الخادم عند تعذّر تطبيق الحل الكامل رغم السماح به.
+  if (fullSolutionMissing && typeof ctx.logDiagnostic === "function") {
+    ctx.logDiagnostic("codeVisibility.fullSolutionMissing", {
+      resourceId: meta.resourceId,
+      projectId: meta.projectId,
+      resolvedLevel: level,
+      resolvedScope: scope,
+      catalogMatch: payload.catalogMatch,
+      reason: "no_server_full_solution",
+    });
   }
 
   return payload;

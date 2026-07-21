@@ -10,10 +10,22 @@ import {
   undoLastCodeVisibility,
   buildAllowedContent,
   previewAsStudent,
+  diagnoseResource,
 } from "./codeVisibilityService.js";
 import { DEFAULT_CODE_VISIBILITY_LEVEL } from "../../src/config/codeVisibilityPolicy.js";
+import { pythonExercises } from "../../src/data/pythonExercises.js";
 
 const CONSOLE_RESOURCE = "intro-print";
+const APP_RESOURCE = "app-guess-number";
+
+/** يجد مورد console بلا حلٍّ نموذجي على الخادم (للاختبار السلبي). */
+function findConsoleWithoutSolution() {
+  for (const ex of pythonExercises) {
+    const c = buildAllowedContent("console", ex.id, { role: "student" });
+    if (!c.fullSolution && c.level >= 8) return ex.id;
+  }
+  return null;
+}
 const SETTINGS_PATH = fileURLToPath(
   new URL("../data/code-visibility-service.test-settings.json", import.meta.url),
 );
@@ -146,5 +158,63 @@ describe("codeVisibilityService — buildAllowedContent security", () => {
     updateCodeVisibility({ scope: "general", level: 8 }, "t");
     const c = previewAsStudent("console", CONSOLE_RESOURCE, {});
     expect(c.fullSolution).toBeTruthy();
+  });
+});
+
+describe("codeVisibilityService — scope priority + student editor policy (app)", () => {
+  beforeEach(() => {
+    resetPlatformSettingsForTests();
+  });
+
+  it("general level 8 delivers the full solution for a graphical project", () => {
+    updateCodeVisibility({ scope: "general", level: 8 }, "t");
+    const c = buildAllowedContent("app", APP_RESOURCE, { role: "student" });
+    expect(c.level).toBe(8);
+    expect(c.resolvedScope).toBe("general");
+    expect(c.fullSolution).toBeTruthy();
+    expect(c.fullSolutionMissing).toBe(false);
+  });
+
+  it("a project-level 4 overrides general 8 and withholds the solution", () => {
+    updateCodeVisibility({ scope: "general", level: 8 }, "t");
+    updateCodeVisibility({ scope: "project", target: APP_RESOURCE, level: 4 }, "t");
+    const c = buildAllowedContent("app", APP_RESOURCE, { role: "student" });
+    expect(c.level).toBe(4);
+    expect(c.resolvedScope).toBe("project");
+    expect(c.fullSolution).toBeNull();
+    expect(c.starterCode).toBeTruthy();
+  });
+
+  it("deleting the project override falls back to general 8 (solution returns)", () => {
+    updateCodeVisibility({ scope: "general", level: 8 }, "t");
+    updateCodeVisibility({ scope: "project", target: APP_RESOURCE, level: 4 }, "t");
+    resetCodeVisibility({ scope: "project", target: APP_RESOURCE }, "t");
+    const c = buildAllowedContent("app", APP_RESOURCE, { role: "student" });
+    expect(c.level).toBe(8);
+    expect(c.resolvedScope).toBe("general");
+    expect(c.fullSolution).toBeTruthy();
+  });
+
+  it("diagnoseResource exposes the full scope breakdown + deciding scope", () => {
+    updateCodeVisibility({ scope: "general", level: 8 }, "t");
+    updateCodeVisibility({ scope: "project", target: APP_RESOURCE, level: 3 }, "t");
+    const d = diagnoseResource("app", APP_RESOURCE);
+    expect(d.generalLevel).toBe(8);
+    expect(d.projectLevel).toBe(3);
+    expect(d.resolvedLevel).toBe(3);
+    expect(d.resolvedScope).toBe("project");
+    expect(d.catalogMatch).toBe(true);
+    expect(d.fullSolutionAvailable).toBe(true);
+  });
+
+  it("level 8 with no bound solution returns a structured 'missing' state (no wrong leak)", () => {
+    updateCodeVisibility({ scope: "general", level: 8 }, "t");
+    const resource = findConsoleWithoutSolution();
+    if (!resource) return; // كل الموارد لها حل — لا شيء لاختباره سلبيًا
+    const c = buildAllowedContent("console", resource, { role: "student" });
+    expect(c.level).toBe(8);
+    expect(c.fullSolution).toBeNull();
+    expect(c.fullSolutionMissing).toBe(true);
+    expect(c.notice).toBeTruthy();
   });
 });
