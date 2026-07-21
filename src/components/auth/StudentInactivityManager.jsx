@@ -81,14 +81,12 @@ export function StudentInactivityManager() {
   }, [isStudentSession, performInactivityLogout]);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      if (!isStudentSession) {
-        setWarningOpen(false);
-        return;
-      }
-      resetActivityTracking();
-      evaluateTimers();
-    });
+    if (!isStudentSession) {
+      setWarningOpen(false);
+      return;
+    }
+    resetActivityTracking();
+    evaluateTimers();
   }, [isStudentSession, evaluateTimers]);
 
   useEffect(() => {

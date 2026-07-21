@@ -1,13 +1,20 @@
 /**
  * مخطط مقارنة التقويم القبلي والبعدي — SVG بدون مكتبات خارجية
  */
+import { buildAssessmentSummary } from "../../lib/assessmentSummary.js";
+
 export function PrePostComparisonChart({ students, className = "" }) {
   const data = students
-    .map(({ student, progress }) => ({
-      name: student.nameAr,
-      pre: progress.preTest?.percent ?? null,
-      post: progress.postTest?.percent ?? null,
-    }))
+    .map(({ student, progress, stats }) => {
+      const summary =
+        stats?.assessmentSummary ??
+        buildAssessmentSummary(progress, { publishedDays: stats?.publishedDays ?? 15 });
+      return {
+        name: student.nameAr,
+        pre: summary.preAssessment?.scorePercent ?? null,
+        post: summary.postAssessment?.scorePercent ?? null,
+      };
+    })
     .filter((d) => d.pre != null || d.post != null);
 
   if (!data.length) {

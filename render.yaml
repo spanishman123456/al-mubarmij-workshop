@@ -1,4 +1,4 @@
-# Render Blueprint — SPA + Analytics API (Node/Express)
+# Render Blueprint — student pilot (batch 07)
 # https://render.com/docs/blueprint-spec
 services:
   - type: web
@@ -9,7 +9,21 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PLATFORM_DB_PATH
+        value: /opt/render/project/src/server/data/platform.db
+      - key: CONTENT_VERSION
+        value: student-pilot-batch-07
+      - key: PUBLISHED_DAYS
+        value: "1"
+      - key: VITE_PUBLISHED_DAYS
+        value: "1"
+      # Set in Render dashboard (secrets — not in git):
+      # TEACHER_BCRYPT_HASH — npm run hash:teacher-password locally
+      # APP_URL — https://your-service.onrender.com
+      # ALLOWED_ORIGINS — same as APP_URL
+      # REVOKE_TEACHER_SESSIONS=1 — once after password rotation
+      # APP_COMMIT_SHA — optional, set at deploy
     disk:
-      name: analytics-data
+      name: platform-data
       mountPath: /opt/render/project/src/server/data
       sizeGB: 1

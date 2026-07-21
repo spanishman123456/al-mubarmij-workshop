@@ -76,7 +76,7 @@ function LogicBooleanExpr({ expr, size }) {
 /** @param {string} expr */
 function tokenizeBooleanExpr(expr) {
   const re =
-    /\(|\)|\bAND\b|\bOR\b|\bXOR\b|\bNAND\b|\bNOR\b|\bXNOR\b|\bNOT\b|[pqrst]/gi;
+    /\(|\)|\bAND\b|\bOR\b|\bXOR\b|\bNAND\b|\bNOR\b|\bXNOR\b|\bNOT\b|[A-Ep-t]/g;
   /** @type {{ type: 'var'|'op'|'punct', value: string, negated?: boolean }[]} */
   const out = [];
   let m;
@@ -88,8 +88,8 @@ function tokenizeBooleanExpr(expr) {
       pendingNot = true;
       continue;
     }
-    if (/^[pqrst]$/i.test(t)) {
-      out.push({ type: "var", value: t.toLowerCase(), negated: pendingNot });
+    if (/^[A-Ep-t]$/.test(t)) {
+      out.push({ type: "var", value: t, negated: pendingNot });
       pendingNot = false;
       continue;
     }
@@ -105,12 +105,21 @@ function tokenizeBooleanExpr(expr) {
 
 /** @param {{ label: string, size?: 'sm'|'md'|'lg' }} props */
 export function LogicTableHeader({ label, size = "md" }) {
-  if (!label || label === "الناتج") {
+  if (!label || label === "الناتج" || label === "V") {
     return <span className="truth-table__head-text">{label}</span>;
   }
-  return (
-    <span className="truth-table__head-logic" title={label}>
-      <LogicExpression expr={label} size={size} />
-    </span>
-  );
+  try {
+    return (
+      <span className="truth-table__head-logic" title={label}>
+        <LogicExpression expr={label} size={size} />
+      </span>
+    );
+  } catch (err) {
+    console.warn("[LogicTableHeader] fallback label render:", label, err);
+    return (
+      <span className="truth-table__head-label" dir="ltr">
+        {label}
+      </span>
+    );
+  }
 }

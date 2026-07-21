@@ -1,10 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { findTeacher } from "../data/demoUsers";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { findTeacherProfileByNationalId, findTeacherById } from "../data/demoUsers";
 import {
   findStudentByNationalId,
   rosterStudentToUser,
   getAllRosterStudents,
 } from "../data/studentsRoster";
+import { createDemoStudentProfile } from "../lib/demo/demoStudentProfile";
 import {
   savePlatformState,
   getStudentProgress,
@@ -25,6 +26,8 @@ import {
   mergeRemoteAnalytics,
 } from "../lib/platformAnalytics";
 import { reportLoginEvent, reportActivityPatch, fetchAllAnalytics } from "../lib/analyticsApi";
+import { loginStudentApi, loginTeacherApi, loginDemoStudentApi, logoutApi, fetchAuthMeApi, savePreAssessmentApi, syncProgressApi, fetchComputedProgressMe, fetchTeacherRosterProgress, completeStudentDayApi, fetchPublicationConfigApi } from "../lib/platformApi";
+import { setCachedPublicationConfig } from "../lib/publicationConfigStore.js";
 import {
   loadValidatedPlatformState,
   resolveSessionUser,
@@ -34,11 +37,56 @@ import {
 } from "../lib/session";
 import { INACTIVITY_LOGOUT_REASON } from "../lib/inactivityConfig.js";
 import { clearActivityTracking, resetActivityTracking } from "../lib/inactivitySync.js";
+import { PRE_ASSESSMENT_STATUS } from "../content/onboarding/onboardingPolicy.js";
 
 const PlatformContext = createContext(null);
 
 const LOGIN_SESSION_KEY = "mubarmij-login-session-id";
 let activitySyncTimer = null;
+
+function mapComputedToStats(computed) {
+  if (!computed) return null;
+  return {
+    overallPercent: computed.availableProgressPercent ?? computed.overallPercent ?? 0,
+    completedDays: computed.completedDays ?? 0,
+    totalDays: computed.totalDays ?? 15,
+    totalPublishedLessons: computed.totalPublishedLessons ?? 0,
+    completedLessons: computed.completedLessons ?? 0,
+    worksheetsDone: computed.worksheetsDone ?? computed.completedWorksheets ?? 0,
+    quizCount: computed.completedQuizzes ?? 0,
+    drillsDone: 0,
+    microbitDone: computed.microbitDone ?? 0,
+    preTest: computed.preTest ?? null,
+    postTest: computed.postTest ?? null,
+    projectStatus: computed.projectStatus ?? "not_started",
+    completedRequiredItems: computed.completedRequiredItems ?? 0,
+    requiredItems: computed.requiredItems ?? 0,
+    pathProgress: computed.pathProgress ?? null,
+    calculatedAt: computed.calculatedAt ?? null,
+    progressVersion: computed.progressVersion ?? "v2",
+    preAssessmentStatus: computed.preAssessmentStatus,
+    preAssessmentLabelAr: computed.preAssessmentLabelAr,
+    preAssessmentDiagnosticPercent: computed.preAssessmentDiagnosticPercent ?? computed.assessmentSummary?.preAssessment?.scorePercent ?? null,
+    assessmentSummary: computed.assessmentSummary ?? null,
+    attendanceStatus: computed.attendanceStatus,
+    details: computed.details ?? null,
+    pythonRuns: computed.pythonRuns ?? 0,
+    pythonSnippetsCount: computed.pythonSnippetsCount ?? 0,
+    lastPythonRunAt: computed.lastPythonRunAt ?? null,
+    pythonActivityNoteAr: computed.pythonActivityNoteAr ?? null,
+    dayUnlock: computed.dayUnlock ?? null,
+    publishedDays: computed.publishedDays ?? computed.dayUnlock?.publishedDays ?? null,
+  };
+}
+
+function shouldHydrateFromServer(localProgress, serverProgress) {
+  if (!serverProgress) return false;
+  const localSnippets = localProgress?.pythonSnippets?.length || 0;
+  const serverSnippets = serverProgress?.pythonSnippets?.length || 0;
+  const localGraphics = localProgress?.graphicProjects?.length || 0;
+  const serverGraphics = serverProgress?.graphicProjects?.length || 0;
+  return serverSnippets > localSnippets || serverGraphics > localGraphics;
+}
 
 function getOrCreateLoginSessionId() {
   try {
@@ -78,11 +126,39 @@ function scheduleActivitySync(studentId, analytics) {
 
 export function PlatformProvider({ children }) {
   const [state, setState] = useState(() => loadValidatedPlatformState());
-  const [authReady] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
   const [remoteAnalyticsByStudent, setRemoteAnalyticsByStudent] = useState({});
   const [analyticsSyncStatus, setAnalyticsSyncStatus] = useState({ loading: false, error: null, fetchedAt: null });
+  const [serverStatsByStudent, setServerStatsByStudent] = useState({});
+  const [progressSyncStatus, setProgressSyncStatus] = useState({
+    loading: false,
+    saving: false,
+    error: null,
+    fetchedAt: null,
+  });
+  const [publicationConfig, setPublicationConfig] = useState(null);
+
+  const refreshPublicationConfig = useCallback(async () => {
+    try {
+      const res = await fetchPublicationConfigApi();
+      if (res.ok) {
+        setCachedPublicationConfig(res);
+        setPublicationConfig(res);
+        return res;
+      }
+    } catch (err) {
+      console.error("[platform] publication config", err?.message || err);
+    }
+    return null;
+  }, []);
 
   useEffect(() => {
+    refreshPublicationConfig();
+  }, [refreshPublicationConfig]);
+
+  useEffect(() => {
+    setAuthReady(true);
+
     function onPageShow(event) {
       if (!event.persisted) return;
       const fresh = loadValidatedPlatformState();
@@ -113,55 +189,6 @@ export function PlatformProvider({ children }) {
   const sessionUserId = state.sessionUserId;
   const isStudentSession = Boolean(user?.role === "student");
 
-  const loginTeacher = useCallback(
-    async (username, password) => {
-      const found = await findTeacher(username, password);
-      if (!found) return { ok: false, message: "بيانات الدخول غير صحيحة." };
-      persist((prev) => ({ ...prev, ...createSessionPatch(found.id) }));
-      return { ok: true, user: found };
-    },
-    [persist],
-  );
-
-  const loginStudentByNationalId = useCallback(
-    (nationalId) => {
-      const row = findStudentByNationalId(nationalId);
-      if (!row) {
-        return { ok: false, message: "رقم الهوية غير مسجل في النظام." };
-      }
-      const student = rosterStudentToUser(row);
-      const sessionId = getOrCreateLoginSessionId();
-      let updatedAnalytics = null;
-
-      persist((prev) => {
-        let next = { ...prev, ...createSessionPatch(student.id) };
-        next = ensureStudentRecords(next, student.id);
-        const current = next.analyticsByStudent[student.id];
-        updatedAnalytics = recordLogin(current, { sessionId });
-        next.analyticsByStudent = {
-          ...next.analyticsByStudent,
-          [student.id]: updatedAnalytics,
-        };
-        return next;
-      });
-
-      reportLoginEvent(student.id, {
-        at: updatedAnalytics.lastLoginAt,
-        sessionId,
-        success: true,
-        userAgent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : "",
-      }).then((res) => {
-        if (!res.ok) {
-          console.error("[platform] login sync failed", res.error);
-        }
-      });
-
-      resetActivityTracking();
-      return { ok: true, user: student };
-    },
-    [persist],
-  );
-
   const refreshTeacherAnalytics = useCallback(async () => {
     setAnalyticsSyncStatus((s) => ({ ...s, loading: true, error: null }));
     const res = await fetchAllAnalytics();
@@ -172,6 +199,23 @@ export function PlatformProvider({ children }) {
         error: null,
         fetchedAt: res.fetchedAt || new Date().toISOString(),
       });
+      try {
+        const roster = await fetchTeacherRosterProgress();
+        if (roster.ok && roster.byStudent) {
+          const mapped = {};
+          for (const [sid, computed] of Object.entries(roster.byStudent)) {
+            mapped[sid] = mapComputedToStats(computed);
+          }
+          setServerStatsByStudent(mapped);
+          setProgressSyncStatus((s) => ({
+            ...s,
+            fetchedAt: roster.fetchedAt || new Date().toISOString(),
+            error: null,
+          }));
+        }
+      } catch (err) {
+        console.error("[platform] teacher roster progress", err?.message || err);
+      }
       return { ok: true };
     }
     setAnalyticsSyncStatus({
@@ -182,8 +226,185 @@ export function PlatformProvider({ children }) {
     return { ok: false, error: res.error };
   }, []);
 
+  const progressSyncTimerRef = useRef(null);
+
+  const applyServerComputed = useCallback((studentId, computed) => {
+    const stats = mapComputedToStats(computed);
+    if (!stats) return;
+    setServerStatsByStudent((prev) => ({ ...prev, [studentId]: stats }));
+    setProgressSyncStatus((s) => ({
+      ...s,
+      fetchedAt: computed.calculatedAt || new Date().toISOString(),
+      error: null,
+      loading: false,
+      saving: false,
+    }));
+  }, []);
+
+  const refreshMyComputedProgress = useCallback(async (studentId, localProgress) => {
+    if (!studentId) return;
+    setProgressSyncStatus((s) => ({ ...s, loading: true, error: null }));
+    try {
+      const synced = await syncProgressApi(studentId, localProgress);
+      if (synced.progress && shouldHydrateFromServer(localProgress, synced.progress)) {
+        persist((prev) => {
+          const current = getStudentProgress(prev, studentId);
+          return {
+            ...prev,
+            progressByStudent: {
+              ...prev.progressByStudent,
+              [studentId]: {
+                ...current,
+                ...synced.progress,
+                updatedAt: synced.progress.updatedAt || new Date().toISOString(),
+              },
+            },
+          };
+        });
+      }
+      if (synced.computed) {
+        applyServerComputed(studentId, synced.computed);
+        return synced.computed;
+      }
+      const me = await fetchComputedProgressMe();
+      if (me.computed) applyServerComputed(studentId, me.computed);
+      return me.computed;
+    } catch (err) {
+      setProgressSyncStatus((s) => ({
+        ...s,
+        loading: false,
+        error: err?.message || "تعذّر مزامنة التقدم",
+      }));
+      return null;
+    }
+  }, [applyServerComputed, persist]);
+
+  const scheduleProgressSync = useCallback(
+    (studentId, progress) => {
+      if (!studentId || !progress) return;
+      if (progressSyncTimerRef.current) clearTimeout(progressSyncTimerRef.current);
+      setProgressSyncStatus((s) => ({ ...s, saving: true, error: null }));
+      progressSyncTimerRef.current = setTimeout(async () => {
+        try {
+          const res = await syncProgressApi(studentId, progress);
+          if (res.computed) applyServerComputed(studentId, res.computed);
+        } catch (err) {
+          console.error("[platform] progress sync failed", err?.message || err);
+          setProgressSyncStatus((s) => ({
+            ...s,
+            saving: false,
+            error: err?.message || "تعذّر الحفظ",
+          }));
+        }
+      }, 2000);
+    },
+    [applyServerComputed],
+  );
+
+  const loginTeacher = useCallback(
+    async (username, password) => {
+      const profileHint = findTeacherProfileByNationalId(username);
+      if (!profileHint) return { ok: false, message: "بيانات الدخول غير صحيحة." };
+      try {
+        const data = await loginTeacherApi(username, password);
+        const found = findTeacherById(data.user?.id) || profileHint;
+        persist((prev) => ({ ...prev, ...createSessionPatch(found.id) }));
+        await refreshTeacherAnalytics();
+        return { ok: true, user: found };
+      } catch (err) {
+        console.error("[platform] server auth failed", err);
+        return { ok: false, message: "بيانات الدخول غير صحيحة." };
+      }
+    },
+    [persist, refreshTeacherAnalytics],
+  );
+
+  const loginStudentByNationalId = useCallback(
+    async (nationalId) => {
+      const row = findStudentByNationalId(nationalId);
+      if (!row) {
+        return { ok: false, message: "رقم الهوية غير مسجل في النظام." };
+      }
+      const student = rosterStudentToUser(row);
+      try {
+        await loginStudentApi(nationalId);
+      } catch (err) {
+        console.error("[platform] server auth failed", err);
+        return { ok: false, message: "تعذّر إنشاء جلسة الخادم." };
+      }
+      const sessionId = getOrCreateLoginSessionId();
+      let updatedAnalytics = null;
+      let updatedProgress = null;
+
+      persist((prev) => {
+        let next = { ...prev, ...createSessionPatch(student.id) };
+        next = ensureStudentRecords(next, student.id);
+        const current = next.analyticsByStudent[student.id];
+        updatedAnalytics = recordLogin(current, { sessionId });
+        updatedProgress = getStudentProgress(next, student.id);
+        next.analyticsByStudent = {
+          ...next.analyticsByStudent,
+          [student.id]: updatedAnalytics,
+        };
+        return next;
+      });
+
+      try {
+        await reportLoginEvent(student.id, {
+          at: updatedAnalytics.lastLoginAt,
+          sessionId,
+          success: true,
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : "",
+        });
+      } catch (err) {
+        console.error("[platform] login sync failed", err?.message || err);
+      }
+
+      resetActivityTracking();
+      refreshMyComputedProgress(student.id, updatedProgress).catch(() => {});
+      return { ok: true, user: student };
+    },
+    [persist, refreshMyComputedProgress],
+  );
+
+  const loginDemoStudent = useCallback(
+    async () => {
+      let payload;
+      try {
+        payload = await loginDemoStudentApi();
+      } catch (err) {
+        console.error("[platform] demo auth failed", err);
+        return { ok: false, message: "تعذّر بدء الجلسة التجريبية." };
+      }
+
+      const demoUser = resolveSessionUser(payload?.user?.id) || createDemoStudentProfile(payload?.user?.id);
+      const sessionId = getOrCreateLoginSessionId();
+      let updatedAnalytics = null;
+      let updatedProgress = null;
+
+      persist((prev) => {
+        let next = { ...prev, ...createSessionPatch(demoUser.id) };
+        next = ensureStudentRecords(next, demoUser.id);
+        const current = next.analyticsByStudent[demoUser.id];
+        updatedAnalytics = recordLogin(current, { sessionId });
+        updatedProgress = getStudentProgress(next, demoUser.id);
+        next.analyticsByStudent = {
+          ...next.analyticsByStudent,
+          [demoUser.id]: updatedAnalytics,
+        };
+        return next;
+      });
+
+      resetActivityTracking();
+      refreshMyComputedProgress(demoUser.id, updatedProgress).catch(() => {});
+      return { ok: true, user: demoUser };
+    },
+    [persist, refreshMyComputedProgress],
+  );
+
   const logout = useCallback(
     ({ reason } = {}) => {
+      logoutApi().catch((err) => console.error("[platform] server logout", err));
       persist((prev) => ({ ...prev, ...clearSessionPatch() }));
       clearLoginSessionId();
       clearActivityTracking();
@@ -254,11 +475,13 @@ export function PlatformProvider({ children }) {
       const resolved = resolveSessionUser(uid);
       if (!resolved || resolved.role !== "student") return prev;
       const current = getStudentAnalytics(prev, uid) ?? defaultAnalytics();
+      const updated = recordPythonRun(current);
+      scheduleActivitySync(uid, updated);
       return {
         ...prev,
         analyticsByStudent: {
           ...prev.analyticsByStudent,
-          [uid]: recordPythonRun(current),
+          [uid]: updated,
         },
       };
     });
@@ -293,9 +516,30 @@ export function PlatformProvider({ children }) {
   }, [state.analyticsByStudent, sessionUserId, isStudentSession]);
 
   const myStats = useMemo(() => {
-    if (!myProgress) return null;
+    if (!myProgress || !sessionUserId) return null;
+    const server = serverStatsByStudent[sessionUserId];
+    if (server) return server;
     return computeProgressStats(myProgress);
-  }, [myProgress]);
+  }, [myProgress, sessionUserId, serverStatsByStudent]);
+
+  useEffect(() => {
+    if (!authReady || !sessionUserId || !isStudentSession || !myProgress) return;
+    scheduleProgressSync(sessionUserId, myProgress);
+  }, [authReady, sessionUserId, isStudentSession, myProgress, scheduleProgressSync]);
+
+  useEffect(() => {
+    if (!authReady || !sessionUserId || !isStudentSession) return;
+    refreshMyComputedProgress(sessionUserId, myProgress).catch(() => {});
+  }, [authReady, sessionUserId, isStudentSession]);
+
+  useEffect(() => {
+    if (!sessionUserId || !isStudentSession) return;
+    function onLessonProgressSaved() {
+      refreshMyComputedProgress(sessionUserId, myProgress).catch(() => {});
+    }
+    window.addEventListener("platform:lesson-progress-saved", onLessonProgressSaved);
+    return () => window.removeEventListener("platform:lesson-progress-saved", onLessonProgressSaved);
+  }, [sessionUserId, isStudentSession, myProgress, refreshMyComputedProgress]);
 
   const updateMyProgress = useCallback(
     (patch) => {
@@ -315,31 +559,41 @@ export function PlatformProvider({ children }) {
   );
 
   const markDayComplete = useCallback(
-    (dayId) => {
-      if (!user || user.role !== "student") return;
-      persist((prev) => {
-        const current = getStudentProgress(prev, user.id);
-        const analytics = getStudentAnalytics(prev, user.id);
-        const set = new Set(current.completedDays || []);
-        set.add(dayId);
-        return {
-          ...prev,
-          progressByStudent: {
-            ...prev.progressByStudent,
-            [user.id]: {
-              ...current,
-              completedDays: [...set],
-              updatedAt: new Date().toISOString(),
+    async (dayId) => {
+      if (!user || user.role !== "student") return { ok: false };
+      try {
+        const res = await completeStudentDayApi(dayId);
+        if (res.computed) applyServerComputed(user.id, res.computed);
+        persist((prev) => {
+          const current = getStudentProgress(prev, user.id);
+          const set = new Set(current.completedDays || []);
+          set.add(dayId);
+          return {
+            ...prev,
+            progressByStudent: {
+              ...prev.progressByStudent,
+              [user.id]: {
+                ...current,
+                completedDays: [...set],
+                dayCompletionTimes: {
+                  ...(current.dayCompletionTimes || {}),
+                  [dayId]: res.completedAt || new Date().toISOString(),
+                },
+                updatedAt: new Date().toISOString(),
+              },
             },
-          },
-          analyticsByStudent: {
-            ...prev.analyticsByStudent,
-            [user.id]: recordActivityComplete(analytics, `day-${dayId}`),
-          },
+          };
+        });
+        return { ok: true, ...res };
+      } catch (err) {
+        return {
+          ok: false,
+          error: err?.message,
+          incompleteItems: err?.incompleteItems || [],
         };
-      });
+      }
     },
-    [persist, user],
+    [persist, user, applyServerComputed],
   );
 
   const saveWorksheetAnswers = useCallback(
@@ -402,6 +656,46 @@ export function PlatformProvider({ children }) {
           },
         };
       });
+    },
+    [persist, user],
+  );
+
+  const savePreAssessmentProgress = useCallback(
+    async ({ answers, status, totalQuestions, defer, result }) => {
+      if (!user || user.role !== "student") return;
+      const now = new Date().toISOString();
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const existing = current.preAssessment || {};
+        let nextStatus = status || existing.status || PRE_ASSESSMENT_STATUS.NOT_STARTED;
+        if (defer) nextStatus = PRE_ASSESSMENT_STATUS.DEFERRED;
+        const preAssessment = {
+          ...existing,
+          answers: answers ?? existing.answers ?? {},
+          status: nextStatus,
+          totalQuestions: totalQuestions ?? existing.totalQuestions ?? null,
+          startedAt: existing.startedAt || (nextStatus !== PRE_ASSESSMENT_STATUS.NOT_STARTED ? now : null),
+          updatedAt: now,
+          deferredAt: defer ? now : existing.deferredAt ?? null,
+          submittedAt: nextStatus === PRE_ASSESSMENT_STATUS.SUBMITTED ? now : existing.submittedAt ?? null,
+        };
+        const patch = { preAssessment, updatedAt: now };
+        if (result && nextStatus === PRE_ASSESSMENT_STATUS.SUBMITTED) {
+          patch.quizScores = {
+            ...(current.quizScores || {}),
+            "quiz-pre": { ...result, submitted: true, at: now },
+          };
+          patch.preTest = result;
+        }
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: { ...current, ...patch },
+          },
+        };
+      });
+      return savePreAssessmentApi({ answers, status, totalQuestions, defer, result });
     },
     [persist, user],
   );
@@ -475,16 +769,22 @@ export function PlatformProvider({ children }) {
   );
 
   const savePythonSnippet = useCallback(
-    (title, code) => {
+    (title, code, meta = {}) => {
       if (!user || user.role !== "student") return;
       persist((prev) => {
         const current = getStudentProgress(prev, user.id);
         const analytics = recordPythonRun(getStudentAnalytics(prev, user.id));
+        scheduleActivitySync(user.id, analytics);
+        const now = new Date().toISOString();
         const snippet = {
           id: `py-${Date.now()}`,
           title: title || "كود محفوظ",
           code,
-          at: new Date().toISOString(),
+          lessonId: meta.lessonId || "",
+          activityId: meta.activityId || "",
+          snippetType: meta.snippetType || "lesson",
+          at: now,
+          updatedAt: now,
           teacherNote: "",
         };
         return {
@@ -507,6 +807,68 @@ export function PlatformProvider({ children }) {
     [persist, user],
   );
 
+  const updatePythonSnippet = useCallback(
+    (snippetId, patch = {}) => {
+      if (!user || user.role !== "student" || !snippetId) return false;
+      let updated = false;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const list = (current.pythonSnippets || []).map((snippet) => {
+          if (snippet.id !== snippetId) return snippet;
+          updated = true;
+          return {
+            ...snippet,
+            ...patch,
+            updatedAt: new Date().toISOString(),
+          };
+        });
+        if (!updated) return prev;
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: {
+              ...current,
+              pythonSnippets: list,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
+      });
+      return updated;
+    },
+    [persist, user],
+  );
+
+  const deletePythonSnippet = useCallback(
+    (snippetId) => {
+      if (!user || user.role !== "student" || !snippetId) return false;
+      let deleted = false;
+      persist((prev) => {
+        const current = getStudentProgress(prev, user.id);
+        const list = (current.pythonSnippets || []).filter((snippet) => {
+          if (snippet.id !== snippetId) return true;
+          deleted = true;
+          return false;
+        });
+        if (!deleted) return prev;
+        return {
+          ...prev,
+          progressByStudent: {
+            ...prev.progressByStudent,
+            [user.id]: {
+              ...current,
+              pythonSnippets: list,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
+      });
+      return deleted;
+    },
+    [persist, user],
+  );
+
   const saveGraphicProject = useCallback(
     (title, code, existingId = null, meta = {}) => {
       if (!user || user.role !== "student") return null;
@@ -515,6 +877,7 @@ export function PlatformProvider({ children }) {
       persist((prev) => {
         const current = getStudentProgress(prev, user.id);
         const analytics = recordPythonRun(getStudentAnalytics(prev, user.id));
+        scheduleActivitySync(user.id, analytics);
         const list = [...(current.graphicProjects || [])];
         const now = new Date().toISOString();
         if (existingId) {
@@ -728,21 +1091,37 @@ export function PlatformProvider({ children }) {
       const localAnalytics = getStudentAnalytics(state, student.id);
       const remoteAnalytics = remoteAnalyticsByStudent[student.id];
       const analytics = mergeRemoteAnalytics(localAnalytics, remoteAnalytics);
+      const serverStats = serverStatsByStudent[student.id];
+      const stats = serverStats || computeProgressStats(progress);
       return {
         student,
         progress,
         analytics,
-        stats: computeProgressStats(progress),
+        stats,
       };
     });
-  }, [state, remoteAnalyticsByStudent]);
+  }, [state, remoteAnalyticsByStudent, serverStatsByStudent]);
 
   useEffect(() => {
+    if (!authReady) return;
     const userNow = state.sessionUserId ? resolveSessionUser(state.sessionUserId) : null;
-    if (userNow?.role === "teacher") {
-      void Promise.resolve().then(refreshTeacherAnalytics);
-    }
-  }, [state.sessionUserId, refreshTeacherAnalytics]);
+    if (userNow?.role !== "teacher") return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await fetchAuthMeApi();
+        if (cancelled || me.user?.role !== "teacher") return;
+        await refreshTeacherAnalytics();
+      } catch {
+        /* local session without server cookie — login flow will refresh */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state.sessionUserId, authReady, refreshTeacherAnalytics]);
 
   const value = useMemo(
     () => ({
@@ -750,6 +1129,7 @@ export function PlatformProvider({ children }) {
       authReady,
       loginTeacher,
       loginStudentByNationalId,
+      loginDemoStudent,
       logout,
       logoutForInactivity,
       myProgress,
@@ -759,9 +1139,12 @@ export function PlatformProvider({ children }) {
       markDayComplete,
       saveWorksheetAnswers,
       saveQuizResult,
+      savePreAssessmentProgress,
       saveDrillResult,
       saveMicrobitProgress,
       savePythonSnippet,
+      updatePythonSnippet,
+      deletePythonSnippet,
       saveGraphicProject,
       submitGraphicProject,
       deleteGraphicProject,
@@ -778,6 +1161,10 @@ export function PlatformProvider({ children }) {
       isStudentSession,
       refreshTeacherAnalytics,
       analyticsSyncStatus,
+      progressSyncStatus,
+      refreshMyComputedProgress,
+      publicationConfig,
+      refreshPublicationConfig,
       state,
     }),
     [
@@ -785,6 +1172,7 @@ export function PlatformProvider({ children }) {
       authReady,
       loginTeacher,
       loginStudentByNationalId,
+      loginDemoStudent,
       logout,
       logoutForInactivity,
       myProgress,
@@ -794,9 +1182,12 @@ export function PlatformProvider({ children }) {
       markDayComplete,
       saveWorksheetAnswers,
       saveQuizResult,
+      savePreAssessmentProgress,
       saveDrillResult,
       saveMicrobitProgress,
       savePythonSnippet,
+      updatePythonSnippet,
+      deletePythonSnippet,
       saveGraphicProject,
       submitGraphicProject,
       deleteGraphicProject,
@@ -813,6 +1204,10 @@ export function PlatformProvider({ children }) {
       isStudentSession,
       refreshTeacherAnalytics,
       analyticsSyncStatus,
+      progressSyncStatus,
+      refreshMyComputedProgress,
+      publicationConfig,
+      refreshPublicationConfig,
       state,
     ],
   );

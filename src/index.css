@@ -465,6 +465,44 @@ body {
   margin-inline-end: 0.15rem;
 }
 
+/* Technical content stays LTR inside Arabic RTL containers. */
+.technical-value,
+.technical-table {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.technical-value--inline {
+  display: inline-block;
+}
+
+.technical-value--block,
+.technical-code-block {
+  display: block;
+  width: 100%;
+}
+
+.technical-value--binary {
+  letter-spacing: 0.08em;
+}
+
+.technical-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.technical-table th,
+.technical-table td {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
 /* شرح قيصر خطوة بخطوة */
 .caesar-steps-table th,
 .caesar-steps-table td {

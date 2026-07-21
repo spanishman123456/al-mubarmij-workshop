@@ -5,9 +5,10 @@ import { MawhibaBrand, SiteTitle } from "../components/branding/MawhibaBrand";
 import { INACTIVITY_LOGOUT_MESSAGE_AR } from "../lib/inactivityConfig.js";
 
 export default function LoginPage() {
-  const { loginStudentByNationalId, loginTeacher, authReady } = usePlatform();
+  const { loginStudentByNationalId, loginTeacher, loginDemoStudent, authReady } = usePlatform();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const demoQuery = searchParams.get("demo") === "student";
   const inactiveNotice =
     searchParams.get("reason") === "inactivity" ? INACTIVITY_LOGOUT_MESSAGE_AR : "";
   const [tab, setTab] = useState("student");
@@ -19,11 +20,11 @@ export default function LoginPage() {
 
   if (!authReady) return null;
 
-  function submitStudent(e) {
+  async function submitStudent(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const res = loginStudentByNationalId(nationalId);
+    const res = await loginStudentByNationalId(nationalId);
     setLoading(false);
     if (!res.ok) {
       setError(res.message);
@@ -43,6 +44,18 @@ export default function LoginPage() {
       return;
     }
     navigate("/teacher", { replace: true });
+  }
+
+  async function submitDemoStudent() {
+    setError("");
+    setLoading(true);
+    const res = await loginDemoStudent();
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.message || "تعذّر الدخول التجريبي.");
+      return;
+    }
+    navigate("/student", { replace: true });
   }
 
   return (
@@ -114,6 +127,7 @@ export default function LoginPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-slate-700">رقم الهوية الوطنية</span>
                 <input
+                  data-testid="student-national-id"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-lg tracking-widest text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                   value={nationalId}
                   onChange={(e) => setNationalId(e.target.value.replace(/\D/g, ""))}
@@ -126,11 +140,38 @@ export default function LoginPage() {
               </label>
               <button
                 type="submit"
+                data-testid="student-submit"
                 disabled={loading}
                 className="w-full rounded-xl bg-violet-700 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-violet-800 disabled:opacity-60"
               >
                 {loading ? "جاري التحقق..." : "دخول"}
               </button>
+              {demoQuery ? (
+                <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
+                  <p className="font-bold">أنت على وشك الدخول بحساب طالب تجريبي لتجربة منصة برمجة الحاسب.</p>
+                  <button
+                    type="button"
+                    data-testid="demo-student-start"
+                    onClick={submitDemoStudent}
+                    disabled={loading}
+                    className="mt-3 w-full rounded-xl border border-violet-600 bg-white py-2.5 font-bold text-violet-700 transition hover:bg-violet-100 disabled:opacity-60"
+                  >
+                    ابدأ التجربة
+                  </button>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                data-testid="demo-student-login"
+                onClick={submitDemoStudent}
+                disabled={loading}
+                className="w-full rounded-xl border border-violet-300 bg-violet-50 py-3 text-sm font-bold text-violet-800 transition hover:bg-violet-100 disabled:opacity-60"
+              >
+                {loading ? "جاري تجهيز الحساب التجريبي..." : "تجربة المنصة كطالب تجريبي"}
+              </button>
+              <p className="text-center text-xs text-violet-700">
+                رابط مباشر للتجربة: <a href="/demo" className="font-bold underline">/demo</a>
+              </p>
               <p className="text-center text-xs text-slate-500">
                 يُسمح بالدخول فقط للطلاب المسجلين في النظام الرسمي
               </p>
@@ -140,6 +181,7 @@ export default function LoginPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-slate-700">رقم الهوية</span>
                 <input
+                  data-testid="teacher-national-id"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-lg tracking-widest text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.replace(/\D/g, ""))}
@@ -153,6 +195,7 @@ export default function LoginPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-slate-700">كلمة المرور</span>
                 <input
+                  data-testid="teacher-password"
                   type="password"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                   value={password}
@@ -163,6 +206,7 @@ export default function LoginPage() {
               </label>
               <button
                 type="submit"
+                data-testid="teacher-submit"
                 disabled={loading}
                 className="w-full rounded-xl bg-violet-700 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-violet-800 disabled:opacity-60"
               >

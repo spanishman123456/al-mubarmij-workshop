@@ -1,5 +1,6 @@
-import { curriculumDays } from "./curriculum15Days";
-import { PDF_WORKSHEETS } from "./worksheetsPdfContent";
+import { curriculumDays } from "./curriculum15Days.js";
+import { PDF_WORKSHEETS } from "./worksheetsPdfContent.js";
+import { getStructuredTasks } from "../content/worksheets/worksheetsStructured.js";
 
 /**
  * أوراق عمل مرتبطة بمسار 15 يومًا — محتوى مُحاذٍ لصفحات PDF الرسمي
@@ -19,7 +20,7 @@ export const worksheets15Days = curriculumDays
         : `بعد دراسة اليوم ${day.dayNumber}، أجب عن الأسئلة التالية.`,
       topicAr: day.conceptsAr.slice(0, 4).join(" · "),
       pdfPages: pdf?.pdfPages ?? [],
-      tasks: pdf?.tasks ?? fallbackTasks(day),
+      tasks: getStructuredTasks(day.worksheetId) ?? pdf?.tasks ?? fallbackTasks(day),
     };
   });
 

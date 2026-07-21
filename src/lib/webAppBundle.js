@@ -1,4 +1,4 @@
-import { SKUI_FRAME_HTML } from "../components/python/SkuiPreviewFrame.jsx";
+import { buildSkuiFrameHtml } from "../components/python/SkuiPreviewFrame.jsx";
 import { SKUI_VERSION, SKULPT_BUILD } from "./skui/manifest.js";
 import { buildSkuiWorkerSource } from "./skui/workerSource.js";
 
@@ -91,8 +91,8 @@ export function buildStandaloneAppJs() {
 })();`;
 }
 
-export function buildPreviewHtml() {
-  return SKUI_FRAME_HTML;
+export function buildPreviewHtml({ lang = "ar", direction = "rtl" } = {}) {
+  return buildSkuiFrameHtml({ lang, direction });
 }
 
 export function buildPwaManifest({
@@ -157,8 +157,10 @@ self.addEventListener("fetch",event=>{
 });`;
 }
 
-export function buildOfflineHtml(title = "مشروع skui") {
-  return `<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>غير متصل</title><body style="font-family:sans-serif;background:#0f172a;color:white;text-align:center;padding:15vh 1rem"><h1>${escapeHtml(title)}</h1><p>التطبيق غير متصل الآن. افتحه مرة واحدة أثناء الاتصال لتخزين ملفاته.</p></body></html>`;
+export function buildOfflineHtml(title = "مشروع skui", { lang = "ar", direction = "rtl" } = {}) {
+  const safeLang = lang === "en" ? "en" : "ar";
+  const safeDirection = direction === "ltr" ? "ltr" : "rtl";
+  return `<!doctype html><html lang="${safeLang}" dir="${safeDirection}"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>غير متصل</title><body style="font-family:sans-serif;background:#0f172a;color:white;text-align:center;padding:15vh 1rem"><h1>${escapeHtml(title)}</h1><p>التطبيق غير متصل الآن. افتحه مرة واحدة أثناء الاتصال لتخزين ملفاته.</p></body></html>`;
 }
 
 export function buildPlaceholderIcon(size) {

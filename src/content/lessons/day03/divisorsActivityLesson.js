@@ -1,0 +1,35 @@
+/** نشاط المقسومات — اليوم 3 */
+export const divisorsActivityLesson = {
+  id: "divisors-activity",
+  titleAr: "نشاط المقسومات",
+  pdfRefs: [{ pdfPageIndex: 170, topic: "Divisors activity" }],
+  lessonKind: "activity",
+  learningObjectives: [
+    "إيجاد مقسومات n باستخدام حلقة.",
+    "استخدام break عند وجود مقسوم.",
+  ],
+  whyLearn: "تطبيق break/continue على مسألة عددية.",
+  prerequisites: ["python-break-continue"],
+  conceptSimple: "for i in range(1,n+1): if n%i==0: print(i)",
+  activityGuide: {
+    goalAr: "اكتب برنامجاً يطبع مقسومات n.",
+    instructionsAr: ["اختر n", "حلقة 1..n", "اطبع i إن n%i==0"],
+    prerequisites: ["for", "break"],
+    estimatedMinutes: 15,
+    executionSteps: ["n=12", "1,2,3,4,6,12", "تحقق: 6×2=12"],
+    taskAr: "n=12 — 6 مقسومات.",
+    successCriteria: ["6 outputs", "includes 1 and n"],
+    verificationAr: "ضرب أي زوج = n.",
+    feedbackAr: "1 و n دائماً مقسومان.",
+    reflectionAr: "أين break مفيد؟",
+    completionTracking: "lesson_progress API",
+  },
+  stepsDetailed: [
+    { titleAr: "1) n", bodyAr: "12" },
+    { titleAr: "2) loop", bodyAr: "1..n" },
+    { titleAr: "3) mod", bodyAr: "n%i==0" },
+    { titleAr: "4) print", bodyAr: "i" },
+  ],
+  summary: "مقسومات = break/continue تطبيق.",
+  linkedActivity: "/lessons/collatz",
+};

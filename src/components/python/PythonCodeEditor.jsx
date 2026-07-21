@@ -1,100 +1,371 @@
-import { useMemo, useRef, useState } from "react";
-import { getSkuiAutocompleteSuggestions, getSkuiConstructorProps } from "../../lib/skui/manifest";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  applyCompletion,
+  getSuggestions,
+  kindLabelAr,
+  parseCompletionContext,
+  shouldAutoTrigger,
+} from "../../lib/python/autocomplete.js";
 
-function completionAt(value, cursor) {
-  const before = String(value || "").slice(0, cursor);
-  const member = before.match(/\bui\.([A-Za-z_]*)$/);
-  if (member) {
-    return {
-      start: cursor - member[1].length,
-      items: getSkuiAutocompleteSuggestions(member[1]),
-    };
-  }
-  const props = before.match(/\bui\.([A-Z][A-Za-z0-9_]*)\([^)]*?([A-Za-z_]*)$/s);
-  if (props) {
-    const prefix = props[2] || "";
-    return {
-      start: cursor - prefix.length,
-      items: getSkuiConstructorProps(props[1])
-        .filter((name) => name.startsWith(prefix))
-        .map((name) => ({ label: name, insertText: `${name}=`, kind: "skui-property" })),
-    };
-  }
-  return null;
+const DEBOUNCE_MS = 150;
+const INDENT = "    ";
+
+function leadingSpaces(line) {
+  const m = line.match(/^\s*/);
+  return m ? m[0] : "";
 }
 
-export function PythonCodeEditor({ value, onChange, appMode = false }) {
-  const ref = useRef(null);
-  const [cursor, setCursor] = useState(0);
-  const [forced, setForced] = useState(false);
-  const completion = useMemo(
-    () => (appMode || forced ? completionAt(value, cursor) : null),
-    [appMode, forced, value, cursor],
-  );
+function currentLineBounds(text, start, end = start) {
+  const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+  let lineEnd = text.indexOf("\n", end);
+  if (lineEnd === -1) lineEnd = text.length;
+  return { lineStart, lineEnd };
+}
 
-  function apply(item) {
-    const start = completion?.start ?? cursor;
-    const next = `${value.slice(0, start)}${item.insertText}${value.slice(cursor)}`;
-    const nextCursor = start + item.insertText.length;
-    onChange(next);
-    setForced(false);
-    requestAnimationFrame(() => {
-      ref.current?.focus();
-      ref.current?.setSelectionRange(nextCursor, nextCursor);
-      setCursor(nextCursor);
-    });
+function applySmartEnterInline(text, cursor) {
+  const { lineStart } = currentLineBounds(text, cursor);
+  const beforeCursor = text.slice(lineStart, cursor);
+  const baseIndent = leadingSpaces(beforeCursor);
+  const trimmed = beforeCursor.trimEnd();
+  const needsBlockIndent = /:\s*$/.test(trimmed);
+  const nextIndent = `${baseIndent}${needsBlockIndent ? INDENT : ""}`;
+  const inserted = `\n${nextIndent}`;
+  const code = `${text.slice(0, cursor)}${inserted}${text.slice(cursor)}`;
+  const nextCursor = cursor + inserted.length;
+  return { code, cursor: nextCursor };
+}
+
+function applyTabIndentInline(text, selectionStart, selectionEnd, shift = false) {
+  const hasSelection = selectionEnd > selectionStart;
+  const startBounds = currentLineBounds(text, selectionStart);
+  const endBounds = currentLineBounds(text, selectionEnd);
+  const blockStart = startBounds.lineStart;
+  const blockEnd = hasSelection ? endBounds.lineEnd : startBounds.lineEnd;
+  const block = text.slice(blockStart, blockEnd);
+  const lines = block.split("\n");
+
+  if (!shift && !hasSelection) {
+    const code = `${text.slice(0, selectionStart)}${INDENT}${text.slice(selectionStart)}`;
+    const next = selectionStart + INDENT.length;
+    return { code, selectionStart: next, selectionEnd: next };
   }
 
+  let deltaStart = 0;
+  let deltaEnd = 0;
+  const transformed = lines.map((line, idx) => {
+    if (!shift) {
+      deltaEnd += INDENT.length;
+      if (idx === 0) deltaStart += INDENT.length;
+      return `${INDENT}${line}`;
+    }
+    if (line.startsWith(INDENT)) {
+      deltaEnd -= INDENT.length;
+      if (idx === 0) deltaStart -= INDENT.length;
+      return line.slice(INDENT.length);
+    }
+    const spacePrefix = leadingSpaces(line);
+    const remove = Math.min(spacePrefix.length, INDENT.length);
+    if (remove > 0) {
+      deltaEnd -= remove;
+      if (idx === 0) deltaStart -= remove;
+      return line.slice(remove);
+    }
+    return line;
+  });
+
+  const replaced = transformed.join("\n");
+  const code = `${text.slice(0, blockStart)}${replaced}${text.slice(blockEnd)}`;
+  const nextStart = Math.max(blockStart, selectionStart + deltaStart);
+  const nextEnd = Math.max(nextStart, selectionEnd + deltaEnd);
+  return { code, selectionStart: nextStart, selectionEnd: nextEnd };
+}
+
+function getLineColumn(text, pos) {
+  const before = text.slice(0, pos);
+  const lines = before.split("\n");
+  return { line: lines.length - 1, column: lines[lines.length - 1].length };
+}
+
+function getCaretCoords(textarea, cursor) {
+  const { line, column } = getLineColumn(textarea.value, cursor);
+  const style = window.getComputedStyle(textarea);
+  const lineHeight = parseFloat(style.lineHeight) || 20;
+  const fontSize = parseFloat(style.fontSize) || 14;
+  const charWidth = fontSize * 0.6;
+  const padTop = parseFloat(style.paddingTop) || 0;
+  const padLeft = parseFloat(style.paddingLeft) || 0;
+  return {
+    top: padTop + line * lineHeight - textarea.scrollTop + lineHeight + 2,
+    left: padLeft + column * charWidth - textarea.scrollLeft,
+  };
+}
+
+export function PythonCodeEditor({
+  value,
+  onChange,
+  disabled = false,
+  assistMode = "full",
+  unitId = null,
+  appMode = false,
+  className = "",
+  minHeight = "min-h-[min(70vh,480px)]",
+  testId = "python-code-editor",
+}) {
+  const textareaRef = useRef(null);
+  const debounceRef = useRef(null);
+  const manualOpenRef = useRef(false);
+
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState([]);
+  const [typoHint, setTypoHint] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const [cursorPos, setCursorPos] = useState(0);
+
+  const showDescriptions = assistMode === "full";
+
+  const refreshSuggestions = useCallback(
+    (code, cursor, { force = false } = {}) => {
+      if (assistMode === "off" && !force) {
+        setOpen(false);
+        return;
+      }
+      const ctx = parseCompletionContext(code, cursor);
+      if (!ctx && !force) {
+        setOpen(false);
+        return;
+      }
+      const prefix = ctx?.prefix ?? "";
+      if (!force && !shouldAutoTrigger(prefix, assistMode)) {
+        setOpen(false);
+        return;
+      }
+      const { items: nextItems, typoHint: hint } = getSuggestions(ctx, {
+        code,
+        unitId,
+        appMode,
+      });
+      if (!nextItems.length && !hint) {
+        setOpen(false);
+        return;
+      }
+      setItems(nextItems);
+      setTypoHint(hint);
+      setActiveIndex(0);
+      setOpen(true);
+      if (textareaRef.current) {
+        setCoords(getCaretCoords(textareaRef.current, cursor));
+      }
+    },
+    [assistMode, unitId, appMode],
+  );
+
+  const scheduleRefresh = useCallback(
+    (code, cursor, opts) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => refreshSuggestions(code, cursor, opts), DEBOUNCE_MS);
+    },
+    [refreshSuggestions],
+  );
+
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    },
+    [],
+  );
+
+  const activeItem = items[activeIndex] ?? null;
+
+  const acceptItem = useCallback(
+    (item) => {
+      if (!item || !textareaRef.current) return;
+      const ta = textareaRef.current;
+      const pos = ta.selectionStart ?? cursorPos;
+      const result = applyCompletion(value, pos, item.label);
+      onChange(result.code);
+      setOpen(false);
+      setTypoHint(null);
+      manualOpenRef.current = false;
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(result.selectionStart, result.selectionEnd);
+        setCursorPos(result.cursor);
+      });
+    },
+    [value, onChange, cursorPos],
+  );
+
+  function handleChange(e) {
+    const next = e.target.value;
+    const cursor = e.target.selectionStart ?? next.length;
+    onChange(next);
+    setCursorPos(cursor);
+    manualOpenRef.current = false;
+    scheduleRefresh(next, cursor);
+  }
+
+  function handleSelect() {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    setCursorPos(ta.selectionStart ?? 0);
+  }
+
+  function handleKeyDown(e) {
+    const ta = textareaRef.current;
+    if (!ta) return;
+
+    if (e.ctrlKey && e.code === "Space") {
+      e.preventDefault();
+      manualOpenRef.current = true;
+      refreshSuggestions(value, ta.selectionStart ?? 0, { force: true });
+      return;
+    }
+
+    if (!open && e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      const cursor = ta.selectionStart ?? 0;
+      const r = applySmartEnterInline(value, cursor);
+      onChange(r.code);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(r.cursor, r.cursor);
+        setCursorPos(r.cursor);
+      });
+      return;
+    }
+
+    if (!open && e.key === "Tab") {
+      e.preventDefault();
+      const start = ta.selectionStart ?? 0;
+      const end = ta.selectionEnd ?? start;
+      const r = applyTabIndentInline(value, start, end, e.shiftKey);
+      onChange(r.code);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(r.selectionStart, r.selectionEnd);
+        setCursorPos(r.selectionEnd);
+      });
+      return;
+    }
+
+    if (!open) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, items.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && items.length) {
+      e.preventDefault();
+      acceptItem(items[activeIndex]);
+    } else if (e.key === "Tab" && items.length) {
+      e.preventDefault();
+      acceptItem(items[activeIndex]);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+      setTypoHint(null);
+    }
+  }
+
+  function handleScroll() {
+    const ta = textareaRef.current;
+    if (!ta || !open) return;
+    setCoords(getCaretCoords(ta, ta.selectionStart ?? cursorPos));
+  }
+
+  const listId = useMemo(() => `${testId}-ac-list`, [testId]);
+
   return (
-    <div className="relative">
+    <div className="relative" dir="ltr">
       <textarea
-        ref={ref}
+        ref={textareaRef}
         dir="ltr"
-        className="code-editor min-h-[min(70vh,480px)] w-full resize-y"
+        data-testid={testId}
+        aria-autocomplete="list"
+        aria-controls={open ? listId : undefined}
+        aria-expanded={open}
+        className={`code-editor w-full resize-y ${minHeight} ${className}`.trim()}
         value={value}
-        onChange={(event) => {
-          onChange(event.target.value);
-          setCursor(event.target.selectionStart);
-        }}
-        onSelect={(event) => setCursor(event.currentTarget.selectionStart)}
-        onKeyDown={(event) => {
-          if (event.ctrlKey && event.code === "Space") {
-            event.preventDefault();
-            setForced(true);
-          }
-          if (event.key === "Tab") {
-            event.preventDefault();
-            const start = event.currentTarget.selectionStart;
-            const end = event.currentTarget.selectionEnd;
-            onChange(`${value.slice(0, start)}    ${value.slice(end)}`);
-            requestAnimationFrame(() => event.currentTarget.setSelectionRange(start + 4, start + 4));
-          }
-        }}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onSelect={handleSelect}
+        onScroll={handleScroll}
+        onClick={handleSelect}
+        disabled={disabled}
         spellCheck={false}
         autoCapitalize="off"
         autoCorrect="off"
-        aria-label="محرر كود بايثون"
-        data-testid="python-code-editor"
       />
-      {completion?.items?.length ? (
-        <div
+
+      {typoHint && !items.length ? (
+        <p className="mt-1 text-xs text-amber-300" dir="rtl">
+          هل تقصد{" "}
+          <button
+            type="button"
+            className="font-mono underline"
+            onClick={() => acceptItem({ label: typoHint })}
+          >
+            {typoHint}
+          </button>
+          ؟
+        </p>
+      ) : null}
+
+      {open && items.length ? (
+        <ul
+          id={listId}
           role="listbox"
-          className="absolute inset-x-0 top-full z-30 mt-1 max-h-52 overflow-auto rounded-lg border border-violet-400/40 bg-slate-950 p-1 text-left shadow-2xl"
-          dir="ltr"
-          data-testid="python-autocomplete"
+          data-testid="python-autocomplete-list"
+          className="absolute z-50 max-h-52 min-w-[220px] max-w-[min(100%,360px)] overflow-y-auto rounded-xl border border-violet-500/40 bg-slate-900/98 py-1 shadow-2xl"
+          style={{ top: coords.top, left: Math.max(0, coords.left) }}
         >
-          {completion.items.slice(0, 18).map((item) => (
-            <button
-              key={`${item.kind}-${item.label}`}
-              type="button"
-              role="option"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => apply(item)}
-              className="block w-full rounded px-3 py-2 text-left font-mono text-xs text-cyan-100 hover:bg-violet-700"
-            >
-              {item.label}
-            </button>
+          {items.map((item, idx) => (
+            <li key={item.label} role="presentation">
+              <button
+                type="button"
+                role="option"
+                aria-selected={idx === activeIndex}
+                data-testid={`python-autocomplete-item-${item.label}`}
+                className={`flex w-full flex-col items-start px-3 py-2 text-left transition ${
+                  idx === activeIndex ? "bg-violet-700/50" : "hover:bg-white/10"
+                }`}
+                onMouseDown={(ev) => {
+                  ev.preventDefault();
+                  acceptItem(item);
+                }}
+                onMouseEnter={() => setActiveIndex(idx)}
+              >
+                <span className="font-mono text-sm font-bold text-emerald-200">{item.label}</span>
+                {showDescriptions ? (
+                  <>
+                    <span className="text-[10px] text-violet-300">{kindLabelAr(item.kind)}</span>
+                    {item.signature ? (
+                      <span className="font-mono text-[10px] text-slate-400">{item.signature}</span>
+                    ) : null}
+                    {idx === activeIndex && item.descriptionAr ? (
+                      <span className="mt-0.5 text-xs leading-snug text-slate-300" dir="rtl">
+                        {item.descriptionAr}
+                      </span>
+                    ) : null}
+                  </>
+                ) : null}
+              </button>
+            </li>
           ))}
+        </ul>
+      ) : null}
+
+      {open && activeItem && showDescriptions ? (
+        <div
+          className="pointer-events-none absolute z-40 hidden rounded-lg border border-white/10 bg-black/80 px-2 py-1 text-xs text-slate-300 sm:block"
+          style={{ top: coords.top + 8, left: Math.min(coords.left + 240, 280) }}
+          dir="rtl"
+        >
+          {kindLabelAr(activeItem.kind)}
+          {activeItem.signature ? ` · ${activeItem.signature}` : ""}
         </div>
       ) : null}
     </div>

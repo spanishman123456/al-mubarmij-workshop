@@ -162,76 +162,77 @@ export const APP_STEP_PLANS = {
 };
 
 function buildGuessNumberPlan() {
-  const full = GRAPHIC_APP_PROJECTS.find((p) => p.id === "app-guess-number")?.starter ?? "";
   return {
-    ideaAr: "لعبة تخمين رقم سرّي بين 1 و 20 — تتعلم if والمتغيرات.",
-    commandsAr: ["import", "random", "if", "appkit"],
+    ideaAr: "لعبة تخمين رقم سري بين 1 و 20 — تتعلم المتغيرات والشروط وواجهة skui.",
+    commandsAr: ["import", "random", "skui", "if", "on_click"],
     stepsOverviewAr: [
-      "استورد الأدوات",
+      "استورد المكتبات",
       "عرّف المتغيرات",
-      "اكتب دالة البدء",
-      "اكتب دالة التحقق",
+      "اكتب بدء الجولة",
+      "اكتب التحقق من التخمين",
       "ابنِ الواجهة",
     ],
-    expectedOutputAr: "لعبة تفاعلية: ابدأ → خمّن → رسالة أكبر/أصغر/فوز",
+    expectedOutputAr: "لعبة تفاعلية: ابدأ الجولة → خمّن → رسالة أكبر/أصغر/فوز",
+    fullSolution: null,
     steps: [
       {
         titleAr: "الخطوة 1 — الاستيراد",
-        instructionAr: "اكتب import لـ appkit و random.",
-        initialCode: `# اكتب سطرين import\nimport ______\nimport ______`,
+        instructionAr: "اكتب import لـ random و skui باسم ui.",
+        initialCode: `# مشروع: لعبة تخمين الرقم\nimport random\nimport skui as ______`,
         appendCode: "",
         hints: [
-          "نحتاج appkit للواجهة و random للرقم العشوائي.",
-          "import appkit ثم import random",
-          "import appkit\\nimport random",
+          "نحتاج random للرقم العشوائي و skui للواجهة.",
+          "import random ثم import skui as ui",
+          "import skui as ui",
         ],
         check: (code) =>
           runChecks(code, [
-            { check: (c) => /import\s+appkit/.test(c), messageAr: "import appkit" },
             { check: (c) => /import\s+random/.test(c), messageAr: "import random" },
+            { check: (c) => /import\s+skui\s+as\s+ui/.test(c), messageAr: "import skui as ui" },
           ]),
         runnable: false,
       },
       {
         titleAr: "الخطوة 2 — المتغيرات",
-        instructionAr: "عرّف max_tries = 7 و secret = [0] و used = [0].",
-        appendCode: `\nmax_tries = ______\nsecret = [0]\nused = [0]`,
+        instructionAr: "عرّف MAX_ATTEMPTS = 7 و secret و attempts و state.",
+        appendCode: `\nMAX_ATTEMPTS = 7\nsecret = [0]\nattempts = [0]\nstate = ["idle"]`,
         hints: [
-          "max_tries عدد المحاولات (7).",
-          "secret و used قوائم لتخزين قيم متغيرة.",
-          "max_tries = 7",
+          "MAX_ATTEMPTS عدد المحاولات (7).",
+          "استخدم قوائم مثل secret = [0] لتخزين قيم متغيرة.",
+          "state = [\"idle\"] يحدد حالة اللعبة.",
         ],
         check: (code) =>
           runChecks(code, [
-            { check: (c) => /max_tries\s*=\s*7/.test(c), messageAr: "max_tries = 7" },
+            { check: (c) => /MAX_ATTEMPTS\s*=\s*7/.test(c), messageAr: "MAX_ATTEMPTS = 7" },
             { check: (c) => /\bsecret\s*=\s*\[0\]/.test(c), messageAr: "secret = [0]" },
+            { check: (c) => /\battempts\s*=\s*\[0\]/.test(c), messageAr: "attempts = [0]" },
           ]),
         runnable: false,
       },
       {
-        titleAr: "الخطوة 3 — بدء اللعبة",
-        instructionAr: "اكتب def start_game(): تختار رقمًا عشوائياً وتصفّر used.",
-        appendCode: `\ndef start_game():\n    secret[0] = random.randint(______, ______)\n    used[0] = 0\n    appkit.set("msg", "ابدأ التخمين!")`,
+        titleAr: "الخطوة 3 — بدء الجولة",
+        instructionAr: "اكتب def start_round(): تختار رقمًا عشوائياً وتصفّر المحاولات.",
+        appendCode: `\ndef start_round():\n    secret[0] = random.randint(1, 20)\n    attempts[0] = 0\n    state[0] = "playing"\n    feedback.set_text("بدأت الجولة! حاول التخمين.")`,
         hints: [
           "random.randint(1, 20) يختار رقمًا بين 1 و 20.",
-          "used[0] = 0 يصفّر المحاولات.",
-          "secret[0] = random.randint(1, 20)",
+          "attempts[0] = 0 يصفّر المحاولات.",
+          "state[0] = \"playing\" يفعّل التحقق.",
         ],
         check: (code) =>
           runChecks(code, [
-            { check: (c) => /def\s+start_game\s*\(\s*\)/.test(c), messageAr: "def start_game():" },
+            { check: (c) => /def\s+start_round\s*\(\s*\)/.test(c), messageAr: "def start_round():" },
             { check: (c) => /random\.randint\s*\(\s*1\s*,\s*20\s*\)/.test(c), messageAr: "randint(1, 20)" },
           ]),
         runnable: false,
       },
       {
         titleAr: "الخطوة 4 — التحقق",
-        instructionAr: "اكتب def check_guess(): تقارن التخمين بالرقم السري.",
-        appendCode: `\ndef check_guess():\n    g = int(appkit.get("guess"))\n    used[0] += 1\n    if g == secret[0]:\n        appkit.set("msg", "______")\n    elif g < secret[0]:\n        appkit.set("msg", "رقم أكبر")\n    else:\n        appkit.set("msg", "رقم أصغر")`,
+        instructionAr: "اكتب def check_guess(): تقارن التخمين بالرقم السري وتحدّث feedback.",
+        appendCode: `\ndef check_guess():\n    if state[0] != "playing":\n        feedback.set_text("ابدأ جولة جديدة أولًا.")\n        return\n    value = int(guess.value())\n    attempts[0] += 1\n    if value == secret[0]:\n        feedback.set_text("إجابة صحيحة!")\n    elif value < secret[0]:\n        feedback.set_text("الرقم أكبر من تخمينك.")\n    else:\n        feedback.set_text("الرقم أصغر من تخمينك.")`,
         hints: [
-          "قارن g مع secret[0] باستخدام if / elif / else.",
-          "عند التطابق اطبع رسالة فوز.",
-          "if g == secret[0]: appkit.set(\"msg\", \"فزت!\")",
+          "اقرأ التخمين من guess.value().",
+          "قارن value مع secret[0] باستخدام if / elif / else.",
+          "حدّث feedback.set_text(...) في كل حالة.",
         ],
         check: (code) =>
           runChecks(code, [
@@ -242,22 +243,22 @@ function buildGuessNumberPlan() {
       },
       {
         titleAr: "الخطوة 5 — الواجهة",
-        instructionAr: "أضف حقول الإدخال والأزرار ثم appkit.build().",
-        appendCode: `\nappkit.input("guess", "تخمينك:")\nappkit.button("start", "ابدأ", start_game)\nappkit.button("check", "تحقق", check_guess)\nappkit.text("msg", "اضغط ابدأ")\nappkit.build()`,
+        instructionAr: "أنشئ App و Card و Input و Buttons ثم app.run().",
+        appendCode: `\napp = ui.App(title="لعبة تخمين الرقم", theme="modern", appearance="dark")\ncard = ui.Card(padding="1.25rem")\nguess = ui.Input(placeholder="أدخل تخمينك", value="")\nfeedback = ui.Alert(text="اضغط «ابدأ الجولة» للبدء", variant="info")\nbtn_start = ui.Button(text="ابدأ الجولة", variant="success", on_click=start_round)\nbtn_check = ui.Button(text="تحقق", variant="primary", on_click=check_guess)\ncard.add(guess)\ncard.add(btn_start)\ncard.add(btn_check)\ncard.add(feedback)\napp.add(card)\napp.run()`,
         hints: [
-          "appkit.input للحقل و appkit.button للأزرار.",
-          "اربط الأزرار بالدوال start_game و check_guess.",
-          "لا تنسَ appkit.build() في النهاية.",
+          "أنشئ ui.App ثم ui.Input و ui.Button.",
+          "اربط الأزرار بـ on_click=start_round و on_click=check_guess.",
+          "لا تنسَ app.run() في النهاية.",
         ],
         check: (code) =>
           runChecks(code, [
-            { check: (c) => /appkit\.build\s*\(\s*\)/.test(c), messageAr: "appkit.build()" },
-            { check: (c) => /appkit\.button/.test(c), messageAr: "أضف أزراراً" },
+            { check: (c) => /ui\.App\s*\(/.test(c), messageAr: "أنشئ ui.App" },
+            { check: (c) => /app\.run\s*\(\s*\)/.test(c), messageAr: "app.run()" },
+            { check: (c) => /ui\.Button/.test(c), messageAr: "أضف أزراراً" },
           ]),
         runnable: true,
       },
     ],
-    fullSolution: full,
   };
 }
 
@@ -405,7 +406,7 @@ function buildGenericAppPlan(project) {
       {
         titleAr: "الخطوة 1 — الاستيراد",
         instructionAr: `ابدأ مشروع «${project.titleAr}» باستيراد مكتبة skui باسم ui.`,
-        initialCode: `# مشروع: ${project.titleAr}\n# أكمل الخطوات تدريجيًا (أو استخدم النسخة الجاهزة من تبويب المشروع)\nimport skui as ______`,
+        initialCode: `# مشروع: ${project.titleAr}\n# أكمل الخطوات تدريجيًا من لوحة «تعلّم خطوة بخطوة»\nimport skui as ______`,
         appendCode: "",
         hints: [
           "أول سطر: import skui as ui",

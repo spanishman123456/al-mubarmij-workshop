@@ -1,14 +1,19 @@
 import { Link, Navigate } from "react-router-dom";
+import { useState } from "react";
 import { usePlatform } from "../context/PlatformContext";
 import { ProgressBar } from "../components/ProgressBar";
 import { curriculumDays } from "../data/curriculum15Days";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { MawhibaBrand } from "../components/branding/MawhibaBrand";
-import { getAttendanceStatus, maskNationalId } from "../lib/platformAnalytics";
+import { getAttendanceStatus, maskNationalId, defaultAnalytics } from "../lib/platformAnalytics";
+import { defaultProgressForStudent } from "../lib/platformStore";
+import { LtrValue, formatFraction, formatPercent } from "../components/LtrValue";
+import { resolvePublishedDaysCount } from "../config/publication";
 
 const QUICK_LINKS = [
   { to: "/path", title: "المسار الدراسي", desc: "15 يومًا من الدروس والأنشطة" },
   { to: "/python", title: "مختبر بايثون", desc: "تمارين نصية ومشاريع رسومية" },
+  { to: "/python?panel=saved", title: "مكتبتي البرمجية", desc: "افتح الأكواد المحفوظة مباشرة" },
   { to: "/worksheets", title: "أوراق العمل", desc: "تمارين نظرية وتطبيقية" },
   { to: "/quizzes", title: "الاختبارات", desc: "قبلي، قصير، وبعدي" },
   { to: "/simulations", title: "المحاكاة", desc: "معمل تفاعلي للمفاهيم" },
@@ -19,7 +24,9 @@ const QUICK_LINKS = [
 function formatDate(iso) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleString("ar-SA", { dateStyle: "short", timeStyle: "short" });
+    return (
+      <LtrValue>{new Date(iso).toLocaleString("ar-SA", { dateStyle: "short", timeStyle: "short" })}</LtrValue>
+    );
   } catch {
     return "—";
   }
@@ -57,7 +64,22 @@ function DashboardError({ onLogout }) {
 }
 
 export default function StudentDashboard() {
-  const { user, authReady, myStats, myProgress, myAnalytics, logout } = usePlatform();
+  const {
+    user,
+    authReady,
+    myStats,
+    myProgress,
+    myAnalytics,
+    logout,
+    progressSyncStatus: syncStatusRaw,
+  } = usePlatform();
+  const publishedDays = resolvePublishedDaysCount(myStats);
+  const progressSyncStatus = syncStatusRaw ?? {
+    loading: false,
+    saving: false,
+    error: null,
+    fetchedAt: null,
+  };
 
   if (!authReady) {
     return <DashboardLoading />;
@@ -67,17 +89,36 @@ export default function StudentDashboard() {
     return <Navigate to="/login" replace />;
   }
 
-  const pre = myProgress.preTest?.percent;
-  const post = myProgress.postTest?.percent;
+  const progress = myProgress ?? defaultProgressForStudent(user.id);
+  const analytics = myAnalytics ?? defaultAnalytics();
+
+  const pre = progress.preTest?.percent;
+  const post = progress.postTest?.percent;
   const growth = pre != null && post != null ? post - pre : null;
-  const attendance = getAttendanceStatus(myAnalytics, myStats);
-  const wsPending = Object.entries(myProgress.worksheetStatus || {}).filter(
+  const attendanceRaw = myStats?.attendanceStatus || getAttendanceStatus(analytics, myStats);
+  const attendance =
+    attendanceRaw?.label && attendanceRaw?.color
+      ? attendanceRaw
+      : getAttendanceStatus(analytics, myStats);
+  const wsPending = Object.entries(progress.worksheetStatus || {}).filter(
     ([, s]) => s !== "completed",
   ).length;
-  const teacherNote = myAnalytics.teacherNotes;
+  const teacherNote = analytics.teacherNotes ?? "";
   const recentDays = curriculumDays
-    .filter((d) => !(myProgress.completedDays || []).includes(d.id))
+    .filter((d) => !(progress.completedDays || []).includes(d.id))
     .slice(0, 3);
+
+  const completedLessons = myStats?.completedLessons ?? 0;
+  const totalLessons = myStats?.totalPublishedLessons ?? 9;
+  const requiredDone = myStats?.completedRequiredItems ?? 0;
+  const requiredTotal = myStats?.requiredItems ?? 0;
+  const pythonRuns = myStats?.pythonRuns ?? analytics.pythonRuns ?? 0;
+  const pythonSaved = myStats?.pythonSnippetsCount ?? progress.pythonSnippets?.length ?? 0;
+  const progressDetails = myStats?.details ?? [];
+  const recentSnippets = (progress.pythonSnippets || []).slice(0, 5);
+  const [showProgressDetails, setShowProgressDetails] = useState(false);
+  const completedItems = progressDetails.filter((d) => d.status === "completed");
+  const pendingItems = progressDetails.filter((d) => d.status !== "completed");
 
   return (
     <PageShell
@@ -99,11 +140,19 @@ export default function StudentDashboard() {
         <img src="/images/mawhiba/mawhiba-banner.png" alt="موهبة" className="h-16 object-contain" />
       </EduCard>
 
+      {user.isDemo ? (
+        <EduCard className="mb-4" accent="amber">
+          <p className="text-sm font-semibold text-amber-900" data-testid="demo-account-banner">
+            أنت تستخدم حسابًا تجريبيًا لتجربة المنصة. بياناتك قد يتم حذفها أو إعادة ضبطها في أي وقت.
+          </p>
+        </EduCard>
+      ) : null}
+
       <EduCard className="mb-4" accent="cyan">
         <div className="flex flex-wrap gap-4 text-sm text-slate-700">
           <p>
             <span className="font-bold text-slate-900">الهوية: </span>
-            {maskNationalId(user.nationalId)}
+            <LtrValue>{maskNationalId(user.nationalId)}</LtrValue>
           </p>
           <p>
             <span className="font-bold text-slate-900">الصف: </span>
@@ -113,31 +162,131 @@ export default function StudentDashboard() {
             <span className="font-bold text-slate-900">الوحدة: </span>
             {user.unitAr ?? "برمجة الحاسب"}
           </p>
+          <p>
+            <span className="font-bold text-slate-900">نوع الحساب: </span>
+            {user.isDemo ? "طالب تجريبي" : "طالب رسمي"}
+          </p>
         </div>
       </EduCard>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <span className={`rounded-full px-3 py-1 text-xs font-bold ${attendance.color}`}>{attendance.label}</span>
         <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-800">
-          آخر نشاط: {formatDate(myAnalytics.lastActivityAt)}
+          آخر نشاط: {formatDate(analytics.lastActivityAt)}
         </span>
+        {progressSyncStatus.fetchedAt ? (
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+            آخر تحديث: {formatDate(progressSyncStatus.fetchedAt)}
+          </span>
+        ) : null}
+        {progressSyncStatus.saving ? (
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">جاري الحفظ...</span>
+        ) : null}
       </div>
 
       <EduCard accent="violet">
-        <ProgressBar value={myStats?.overallPercent ?? 0} label="التقدم العام في المنهج" />
+        <ProgressBar value={myStats?.overallPercent ?? 0} label="التقدم في المحتوى المتاح" />
+        {requiredTotal > 0 ? (
+          <p className="mt-2 text-sm text-slate-600">
+            أكملت{" "}
+            <LtrValue>{formatFraction(requiredDone, requiredTotal)}</LtrValue> عناصر إلزامية —{" "}
+            <LtrValue>{formatPercent(myStats?.overallPercent ?? 0)}</LtrValue>
+          </p>
+        ) : null}
+        {myStats?.pathProgress?.pathLabelAr ? (
+          <p className="mt-1 text-xs text-slate-500">{myStats.pathProgress.pathLabelAr}</p>
+        ) : null}
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Stat label="الدروس المكتملة" value={`${myStats?.completedDays ?? 0} / ${myStats?.totalDays ?? 15}`} />
-          <Stat label="أوراق العمل المنجزة" value={myStats?.worksheetsDone ?? 0} />
-          <Stat label="أوراق معلّقة" value={wsPending} />
-          <Stat label="أكواد بايثون" value={myProgress.pythonSnippets?.length ?? 0} />
-          <Stat label="مشاريع رسومية" value={myProgress.graphicProjects?.length ?? 0} />
-          <Stat label="التقويم القبلي" value={pre != null ? `${pre}%` : "لم يُجرَ"} />
-          <Stat label="التقويم البعدي" value={post != null ? `${post}%` : "لم يُجرَ"} />
-          <Stat label="نمو الأداء" value={growth != null ? (growth >= 0 ? `+${growth}%` : `${growth}%`) : "—"} />
-          <Stat label="المشروع النهائي" value={myProgress.project?.status ?? "لم يبدأ"} />
-          <Stat label="مشاريع micro:bit" value={`${myStats?.microbitDone ?? 0} / 9`} />
-          <Stat label="عدد الدخول" value={myAnalytics.loginCount ?? 0} />
+          <Stat
+            label="الدروس المكتملة (منشورة)"
+            value={
+              totalLessons > 0 && completedLessons === 0 && progressDetails.length > 0 ? (
+                <span className="text-sm">لم تُسجَّل دروس مكتملة بعد</span>
+              ) : (
+                <LtrValue>{formatFraction(completedLessons, totalLessons)}</LtrValue>
+              )
+            }
+          />
+          <Stat label="أوراق العمل المنجزة" value={<LtrValue>{myStats?.worksheetsDone ?? 0}</LtrValue>} />
+          <Stat label="أوراق معلّقة" value={<LtrValue>{wsPending}</LtrValue>} />
+          <Stat label="تشغيلات بايثون" value={<LtrValue>{pythonRuns}</LtrValue>} />
+          <Stat label="أكواد بايثون محفوظة" value={<LtrValue>{pythonSaved}</LtrValue>} />
+          <Stat label="مشاريع رسومية" value={<LtrValue>{progress.graphicProjects?.length ?? 0}</LtrValue>} />
+          <Stat
+            label="التقويم القبلي (تشخيصي)"
+            value={
+              myStats?.preAssessmentLabelAr ||
+              (pre != null ? <LtrValue>{formatPercent(pre)}</LtrValue> : "لم يُجرَ")
+            }
+          />
+          <Stat
+            label="التقويم البعدي"
+            value={post != null ? <LtrValue>{formatPercent(post)}</LtrValue> : "لم يُجرَ"}
+          />
+          <Stat
+            label="نمو الأداء"
+            value={
+              growth != null ? (
+                <LtrValue>{growth >= 0 ? `+${growth}%` : `${growth}%`}</LtrValue>
+              ) : (
+                "—"
+              )
+            }
+          />
+          <Stat label="المشروع النهائي" value={progress.project?.status ?? "لم يبدأ"} />
+          <Stat
+            label="مشاريع micro:bit"
+            value={<LtrValue>{formatFraction(myStats?.microbitDone ?? 0, 9)}</LtrValue>}
+          />
+          <Stat label="عدد الدخول" value={<LtrValue>{analytics.loginCount ?? 0}</LtrValue>} />
         </div>
+        {myStats?.pythonActivityNoteAr ? (
+          <p className="mt-3 text-xs text-slate-500">{myStats.pythonActivityNoteAr}</p>
+        ) : null}
+        {progressDetails.length > 0 ? (
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              className="text-sm font-semibold text-violet-700 hover:underline"
+              onClick={() => setShowProgressDetails((v) => !v)}
+            >
+              {showProgressDetails ? "إخفاء تفاصيل التقدم" : "عرض تفاصيل التقدم"}
+            </button>
+            {showProgressDetails ? (
+              <div className="mt-3 grid gap-4 md:grid-cols-2">
+                <div>
+                  <p className="text-sm font-bold text-emerald-800">العناصر المكتملة:</p>
+                  <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                    {completedItems.length ? (
+                      completedItems.map((item) => (
+                        <li key={item.id}>
+                          {item.icon} {item.labelAr}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-slate-500">لا يوجد بعد</li>
+                    )}
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">العناصر غير المكتملة:</p>
+                  <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                    {pendingItems.length ? (
+                      pendingItems.map((item) => (
+                        <li key={item.id}>
+                          {item.icon} {item.labelAr}
+                          {item.status === "in_progress" ? " (قيد التنفيذ)" : ""}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-slate-500">أكملت كل العناصر المنشورة</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </EduCard>
 
       {teacherNote ? (
@@ -176,10 +325,37 @@ export default function StudentDashboard() {
         ))}
       </div>
 
+      <EduCard className="mt-6" title="مكتبة الأكواد المحفوظة (مختصر)" accent="violet">
+        {recentSnippets.length === 0 ? (
+          <p className="text-sm text-slate-600">لا توجد أكواد محفوظة بعد. احفظ أول كود من مختبر بايثون.</p>
+        ) : (
+          <ul className="space-y-2">
+            {recentSnippets.map((snippet) => (
+              <li key={snippet.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                <p className="font-semibold text-slate-900">{snippet.title || "كود محفوظ"}</p>
+                <p className="text-xs text-slate-500">
+                  {snippet.updatedAt
+                    ? new Date(snippet.updatedAt).toLocaleString("ar-SA")
+                    : snippet.at
+                      ? new Date(snippet.at).toLocaleString("ar-SA")
+                      : "—"}
+                </p>
+                <p className="text-xs text-violet-700">
+                  {snippet.lessonTitle || snippet.lessonId || "بدون ربط درس"} | النشاط: {snippet.activityId || "—"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Link to="/python?panel=saved" className="mt-3 inline-flex text-sm font-semibold text-violet-700 hover:underline">
+          فتح المكتبة الكاملة →
+        </Link>
+      </EduCard>
+
       <EduCard className="mt-8" title="آخر الدروس المتاحة" accent="cyan">
         <ul className="mt-3 space-y-2">
-          {curriculumDays.slice(0, 5).map((d) => {
-            const done = (myProgress.completedDays || []).includes(d.id);
+          {curriculumDays.slice(0, publishedDays).map((d) => {
+            const done = (progress.completedDays || []).includes(d.id);
             return (
               <li key={d.id} className="flex items-center justify-between text-sm">
                 <Link to={`/path/day/${d.id}`} className="font-medium text-violet-700 hover:underline">

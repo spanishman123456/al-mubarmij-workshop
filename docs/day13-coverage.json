@@ -1,0 +1,24 @@
+{
+  "dayId": "day-13",
+  "titleAr": "اليوم الثالث عشر — مراجعة وتقويم وتجهيز المشروع النهائي",
+  "sourceOfTruth": "C:/Users/hosam/OneDrive/Desktop/برمجة الحاسب.pdf",
+  "pdfRefs": [
+    { "pdfPageIndex": 449, "topic": "comprehensive review" },
+    { "pdfPageIndex": 450, "topic": "post-assessment" },
+    { "pdfPageIndex": 451, "topic": "project ideation" },
+    { "pdfPageIndex": 452, "topic": "project planning" }
+  ],
+  "lessons": [
+    { "id": "comprehensive-review", "route": "/lessons/comprehensive-review", "hasDetailedStructure": true, "lab": "review-lab" },
+    { "id": "post-assessment-readiness", "route": "/lessons/post-assessment-readiness", "hasDetailedStructure": true, "lab": "post-assessment-lab" },
+    { "id": "project-ideation", "route": "/lessons/project-ideation", "hasDetailedStructure": true, "lab": "project-prep-lab" },
+    { "id": "project-planning", "route": "/lessons/project-planning", "hasDetailedStructure": true, "lab": "project-prep-lab" }
+  ],
+  "worksheetId": "ws-day-13",
+  "quizId": "quiz-post",
+  "teacherAnswersRoute": "/teacher/day-13-answers",
+  "studentVisibility": {
+    "publishedDaysRequirement": 13,
+    "currentExpectedStateWhenPublishedDays2": "draft-locked-for-students"
+  }
+}

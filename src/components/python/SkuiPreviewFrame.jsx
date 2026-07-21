@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SKUI_SCENE_CSS } from "../../lib/skui/sceneStyles.js";
 
-export const SKUI_FRAME_HTML = `<!doctype html>
-<html lang="ar" dir="rtl">
+// The export bundle and React iframe must render the same skui document template.
+// eslint-disable-next-line react-refresh/only-export-components
+export function buildSkuiFrameHtml({ lang = "ar", direction = "rtl" } = {}) {
+  const frameLang = lang === "en" ? "en" : "ar";
+  const frameDirection = direction === "ltr" ? "ltr" : "rtl";
+  return `<!doctype html>
+<html lang="${frameLang}" dir="${frameDirection}">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
@@ -17,7 +22,7 @@ ${SKUI_SCENE_CSS}
 <body><main id="root" class="root"><div class="empty">اضغط «تشغيل» لعرض التطبيق</div></main>
 <script>
 "use strict";
-var currentUi=null,timers=[],currentValues={};
+var currentUi=null,timers=[],currentValues={},defaultDirection=${JSON.stringify(frameDirection)},defaultLang=${JSON.stringify(frameLang)};
 function send(id,event,value){parent.postMessage({source:"skui-preview",type:"event",id:id,event:event,value:value,values:Object.assign({},currentValues)},"*")}
 function clearTimers(){timers.forEach(clearInterval);timers=[]}
 function text(value){return value==null?"":String(value)}
@@ -127,11 +132,12 @@ function make(node){
 function append(id,parent,seen){
  if(seen.has(id)||!currentUi.nodes[id])return;seen.add(id);var node=currentUi.nodes[id],el=make(node);parent.appendChild(el);var target=node.childrenTarget||el;(node.children||[]).forEach(function(child){append(child,target,seen)})
 }
-function render(ui,emptyMessage){clearTimers();currentValues={};currentUi=ui;var root=document.getElementById("root");root.replaceChildren();var emptyText=emptyMessage||"اضغط «تشغيل» لعرض التطبيق";if(!ui||!ui.nodes){document.body.className="";root.innerHTML='<div class="empty">'+emptyText+'</div>';return}var ids=ui.appId?[ui.appId]:ui.roots||[];var seen=new Set();ids.forEach(function(id){append(id,root,seen)});if(!seen.size){document.body.className="";root.innerHTML='<div class="empty">لا توجد مكونات للعرض</div>';return}var app=ui.appId&&ui.nodes[ui.appId];if(app){var sceneNode=Object.keys(ui.nodes).map(function(id){return ui.nodes[id]}).find(function(item){return item.type==="Scene"}),settings=Object.assign({},app.props||{},sceneNode&&sceneNode.props||{});document.documentElement.dir=settings.direction==="ltr"?"ltr":"rtl";document.title=text(settings.title||"skui");var light=settings.theme==="light"||(settings.theme==="auto"&&matchMedia("(prefers-color-scheme:light)").matches);document.documentElement.style.colorScheme=light?"light":"dark";var scene=text(settings.scene||settings.name||settings.id||""),layoutValue=settings.layout||settings.appearance||"",layout=/^(fullscreen|workspace|split|map|game)$/.test(layoutValue)?layoutValue:"";document.body.className=(scene?"scene-"+scene+" ":"")+(layout?"layout-"+layout:"");if(!scene){document.body.style.background=light?"#f8fafc":"linear-gradient(150deg,#0f172a,#1e1b4b)";document.body.style.color=light?"#0f172a":"#f8fafc"}else{document.body.style.background="";document.body.style.color=light?"#0f172a":"#f8fafc"}}}
+function render(ui,emptyMessage){clearTimers();currentValues={};currentUi=ui;var root=document.getElementById("root");root.replaceChildren();var emptyText=emptyMessage||"اضغط «تشغيل» لعرض التطبيق";if(!ui||!ui.nodes){document.documentElement.lang=defaultLang;document.documentElement.dir=defaultDirection;document.body.className="";root.innerHTML='<div class="empty">'+emptyText+'</div>';return}var ids=ui.appId?[ui.appId]:ui.roots||[];var seen=new Set();ids.forEach(function(id){append(id,root,seen)});if(!seen.size){document.body.className="";root.innerHTML='<div class="empty">لا توجد مكونات للعرض</div>';return}var app=ui.appId&&ui.nodes[ui.appId];if(app){var sceneNode=Object.keys(ui.nodes).map(function(id){return ui.nodes[id]}).find(function(item){return item.type==="Scene"}),settings=Object.assign({},app.props||{},sceneNode&&sceneNode.props||{});document.documentElement.lang=settings.lang==="en"?"en":defaultLang;document.documentElement.dir=settings.direction==="ltr"?"ltr":settings.direction==="rtl"?"rtl":defaultDirection;document.title=text(settings.title||"skui");var light=settings.theme==="light"||(settings.theme==="auto"&&matchMedia("(prefers-color-scheme:light)").matches);document.documentElement.style.colorScheme=light?"light":"dark";var scene=text(settings.scene||settings.name||settings.id||""),layoutValue=settings.layout||settings.appearance||"",layout=/^(fullscreen|workspace|split|map|game)$/.test(layoutValue)?layoutValue:"";document.body.className=(scene?"scene-"+scene+" ":"")+(layout?"layout-"+layout:"");if(!scene){document.body.style.background=light?"#f8fafc":"linear-gradient(150deg,#0f172a,#1e1b4b)";document.body.style.color=light?"#0f172a":"#f8fafc"}else{document.body.style.background="";document.body.style.color=light?"#0f172a":"#f8fafc"}}}
 addEventListener("message",function(e){if(e.source!==parent)return;var m=e.data||{};if(m.type==="render")render(m.ui,m.emptyMessage);if(m.type==="clear")render(null,m.emptyMessage)});
 function reportSize(){parent.postMessage({source:"skui-preview",type:"resize",height:Math.ceil(Math.max(document.documentElement.scrollHeight,document.body.scrollHeight))},"*")}
 if("ResizeObserver" in window)new ResizeObserver(reportSize).observe(document.body);else addEventListener("resize",reportSize);
 </script></body></html>`;
+}
 
 export function SkuiPreviewFrame({
   ui,
@@ -141,9 +147,11 @@ export function SkuiPreviewFrame({
   minHeight = 360,
   emptyMessage = "اضغط «تشغيل» لعرض التطبيق",
   viewport = "desktop",
+  lang = "ar",
+  direction = "rtl",
 }) {
   const frameRef = useRef(null);
-  const srcDoc = useMemo(() => SKUI_FRAME_HTML, []);
+  const srcDoc = useMemo(() => buildSkuiFrameHtml({ lang, direction }), [lang, direction]);
   const numericMinHeight = typeof minHeight === "number" ? minHeight : 360;
   const [frameHeight, setFrameHeight] = useState(numericMinHeight);
 

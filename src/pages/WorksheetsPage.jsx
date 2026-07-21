@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { curriculumUnits } from "../data/curriculum";
 import { worksheets, worksheetsIntroAr } from "../data/worksheets";
@@ -6,6 +6,14 @@ import { worksheets15Days } from "../data/worksheets15Days";
 import { WEEKS_15 } from "../data/curriculum15Days";
 import { usePlatform } from "../context/PlatformContext";
 import { PageShell, EduCard } from "../components/layout/PageShell";
+import { ArabicText } from "../components/BilingualTextBlocks";
+import { isTeacherRole, TEACHER_PREVIEW_BADGE_AR } from "../config/publication";
+import {
+  getTeacherWorksheetBadge,
+  getWorksheetAccessState,
+  studentWorksheetLockedMessage,
+  WorksheetAccessState,
+} from "../lib/worksheetAccess";
 
 function unitTitle(unitId) {
   return curriculumUnits.find((u) => u.id === unitId)?.titleAr ?? unitId;
@@ -13,8 +21,10 @@ function unitTitle(unitId) {
 
 export default function WorksheetsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { myProgress } = usePlatform();
+  const { myProgress, user, myStats } = usePlatform();
   const wsStatus = myProgress?.worksheetStatus ?? {};
+  const isTeacher = isTeacherRole(user?.role);
+  const dayUnlockMap = myStats?.dayUnlock?.dayUnlockMap;
 
   const view = searchParams.get("view") === "units" ? "units" : "path";
   const weekFilter = Number(searchParams.get("week")) || 0;
@@ -23,9 +33,27 @@ export default function WorksheetsPage() {
     unitParam && curriculumUnits.some((u) => u.id === unitParam) ? unitParam : "all";
 
   const pathList = useMemo(() => {
-    if (weekFilter > 0) return worksheets15Days.filter((w) => w.weekNumber === weekFilter);
-    return worksheets15Days;
-  }, [weekFilter]);
+    let list = worksheets15Days.map((ws) => {
+      const access = getWorksheetAccessState({
+        role: user?.role,
+        dayId: ws.dayId,
+        dayUnlockMap,
+        myStats,
+      });
+      return { ws, access };
+    });
+
+    if (!isTeacher) {
+      list = list.filter(
+        ({ access }) => access === WorksheetAccessState.OPEN || access === WorksheetAccessState.LOCKED,
+      );
+    }
+
+    if (weekFilter > 0) {
+      list = list.filter(({ ws }) => ws.weekNumber === weekFilter);
+    }
+    return list;
+  }, [weekFilter, user?.role, dayUnlockMap, myStats, isTeacher]);
 
   const unitList = useMemo(() => {
     if (unitFilter === "all") return worksheets;
@@ -36,8 +64,17 @@ export default function WorksheetsPage() {
     <PageShell
       title="أوراق العمل"
       subtitle={`${worksheetsIntroAr} مرتبطة بمسار 15 يومًا ووحدات المنهج الرسمي.`}
-      badge={`${worksheets15Days.length} ورقة في المسار`}
+      badge={isTeacher ? `${worksheets15Days.length} ورقة — معاينة المعلم` : `${pathList.length} ورقة متاحة`}
     >
+      {isTeacher ? (
+        <EduCard className="mb-6" accent="amber">
+          <p className="text-sm font-semibold text-amber-900">{TEACHER_PREVIEW_BADGE_AR}</p>
+          <p className="mt-1 text-sm text-amber-800">
+            ترى كل أوراق العمل في المنهج — الأيام غير المنشورة للطلاب تظهر كمعاينة معلم فقط.
+          </p>
+        </EduCard>
+      ) : null}
+
       <div className="no-print mb-8 flex flex-wrap items-center gap-3">
         <div className="flex rounded-lg border border-slate-200 bg-white p-1">
           <button
@@ -96,9 +133,11 @@ export default function WorksheetsPage() {
       </div>
 
       {view === "path" ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {pathList.map((ws) => {
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-testid="worksheets-path-grid">
+          {pathList.map(({ ws, access }) => {
             const st = wsStatus[ws.id] ?? "not_started";
+            const locked = access === WorksheetAccessState.LOCKED;
+            const teacherBadge = isTeacher ? getTeacherWorksheetBadge(ws.dayId, myStats) : null;
             return (
               <WorksheetCard
                 key={ws.id}
@@ -107,7 +146,11 @@ export default function WorksheetsPage() {
                 topic={ws.topicAr}
                 count={ws.tasks.length}
                 status={st}
-                to={`/worksheets/${ws.id}`}
+                to={locked ? undefined : `/worksheets/${ws.id}`}
+                locked={locked}
+                lockedMessage={studentWorksheetLockedMessage(ws.dayId, dayUnlockMap)}
+                publishBadge={teacherBadge}
+                testId={`worksheet-card-${ws.id}`}
               />
             );
           })}
@@ -115,29 +158,22 @@ export default function WorksheetsPage() {
       ) : (
         <ul className="space-y-8 print:space-y-6">
           {unitList.map((ws) => (
-            <li
-              key={ws.id}
-              className="print-area edu-card"
-            >
+            <li key={ws.id} className="print-area edu-card">
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-3">
                 <div>
                   <p className="text-xs font-medium text-violet-600">{unitTitle(ws.unitId)}</p>
                   <h2 className="text-xl font-bold text-slate-900">{ws.titleAr}</h2>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="no-print edu-btn edu-btn-ghost text-sm"
-                >
+                <button type="button" onClick={() => window.print()} className="no-print edu-btn edu-btn-ghost text-sm">
                   طباعة
                 </button>
               </div>
-              <p className="text-slate-700">{ws.introAr}</p>
+              <ArabicText text={ws.introAr} className="text-slate-700" />
               <ol className="mt-6 space-y-6">
                 {ws.tasks.map((task) => (
                   <li key={task.n}>
                     <p className="font-bold text-violet-800">السؤال {task.n}.</p>
-                    <p className="mt-2 text-slate-800">{task.textAr}</p>
+                    <ArabicText text={task.textAr} className="mt-2 text-slate-800" />
                     <div className="mt-4 border-b border-dashed border-slate-300 pb-10" />
                   </li>
                 ))}
@@ -150,7 +186,18 @@ export default function WorksheetsPage() {
   );
 }
 
-function WorksheetCard({ badge, title, topic, count, status, to }) {
+function WorksheetCard({
+  badge,
+  title,
+  topic,
+  count,
+  status,
+  to,
+  locked,
+  lockedMessage,
+  publishBadge,
+  testId,
+}) {
   const statusLabel = {
     completed: { text: "مكتملة ✓", cls: "bg-emerald-100 text-emerald-800" },
     in_progress: { text: "قيد العمل", cls: "bg-amber-100 text-amber-800" },
@@ -158,19 +205,43 @@ function WorksheetCard({ badge, title, topic, count, status, to }) {
   }[status] ?? { text: status, cls: "bg-slate-100 text-slate-600" };
 
   return (
-    <EduCard accent="amber" className="flex flex-col">
+    <div data-testid={testId} className="h-full">
+      <EduCard accent="amber" className="flex h-full flex-col">
       <div className="flex items-start justify-between gap-2">
         <span className="rounded-md bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-800">{badge}</span>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusLabel.cls}`}>{statusLabel.text}</span>
+        <div className="flex flex-col items-end gap-1">
+          {publishBadge ? (
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${publishBadge.cls}`}>
+              {publishBadge.label}
+            </span>
+          ) : null}
+          {locked ? (
+            <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">مقفل</span>
+          ) : (
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusLabel.cls}`}>
+              {statusLabel.text}
+            </span>
+          )}
+        </div>
       </div>
       <h3 className="mt-3 font-bold text-slate-900 line-clamp-2">{title}</h3>
       <p className="mt-2 text-sm text-slate-600 line-clamp-2">{topic}</p>
       <p className="mt-2 text-xs text-slate-500">{count} أسئلة</p>
+      {locked ? (
+        <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-semibold text-slate-700">
+          {lockedMessage}
+        </p>
+      ) : null}
       <div className="mt-auto flex gap-2 pt-4">
-        <Link to={to} className="edu-btn edu-btn-primary flex-1 text-center text-sm">
-          فتح
-        </Link>
+        {to ? (
+          <Link to={to} className="edu-btn edu-btn-primary flex-1 text-center text-sm">
+            فتح
+          </Link>
+        ) : (
+          <span className="edu-btn edu-btn-outline flex-1 cursor-not-allowed text-center text-sm opacity-60">مقفل</span>
+        )}
       </div>
-    </EduCard>
+      </EduCard>
+    </div>
   );
 }

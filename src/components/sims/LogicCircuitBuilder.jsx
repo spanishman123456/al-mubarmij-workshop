@@ -4,6 +4,7 @@ import {
   CIRCUIT_STORAGE_KEY,
   evaluateCircuit,
   GATE_META,
+  QUIZ_CIRCUIT_CHALLENGES,
 } from "../../lib/logic/circuit.js";
 
 const PRESETS = {
@@ -61,13 +62,47 @@ function loadSavedCircuit() {
   }
 }
 
-export function LogicCircuitBuilder() {
+function parseCircuitValue(raw) {
+  if (!raw) return null;
+  if (typeof raw === "object") return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function clonePreset(key) {
+  const p = QUIZ_CIRCUIT_CHALLENGES[key] || PRESETS.and;
+  return {
+    nodes: p.nodes.map((n) => ({ ...n })),
+    wires: p.wires.map((w) => ({ ...w })),
+  };
+}
+
+export function LogicCircuitBuilder({
+  value,
+  onChange,
+  disabled = false,
+  quizMode = false,
+  allowedGates = null,
+  circuitPreset = null,
+}) {
+  const challenge = circuitPreset ? clonePreset(circuitPreset) : null;
+  const parsedValue = parseCircuitValue(value);
+  const saved = !quizMode && !value ? loadSavedCircuit() : null;
+  const initial = parsedValue?.nodes?.length
+    ? { nodes: parsedValue.nodes, wires: parsedValue.wires ?? [] }
+    : challenge || saved || PRESETS.and;
+
   const canvasRef = useRef(null);
-  const saved = loadSavedCircuit();
-  const [nodes, setNodes] = useState(saved?.nodes ?? PRESETS.and.nodes);
-  const [wires, setWires] = useState(saved?.wires ?? PRESETS.and.wires);
-  const [, setHistory] = useState([]);
-  const [, setFuture] = useState([]);
+  const skipEmitRef = useRef(true);
+  const hydratedRef = useRef(Boolean(parsedValue?.nodes?.length));
+
+  const [nodes, setNodes] = useState(initial.nodes);
+  const [wires, setWires] = useState(initial.wires);
+  const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
   const [dragging, setDragging] = useState(null);
   const [wireFrom, setWireFrom] = useState(null);
   const [wirePreview, setWirePreview] = useState(null);
@@ -106,15 +141,41 @@ export function LogicCircuitBuilder() {
   }, [nodes, wires]);
 
   useEffect(() => {
+    if (quizMode || value) return;
     try {
       localStorage.setItem(CIRCUIT_STORAGE_KEY, JSON.stringify({ nodes, wires }));
     } catch {
       /* ignore */
     }
+  }, [nodes, wires, quizMode, value]);
+
+  useEffect(() => {
+    const parsed = parseCircuitValue(value);
+    if (parsed?.nodes?.length && !hydratedRef.current) {
+      setNodes(parsed.nodes);
+      setWires(parsed.wires ?? []);
+      hydratedRef.current = true;
+      skipEmitRef.current = true;
+    }
+  }, [value]);
+
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    if (!onChangeRef.current) return;
+    if (skipEmitRef.current) {
+      skipEmitRef.current = false;
+      return;
+    }
+    onChangeRef.current(JSON.stringify({ nodes, wires }));
   }, [nodes, wires]);
+
+  const gateToolbar = allowedGates?.length ? allowedGates : Object.keys(GATE_META);
 
   const addGate = useCallback(
     (type) => {
+      if (disabled) return;
       pushHistory();
       const id = uid(type.toLowerCase());
       setNodes((prev) => [
@@ -133,7 +194,7 @@ export function LogicCircuitBuilder() {
         },
       ]);
     },
-    [pushHistory],
+    [pushHistory, disabled],
   );
 
   const onCanvasPointerMove = useCallback(
@@ -162,6 +223,7 @@ export function LogicCircuitBuilder() {
   }, []);
 
   function startDragNode(e, node) {
+    if (disabled) return;
     e.stopPropagation();
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -175,6 +237,7 @@ export function LogicCircuitBuilder() {
   }
 
   function startWire(nodeId, e) {
+    if (disabled) return;
     e.stopPropagation();
     setWireFrom(nodeId);
     setSelectedWire(null);
@@ -187,7 +250,7 @@ export function LogicCircuitBuilder() {
 
   function finishWire(nodeId, port, e) {
     e.stopPropagation();
-    if (!wireFrom) return;
+    if (disabled || !wireFrom) return;
     const check = canConnect(wireFrom, nodeId, port, nodes, wires);
     if (!check.ok) {
       setError(check.reason);
@@ -206,10 +269,12 @@ export function LogicCircuitBuilder() {
   }
 
   function toggleInput(nodeId) {
+    if (disabled) return;
     setNodes((prev) => prev.map((n) => (n.id === nodeId ? { ...n, value: !n.value } : n)));
   }
 
   function removeSelected() {
+    if (disabled) return;
     if (selectedWire) {
       pushHistory();
       setWires((prev) => prev.filter((w) => w.id !== selectedWire));
@@ -241,6 +306,15 @@ export function LogicCircuitBuilder() {
   }
 
   function resetCircuit() {
+    if (quizMode && circuitPreset) {
+      const p = clonePreset(circuitPreset);
+      pushHistory();
+      setNodes(p.nodes);
+      setWires(p.wires);
+      setSelected(null);
+      setWireFrom(null);
+      return;
+    }
     loadPreset("and");
     setNodes((prev) => prev.map((n) => (n.type === "INPUT" ? { ...n, value: false } : n)));
   }
@@ -259,49 +333,56 @@ export function LogicCircuitBuilder() {
   }
 
   return (
-    <div className="space-y-4" dir="rtl">
-      <p className="lab-hint">
-        اسحب العناصر داخل اللوحة. ابدأ السلك من منفذ الخرج (يمين) واسحبه إلى منفذ الإدخال (يسار).
-        انقر مرتين على مفتاح INPUT لتبديل 0/1.
+    <div className="space-y-4" dir="rtl" data-testid={quizMode ? "logic-circuit-quiz" : undefined}>
+      <p className={quizMode ? "text-sm text-slate-300" : "lab-hint"}>
+        {quizMode
+          ? "أضف بوابة من شريط الأدوات، ثم اسحب من منفذ الخرج (يمين) إلى منفذ الإدخال (يسار)."
+          : "اسحب العناصر داخل اللوحة. ابدأ السلك من منفذ الخرج (يمين) واسحبه إلى منفذ الإدخال (يسار). انقر مرتين على مفتاح INPUT لتبديل 0/1."}
       </p>
 
       <div className="flex flex-wrap gap-2">
-        {Object.keys(GATE_META).map((type) => (
+        {gateToolbar.map((type) => (
           <button
             key={type}
             type="button"
+            data-testid={`logic-gate-add-${type}`}
             onClick={() => addGate(type)}
-            className="rounded-lg border border-violet-500/40 bg-violet-900/40 px-3 py-1.5 text-xs font-bold text-violet-200 hover:bg-violet-800/50"
+            disabled={disabled}
+            className="rounded-lg border border-violet-500/40 bg-violet-900/40 px-3 py-1.5 text-xs font-bold text-violet-200 hover:bg-violet-800/50 disabled:opacity-40"
           >
             + {GATE_META[type].label}
           </button>
         ))}
-        <button type="button" onClick={undo} className="rounded-lg border border-slate-500/40 px-3 py-1.5 text-xs text-slate-300">
+        <button type="button" onClick={undo} disabled={disabled} className="rounded-lg border border-slate-500/40 px-3 py-1.5 text-xs text-slate-300 disabled:opacity-40">
           تراجع
         </button>
-        <button type="button" onClick={redo} className="rounded-lg border border-slate-500/40 px-3 py-1.5 text-xs text-slate-300">
+        <button type="button" onClick={redo} disabled={disabled} className="rounded-lg border border-slate-500/40 px-3 py-1.5 text-xs text-slate-300 disabled:opacity-40">
           إعادة
         </button>
-        <button type="button" onClick={removeSelected} className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs text-red-300">
+        <button type="button" onClick={removeSelected} disabled={disabled} className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs text-red-300 disabled:opacity-40">
           {selectedWire ? "حذف السلك" : "حذف المحدد"}
         </button>
-        <button type="button" onClick={resetCircuit} className="rounded-lg border border-slate-500/40 px-3 py-1.5 text-xs text-slate-300">
+        <button type="button" onClick={resetCircuit} disabled={disabled} className="rounded-lg border border-slate-500/40 px-3 py-1.5 text-xs text-slate-300 disabled:opacity-40">
           إعادة ضبط
         </button>
-        <button type="button" onClick={clearCanvas} className="rounded-lg border border-slate-500/40 px-3 py-1.5 text-xs text-slate-300">
-          مسح اللوحة
-        </button>
-        <button type="button" onClick={() => loadPreset("and")} className="rounded-lg border border-cyan-500/40 px-3 py-1.5 text-xs text-cyan-300">
-          مثال AND
-        </button>
-        <button type="button" onClick={() => loadPreset("xor")} className="rounded-lg border border-cyan-500/40 px-3 py-1.5 text-xs text-cyan-300">
-          مثال XOR
-        </button>
-        <select className="lab-select !w-auto text-xs" value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-          <option value="easy">سهل</option>
-          <option value="medium">متوسط</option>
-          <option value="advanced">متقدم</option>
-        </select>
+        {!quizMode ? (
+          <>
+            <button type="button" onClick={clearCanvas} className="rounded-lg border border-slate-500/40 px-3 py-1.5 text-xs text-slate-300">
+              مسح اللوحة
+            </button>
+            <button type="button" onClick={() => loadPreset("and")} className="rounded-lg border border-cyan-500/40 px-3 py-1.5 text-xs text-cyan-300">
+              مثال AND
+            </button>
+            <button type="button" onClick={() => loadPreset("xor")} className="rounded-lg border border-cyan-500/40 px-3 py-1.5 text-xs text-cyan-300">
+              مثال XOR
+            </button>
+            <select className="lab-select !w-auto text-xs" value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+              <option value="easy">سهل</option>
+              <option value="medium">متوسط</option>
+              <option value="advanced">متقدم</option>
+            </select>
+          </>
+        ) : null}
       </div>
 
       {error ? <p className="text-sm text-red-300" role="alert">{error}</p> : null}
@@ -309,6 +390,7 @@ export function LogicCircuitBuilder() {
 
       <div
         ref={canvasRef}
+        data-testid="logic-circuit-canvas"
         className="relative h-[360px] w-full touch-none overflow-hidden rounded-xl border-2 border-slate-600 bg-slate-900"
         onPointerMove={onCanvasPointerMove}
         onPointerUp={endPointer}
@@ -370,6 +452,8 @@ export function LogicCircuitBuilder() {
           return (
             <div
               key={node.id}
+              data-testid={`logic-node-${node.id}`}
+              data-gate-type={node.type}
               className={`absolute cursor-grab select-none rounded-lg border-2 active:cursor-grabbing ${
                 selected === node.id ? "ring-2 ring-cyan-400" : ""
               }`}
@@ -429,6 +513,7 @@ export function LogicCircuitBuilder() {
               </div>
               {m.outputs ? (
                 <span
+                  data-testid={`logic-port-${node.id}-out`}
                   className="absolute -right-1 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-slate-900 bg-cyan-400 hover:scale-110"
                   style={{ pointerEvents: "auto", cursor: "crosshair" }}
                   onPointerDown={(e) => startWire(node.id, e)}
@@ -437,6 +522,7 @@ export function LogicCircuitBuilder() {
               {Array.from({ length: inputCount }).map((_, port) => (
                 <span
                   key={port}
+                  data-testid={`logic-port-${node.id}-in-${port}`}
                   className="absolute -left-1 h-4 w-4 rounded-full border-2 border-slate-900 bg-slate-400 hover:bg-cyan-300"
                   style={{
                     top: `${((port + 1) / (inputCount + 1)) * 100}%`,

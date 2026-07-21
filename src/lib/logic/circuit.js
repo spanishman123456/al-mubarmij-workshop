@@ -120,3 +120,85 @@ export function canConnect(fromNodeId, toNodeId, toPort, nodes, wires) {
 }
 
 export const CIRCUIT_STORAGE_KEY = "mubarmij-logic-circuit-v1";
+
+/** Presets for quiz challenges — fixed inputs/outputs, student adds gates and wires. */
+export const QUIZ_CIRCUIT_CHALLENGES = {
+  "ab-out": {
+    nodes: [
+      { id: "in-a", type: "INPUT", x: 36, y: 72, value: false, label: "A" },
+      { id: "in-b", type: "INPUT", x: 36, y: 152, value: false, label: "B" },
+      { id: "out-1", type: "OUTPUT", x: 400, y: 112 },
+    ],
+    wires: [],
+  },
+  "a-out": {
+    nodes: [
+      { id: "in-a", type: "INPUT", x: 36, y: 112, value: false, label: "A" },
+      { id: "out-1", type: "OUTPUT", x: 400, y: 112 },
+    ],
+    wires: [],
+  },
+};
+
+const INPUT_COMBOS_2 = [
+  [false, false],
+  [false, true],
+  [true, false],
+  [true, true],
+];
+
+const INPUT_COMBOS_1 = [[false], [true]];
+
+/**
+ * Grade a student-built circuit against expected output truth table.
+ * @param {{ circuitGate?: string, expectedOutputs?: boolean[], circuitPreset?: string }} question
+ * @param {string|object} userAnswer JSON { nodes, wires }
+ */
+export function gradeLogicCircuit(question, userAnswer) {
+  let parsed = userAnswer;
+  if (typeof userAnswer === "string") {
+    try {
+      parsed = JSON.parse(userAnswer);
+    } catch {
+      return false;
+    }
+  }
+  if (!parsed?.nodes?.length) return false;
+
+  const inputs = parsed.nodes
+    .filter((n) => n.type === "INPUT")
+    .sort((a, b) => String(a.label || a.id).localeCompare(String(b.label || b.id)));
+  const outputs = parsed.nodes.filter((n) => n.type === "OUTPUT");
+  if (!inputs.length || !outputs.length) return false;
+
+  const expected = question.expectedOutputs;
+  if (!Array.isArray(expected) || !expected.length) return false;
+
+  const combos = inputs.length >= 2 ? INPUT_COMBOS_2 : INPUT_COMBOS_1;
+  if (expected.length !== combos.length) return false;
+
+  for (let i = 0; i < combos.length; i += 1) {
+    const combo = combos[i];
+    const nodes = parsed.nodes.map((n) => {
+      if (n.type !== "INPUT") return { ...n };
+      const idx = inputs.findIndex((inp) => inp.id === n.id);
+      return { ...n, value: Boolean(combo[idx]) };
+    });
+    const values = evaluateCircuit(nodes, parsed.wires || []);
+    const out = Boolean(values[outputs[0].id]);
+    if (out !== Boolean(expected[i])) return false;
+  }
+
+  if (question.circuitGate) {
+    const gate = String(question.circuitGate).toUpperCase();
+    if (!parsed.nodes.some((n) => n.type === gate)) return false;
+  }
+
+  return true;
+}
+
+export function logicCircuitModelLabel(question) {
+  const gate = question.circuitGate ? String(question.circuitGate).toUpperCase() : "دارة";
+  const outs = (question.expectedOutputs || []).map((v) => (v ? "1" : "0")).join("");
+  return `${gate} → ${outs}`;
+}

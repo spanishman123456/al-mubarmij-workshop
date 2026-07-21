@@ -19,11 +19,23 @@ data/
 !src/data/
 !src/data/graphicSkuiStarters.js
 server/data/analytics.json
+server/data/platform.db
+server/data/platform.db.bak
+server/data/platform.db.tmp
+server/data/platform.test.db
+server/data/platform.e2e.db
+server/data/*.test.db
+test-results/
+playwright-report/
 scripts/microbit-hex-workspace/
 scripts/makecode-compile-workspace/
 scripts/makecode-compile-results.json
 scripts/mkc-test
 *.local
+.env
+.env.*
+!.env.example
+.env.test.local
 
 # Editor directories and files
 .vscode/*

@@ -58,10 +58,11 @@ export function createInitialTowers(diskCount) {
 export function isHanoiSolved(towers, diskCount) {
   const target = towers[2];
   if (target.length !== diskCount) return false;
-  for (let i = 0; i < diskCount; i += 1) {
-    if (target[i] !== i + 1) return false;
-  }
-  return true;
+  // Internal stack order is bottom -> top, e.g. [3, 2, 1] for 3 disks.
+  const descendingStack = target.every((disk, idx) => disk === diskCount - idx);
+  // Backward compatibility for any legacy serialized states.
+  const ascendingStack = target.every((disk, idx) => disk === idx + 1);
+  return descendingStack || ascendingStack;
 }
 
 /** @param {number} moves @param {number} diskCount @param {number} wrongAttempts @param {number} elapsedMs */

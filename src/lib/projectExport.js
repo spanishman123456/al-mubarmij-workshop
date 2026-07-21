@@ -171,6 +171,8 @@ export async function createExportBundle({
   iconFiles = null,
 }) {
   const safeSlug = safeExportSlug(title, templateId);
+  const exportLang = lang === "en" ? "en" : "ar";
+  const exportDirection = direction === "ltr" ? "ltr" : "rtl";
   const validation = validateExportProject(code, { title, target, assets });
   if (!validation.ok && target !== "source") {
     throw new Error(validation.issues.map((issue) => issue.message).join("\n"));
@@ -191,6 +193,8 @@ export async function createExportBundle({
     uiLibrary: "skui",
     uiLibraryVersion: SKUI_VERSION,
     projectType,
+    lang: exportLang,
+    direction: exportDirection,
     createdAt: now,
     exportedAt: now,
   };
@@ -202,14 +206,16 @@ export async function createExportBundle({
     buildWebAppHtml({
       title: meta.name,
       description: meta.description,
-      lang,
-      direction,
+      lang: exportLang,
+      direction: exportDirection,
       themeColor,
       pwa: target === "pwa" || target === "source",
     }),
   );
   files[`${web}app.js`] = strToU8(buildStandaloneAppJs());
-  files[`${web}preview.html`] = strToU8(buildPreviewHtml());
+  files[`${web}preview.html`] = strToU8(
+    buildPreviewHtml({ lang: exportLang, direction: exportDirection }),
+  );
   files[`${web}main.py`] = strToU8(String(code || ""));
   files[`${web}runtime/skulpt.min.js`] = runtime;
   files[`${web}runtime/skulpt-stdlib.js`] = stdlib;
@@ -223,10 +229,19 @@ export async function createExportBundle({
   }
   if (target === "pwa" || target === "source") {
     files[`${web}manifest.webmanifest`] = strToU8(
-      buildPwaManifest({ title: meta.name, description: meta.description, themeColor, lang, direction, orientation }),
+      buildPwaManifest({
+        title: meta.name,
+        description: meta.description,
+        themeColor,
+        lang: exportLang,
+        direction: exportDirection,
+        orientation,
+      }),
     );
     files[`${web}service-worker.js`] = strToU8(buildServiceWorker({ cacheVersion: version }));
-    files[`${web}offline.html`] = strToU8(buildOfflineHtml(meta.name));
+    files[`${web}offline.html`] = strToU8(
+      buildOfflineHtml(meta.name, { lang: exportLang, direction: exportDirection }),
+    );
     files[`${web}icons/icon-192.png`] = iconFiles?.icon192 || buildPlaceholderIcon(192);
     files[`${web}icons/icon-512.png`] = iconFiles?.icon512 || buildPlaceholderIcon(512);
   }

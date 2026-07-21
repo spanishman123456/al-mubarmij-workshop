@@ -25,6 +25,17 @@ describe("skuiProjectsRegistry", () => {
     }
   });
 
+  it("keeps training student starters minimal while teacher starters stay runnable", () => {
+    const guess = getSkuiProject("app-guess-number");
+    expect(guess.starterCode).toMatch(/app\.run\s*\(/);
+    expect(guess.studentStarterCode).not.toMatch(/app\.run\s*\(/);
+    expect(guess.studentStarterCode).toMatch(/تعلّم خطوة بخطوة/);
+
+    const plan = getStepPlan("app", "app-guess-number");
+    expect(plan?.steps?.[0]?.initialCode).toMatch(/import skui as ______/);
+    expect(plan?.fullSolution).toBeNull();
+  });
+
   it("does not embed fullSolution in student step plans", () => {
     const plan = getStepPlan("app", "app-calculator");
     expect(plan.fullSolution).toBeNull();

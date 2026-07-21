@@ -1,11 +1,20 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { usePlatform } from "../context/PlatformContext";
+import {
+  fetchOnboardingAll,
+  fetchTeacherPythonSnippetsAudit,
+  fetchTeacherStudentProgress,
+  fetchTeacherStudentPythonSnippets,
+  deleteTeacherStudentPythonSnippet,
+} from "../lib/platformApi";
 import { ProgressBar } from "../components/ProgressBar";
 import { PageShell, EduCard } from "../components/layout/PageShell";
 import { PrePostComparisonChart } from "../components/charts/PrePostComparisonChart";
 import { TeacherGraphicProjects } from "../components/teacher/TeacherGraphicProjects";
 import { MawhibaBrand } from "../components/branding/MawhibaBrand";
+import { LtrValue, formatFraction, formatPercent } from "../components/LtrValue";
 import {
   maskNationalId,
   getAccountStatus,
@@ -15,12 +24,16 @@ import {
   filterByLastLogin,
   todayKey,
 } from "../lib/platformAnalytics";
+import { buildAssessmentSummary, formatAssessmentCardLine } from "../lib/assessmentSummary.js";
+import { DayPublicationPanel, StudentDayUnlockActions } from "../components/teacher/DayPublicationPanel";
+import { filterSnippets, paginateSnippets, sortSnippets } from "../lib/python/snippetLibraryUi.js";
 
 function formatDate(iso) {
   return formatLoginDateTime(iso) === "لم يسجل الدخول" ? "—" : formatLoginDateTime(iso);
 }
 
 export default function TeacherDashboard() {
+  const navigate = useNavigate();
   const {
     user,
     allStudentsProgress,
@@ -29,11 +42,32 @@ export default function TeacherDashboard() {
     teacherUpdateGraphicProject,
     refreshTeacherAnalytics,
     analyticsSyncStatus,
+    publicationConfig,
+    refreshPublicationConfig,
   } = usePlatform();
 
   const [loginFilter, setLoginFilter] = useState("all");
   const [expandedHistory, setExpandedHistory] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [onboardingSummary, setOnboardingSummary] = useState(null);
+  const [progressDetails, setProgressDetails] = useState(null);
+  const [progressDetailsLoading, setProgressDetailsLoading] = useState(false);
+  const [selectedSnippetStudentId, setSelectedSnippetStudentId] = useState("");
+  const [selectedStudentSnippets, setSelectedStudentSnippets] = useState([]);
+  const [snippetsLoading, setSnippetsLoading] = useState(false);
+  const [snippetQuery, setSnippetQuery] = useState("");
+  const [snippetSort, setSnippetSort] = useState("newest");
+  const [snippetPage, setSnippetPage] = useState(1);
+  const [selectedPreviewSnippet, setSelectedPreviewSnippet] = useState(null);
+  const [snippetNotice, setSnippetNotice] = useState("");
+  const [snippetError, setSnippetError] = useState("");
+  const [snippetAudit, setSnippetAudit] = useState(null);
+
+  useEffect(() => {
+    fetchOnboardingAll()
+      .then(setOnboardingSummary)
+      .catch(() => setOnboardingSummary(null));
+  }, [analyticsSyncStatus.fetchedAt]);
 
   if (!user || user.role !== "teacher") {
     return (
@@ -57,14 +91,184 @@ export default function TeacherDashboard() {
   const today = todayKey();
   const presentToday = allStudentsProgress.filter((x) => x.analytics?.dailyLog?.[today]?.entered);
   const needsFollowup = allStudentsProgress.filter(
-    (x) => getAttendanceStatus(x.analytics, x.stats).key === "needs_followup",
+    (x) =>
+      (x.stats?.overallPercent ?? 0) < 15 &&
+      getAttendanceStatus(x.analytics, x.stats).key === "inactive",
   );
   const onlineNow = allStudentsProgress.filter((x) => getPresenceStatus(x.analytics).key === "online");
+  const publishedDays = publicationConfig?.publishedDays ?? 1;
+  const snippetStudents = allStudentsProgress;
+  const selectedSnippetStudent =
+    snippetStudents.find((item) => item.student.id === selectedSnippetStudentId) || snippetStudents[0] || null;
+  const filteredStudentSnippets = filterSnippets(selectedStudentSnippets, { query: snippetQuery, type: "all" });
+  const sortedStudentSnippets = sortSnippets(filteredStudentSnippets, snippetSort);
+  const pagedStudentSnippets = paginateSnippets(sortedStudentSnippets, snippetPage, 5);
+
+  useEffect(() => {
+    if (!selectedSnippetStudentId && snippetStudents.length > 0) {
+      setSelectedSnippetStudentId(snippetStudents[0].student.id);
+    }
+  }, [selectedSnippetStudentId, snippetStudents]);
+
+  useEffect(() => {
+    setSnippetPage(1);
+    setSelectedPreviewSnippet(null);
+    setSnippetNotice("");
+    setSnippetError("");
+  }, [snippetQuery, snippetSort, selectedSnippetStudentId]);
+
+  useEffect(() => {
+    if (!selectedSnippetStudentId) return;
+    let cancelled = false;
+    (async () => {
+      setSnippetsLoading(true);
+      setSnippetError("");
+      try {
+        const res = await fetchTeacherStudentPythonSnippets(selectedSnippetStudentId);
+        if (!cancelled) setSelectedStudentSnippets((res.snippets || []).map(normalizeSnippetRecord));
+      } catch (err) {
+        if (!cancelled) setSelectedStudentSnippets([]);
+        if (!cancelled) {
+          const status = err?.status;
+          if (status === 403) setSnippetError("لا تملك صلاحية عرض هذا الكود.");
+          else setSnippetError("تعذر تحميل الكود المحفوظ. حاول مرة أخرى أو راجع السجل.");
+        }
+      } finally {
+        if (!cancelled) setSnippetsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSnippetStudentId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetchTeacherPythonSnippetsAudit();
+        if (!cancelled) setSnippetAudit(res.report || null);
+      } catch {
+        if (!cancelled) setSnippetAudit(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [analyticsSyncStatus.fetchedAt]);
+
+  function normalizeSnippetRecord(snippet, idx = 0) {
+    const code = typeof snippet?.code === "string" ? snippet.code : "";
+    const previewLines = code
+      ? code
+          .split(/\r?\n/)
+          .slice(0, 5)
+          .join("\n")
+      : "";
+    return {
+      ...snippet,
+      _safeId: String(snippet?.id || `snippet-${idx}-${snippet?.at || Date.now()}`),
+      _code: code,
+      _hasCode: code.trim().length > 0,
+      _preview: previewLines,
+    };
+  }
+
+  function openSnippetPreview(snippet) {
+    setSelectedPreviewSnippet(snippet);
+    setSnippetError("");
+    if (snippet?._hasCode) setSnippetNotice("تم تحميل الكود بنجاح.");
+    else setSnippetNotice("هذا السجل موجود لكن لا يحتوي على نص كود.");
+  }
+
+  async function copySnippet(snippet) {
+    if (!snippet?._hasCode) {
+      setSnippetError("تعذر نسخ الكود لأن المحتوى غير متوفر.");
+      return;
+    }
+    try {
+      await navigator.clipboard?.writeText(snippet._code);
+      setSnippetNotice("تم نسخ الكود.");
+      setSnippetError("");
+    } catch {
+      setSnippetError("تعذر نسخ الكود لأن المحتوى غير متوفر.");
+    }
+  }
+
+  function openInEditor(snippet) {
+    if (!snippet?._hasCode) {
+      setSnippetError("هذا السجل موجود لكن لا يحتوي على نص كود.");
+      return;
+    }
+    try {
+      localStorage.setItem(
+        "teacher-snippet-preview",
+        JSON.stringify({
+          title: snippet.title || "كود طالب",
+          code: snippet._code,
+          studentId: selectedSnippetStudent?.student.id || "",
+          studentNameAr: selectedSnippetStudent?.student.nameAr || "",
+          lessonId: snippet.lessonId || "",
+          activityId: snippet.activityId || "",
+          at: snippet.at || null,
+          updatedAt: snippet.updatedAt || null,
+        }),
+      );
+    } catch {
+      /* ignore localStorage failure */
+    }
+    navigate("/python?source=teacher-snippet-preview");
+  }
+
+  async function deleteSnippet(snippet) {
+    if (!selectedSnippetStudent?.student.id) return;
+    if (!snippet?.id) {
+      setSnippetError("هذا السجل لا يملك معرفًا صالحًا للحذف.");
+      return;
+    }
+    const ok = window.confirm(`هل تريد حذف "${snippet.title || "كود محفوظ"}"؟`);
+    if (!ok) return;
+    try {
+      await deleteTeacherStudentPythonSnippet(selectedSnippetStudent.student.id, snippet.id);
+      setSelectedStudentSnippets((prev) => prev.filter((s) => s._safeId !== snippet._safeId));
+      setSelectedPreviewSnippet((prev) => (prev?._safeId === snippet._safeId ? null : prev));
+      setSnippetNotice("تم حذف الكود.");
+      setSnippetError("");
+    } catch (err) {
+      setSnippetError(err?.status === 403 ? "لا تملك صلاحية عرض هذا الكود." : "تعذر حذف الكود المحفوظ.");
+    }
+  }
+
+  useEffect(() => {
+    if (!selectedPreviewSnippet) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setSelectedPreviewSnippet(null);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [selectedPreviewSnippet]);
 
   async function handleRefresh() {
     setRefreshing(true);
     await refreshTeacherAnalytics();
     setRefreshing(false);
+  }
+
+  async function showProgressDetails(studentId) {
+    setProgressDetailsLoading(true);
+    try {
+      const res = await fetchTeacherStudentProgress(studentId);
+      setProgressDetails(res.computed);
+    } catch {
+      setProgressDetails(null);
+    } finally {
+      setProgressDetailsLoading(false);
+    }
   }
 
   return (
@@ -85,6 +289,57 @@ export default function TeacherDashboard() {
       <EduCard className="mb-6 flex flex-wrap items-center justify-between gap-4" accent="violet">
         <MawhibaBrand variant="horizontal" />
         <div className="flex flex-wrap items-center gap-3">
+          <Link to="/teacher/day-01-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 1
+          </Link>
+          <Link to="/teacher/day-02-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 2
+          </Link>
+          <Link to="/teacher/day-03-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 3
+          </Link>
+          <Link to="/teacher/day-04-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 4
+          </Link>
+          <Link to="/teacher/day-05-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 5
+          </Link>
+          <Link to="/teacher/day-06-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 6
+          </Link>
+          <Link to="/teacher/day-07-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 7
+          </Link>
+          <Link to="/teacher/day-08-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 8
+          </Link>
+          <Link to="/teacher/day-09-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 9
+          </Link>
+          <Link to="/teacher/day-10-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 10
+          </Link>
+          <Link to="/teacher/day-11-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 11
+          </Link>
+          <Link to="/teacher/day-12-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 12
+          </Link>
+          <Link to="/teacher/day-13-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 13
+          </Link>
+          <Link to="/teacher/day-14-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 14
+          </Link>
+          <Link to="/teacher/day-15-answers" className="edu-btn edu-btn-outline text-sm">
+            إجابات المعلم — اليوم 15
+          </Link>
+          <Link to="/teacher/quiz-review" className="edu-btn edu-btn-outline text-sm">
+            مراجعة الاختبارات
+          </Link>
+          <Link to="/teacher/code-visibility" className="edu-btn edu-btn-primary text-sm">
+            التحكم في ظهور الكود
+          </Link>
           <button
             type="button"
             onClick={handleRefresh}
@@ -109,6 +364,43 @@ export default function TeacherDashboard() {
           </p>
         </EduCard>
       ) : null}
+
+      {onboardingSummary ? (
+        <EduCard className="mb-4" accent="cyan" title="التمهيد — BINGO والموافقات والتقويم القبلي">
+          <p className="text-sm text-slate-600">
+            طلاب سجّلوا في التمهيد: {onboardingSummary.studentIds?.length ?? 0} — يُحدَّث من قاعدة
+            البيانات المركزية.
+          </p>
+          {onboardingSummary.preAssessment && Object.keys(onboardingSummary.preAssessment).length > 0 ? (
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[420px] text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-right text-xs text-slate-500">
+                    <th className="py-2 pl-2">الطالب</th>
+                    <th className="py-2 pl-2">التقويم القبلي</th>
+                    <th className="py-2">تشخيصي</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(onboardingSummary.preAssessment)
+                    .slice(0, 12)
+                    .map(([sid, pa]) => (
+                      <tr key={sid} className="border-b border-slate-100">
+                        <td className="py-2 pl-2 font-mono text-xs">{sid.replace("stu-", "")}</td>
+                        <td className="py-2 pl-2">{pa.teacherLabelAr || pa.statusLabelAr}</td>
+                        <td className="py-2">
+                          {pa.diagnosticPercent != null ? `${pa.diagnosticPercent}%` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </EduCard>
+      ) : null}
+
+      <DayPublicationPanel publicationConfig={publicationConfig} onUpdated={refreshPublicationConfig} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <SummaryCard value={allStudentsProgress.length} label="إجمالي الطلاب" color="violet" />
@@ -143,6 +435,229 @@ export default function TeacherDashboard() {
         ))}
         <span className="text-xs text-slate-500">({filteredStudents.length} طالب)</span>
       </EduCard>
+
+      <EduCard id="student-snippets" className="mt-6" accent="cyan" title="الوصول السريع لمكتبة أكواد الطلاب">
+        {snippetStudents.length === 0 ? (
+          <p className="text-sm text-slate-600">لا توجد أكواد طلاب محفوظة حالياً في البيانات المتاحة.</p>
+        ) : (
+          <>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <label className="text-sm font-semibold text-slate-700">اختر الطالب:</label>
+              <select
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                value={selectedSnippetStudent?.student.id || ""}
+                onChange={(e) => setSelectedSnippetStudentId(e.target.value)}
+              >
+                {snippetStudents.map((item) => (
+                  <option key={item.student.id} value={item.student.id}>
+                    {item.student.nameAr} ({maskNationalId(item.student.nationalId)})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="mb-2 text-sm text-slate-600">
+              عدد الأكواد: <LtrValue>{pagedStudentSnippets.totalItems}</LtrValue>
+            </p>
+            {snippetAudit ? (
+              <div className="mb-2 rounded-lg border border-cyan-200 bg-cyan-50 p-2 text-xs text-cyan-900">
+                الطلاب الذين لديهم أكواد: <LtrValue>{snippetAudit.studentsWithCodes}</LtrValue> | إجمالي الأكواد:{" "}
+                <LtrValue>{snippetAudit.totalSnippets}</LtrValue> | الأكواد التي تحتوي نصًا:{" "}
+                <LtrValue>{snippetAudit.snippetsWithCodeText}</LtrValue> | الأكواد الفارغة:{" "}
+                <LtrValue>{snippetAudit.emptyCodeSnippets}</LtrValue>
+              </div>
+            ) : null}
+            <div className="mb-3 grid gap-2 md:grid-cols-2">
+              <input
+                type="text"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                value={snippetQuery}
+                onChange={(e) => setSnippetQuery(e.target.value)}
+                placeholder="ابحث باسم الكود أو النشاط أو التاريخ"
+              />
+              <select
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                value={snippetSort}
+                onChange={(e) => setSnippetSort(e.target.value)}
+              >
+                <option value="newest">الأحدث أولًا</option>
+                <option value="oldest">الأقدم أولًا</option>
+                <option value="lesson">حسب اسم الدرس</option>
+              </select>
+            </div>
+            <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+              {snippetsLoading ? (
+                <p className="text-sm text-slate-500">جاري تحميل الأكواد...</p>
+              ) : null}
+              {snippetError ? <p className="rounded bg-rose-50 px-2 py-1 text-sm text-rose-800">{snippetError}</p> : null}
+              {snippetNotice ? <p className="rounded bg-emerald-50 px-2 py-1 text-sm text-emerald-800">{snippetNotice}</p> : null}
+              {!snippetsLoading && pagedStudentSnippets.totalItems === 0 ? (
+                <p className="text-sm text-slate-500">لا توجد أكواد محفوظة لهذا الطالب حالياً.</p>
+              ) : null}
+              {pagedStudentSnippets.items.map((snippet) => (
+                <div key={snippet._safeId} className="rounded-md border border-slate-200 bg-white p-2">
+                  <p className="font-semibold text-slate-900">{snippet.title || "كود محفوظ"}</p>
+                  <p className="text-xs text-slate-500">
+                    {snippet.updatedAt
+                      ? formatLoginDateTime(snippet.updatedAt)
+                      : snippet.at
+                        ? formatLoginDateTime(snippet.at)
+                        : "—"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    الدرس: {snippet.lessonTitle || snippet.lessonId || "—"} | النشاط: {snippet.activityId || "—"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openSnippetPreview(snippet)}
+                      className="rounded-md border border-cyan-300 px-2 py-1 text-xs text-cyan-700"
+                    >
+                      معاينة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copySnippet(snippet)}
+                      className="rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700"
+                    >
+                      نسخ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openInEditor(snippet)}
+                      className="rounded-md border border-emerald-300 px-2 py-1 text-xs text-emerald-700"
+                    >
+                      فتح في المحرر
+                    </button>
+                  </div>
+                  {snippet._hasCode ? (
+                    <pre
+                      dir="ltr"
+                      className="mt-2 max-h-20 overflow-auto rounded bg-slate-900 p-2 text-left font-mono text-xs text-emerald-200"
+                      style={{ direction: "ltr", textAlign: "left", unicodeBidi: "isolate", whiteSpace: "pre-wrap" }}
+                    >
+                      {snippet._preview}
+                    </pre>
+                  ) : (
+                    <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                      محتوى الكود غير متوفر — يحتاج فحص
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center justify-between text-xs text-slate-600">
+              <span>
+                صفحة {pagedStudentSnippets.currentPage} من {pagedStudentSnippets.totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSnippetPage((p) => Math.max(1, p - 1))}
+                  disabled={pagedStudentSnippets.currentPage <= 1}
+                  className="rounded-md border border-slate-300 px-2 py-1 disabled:opacity-40"
+                >
+                  السابق
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSnippetPage((p) => Math.min(pagedStudentSnippets.totalPages, p + 1))}
+                  disabled={pagedStudentSnippets.currentPage >= pagedStudentSnippets.totalPages}
+                  className="rounded-md border border-slate-300 px-2 py-1 disabled:opacity-40"
+                >
+                  التالي
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </EduCard>
+
+      {selectedPreviewSnippet
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4"
+              onClick={() => setSelectedPreviewSnippet(null)}
+            >
+              <div
+                className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-5 shadow-2xl"
+                dir="rtl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{selectedPreviewSnippet.title || "كود محفوظ"}</h3>
+                    <p className="text-xs text-slate-600">
+                      الطالب: {selectedSnippetStudent?.student.nameAr || "—"} | الدرس:{" "}
+                      {selectedPreviewSnippet.lessonTitle || selectedPreviewSnippet.lessonId || "—"} | النشاط:{" "}
+                      {selectedPreviewSnippet.activityId || "—"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      الحفظ: {selectedPreviewSnippet.at ? formatLoginDateTime(selectedPreviewSnippet.at) : "—"} | آخر تعديل:{" "}
+                      {selectedPreviewSnippet.updatedAt
+                        ? formatLoginDateTime(selectedPreviewSnippet.updatedAt)
+                        : selectedPreviewSnippet.at
+                          ? formatLoginDateTime(selectedPreviewSnippet.at)
+                          : "—"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPreviewSnippet(null)}
+                    className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700"
+                  >
+                    إغلاق
+                  </button>
+                </div>
+
+                {selectedPreviewSnippet._hasCode ? (
+                  <pre
+                    dir="ltr"
+                    className="max-h-[50vh] overflow-auto rounded-lg border border-slate-200 bg-slate-950 p-3 text-left font-mono text-sm text-emerald-200"
+                    style={{ direction: "ltr", textAlign: "left", unicodeBidi: "isolate", whiteSpace: "pre-wrap" }}
+                  >
+                    {selectedPreviewSnippet._code}
+                  </pre>
+                ) : (
+                  <p className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    هذا السجل موجود لكن لا يحتوي على نص كود.
+                  </p>
+                )}
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openInEditor(selectedPreviewSnippet)}
+                    className="rounded-md border border-emerald-300 px-3 py-1 text-xs text-emerald-700"
+                  >
+                    فتح في المحرر
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copySnippet(selectedPreviewSnippet)}
+                    className="rounded-md border border-violet-300 px-3 py-1 text-xs text-violet-700"
+                  >
+                    نسخ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteSnippet(selectedPreviewSnippet)}
+                    className="rounded-md border border-rose-300 px-3 py-1 text-xs text-rose-700"
+                  >
+                    حذف
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPreviewSnippet(null)}
+                    className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700"
+                  >
+                    إغلاق
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       <PrePostComparisonChart className="mt-8" students={allStudentsProgress} />
 
@@ -191,29 +706,50 @@ export default function TeacherDashboard() {
                     {attendance.label}
                   </span>
                   <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-bold text-violet-800">
-                    {stats.overallPercent}%
+                    <LtrValue>{formatPercent(stats.overallPercent)}</LtrValue>
                   </span>
                 </div>
               </div>
 
-              <ProgressBar className="mt-4" value={stats.overallPercent} label="نسبة التقدم العامة" />
+              <ProgressBar className="mt-4" value={stats.overallPercent} label="التقدم في المحتوى المتاح" />
+              {stats.dayUnlock ? (
+                <p className="mt-2 text-xs text-slate-600">
+                  اليوم 1: {stats.dayUnlock.dayCompletions?.["day-01"]?.completed ? "مكتمل ✓" : "غير مكتمل"} — اليوم
+                  2: {stats.dayUnlock.dayUnlockMap?.["day-02"] === "locked" ? "مقفل" : "مفتوح"}
+                </p>
+              ) : null}
 
               <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <Info label="آخر تسجيل دخول" value={formatLoginDateTime(analytics?.lastLoginAt)} />
-                <Info label="عدد مرات الدخول" value={analytics?.loginCount ?? 0} />
+                <Info label="عدد مرات الدخول" value={<LtrValue>{analytics?.loginCount ?? 0}</LtrValue>} />
                 <Info label="آخر نشاط" value={formatDate(analytics?.lastActivityAt)} />
-                <Info label="الصفحات المزارة" value={pagesCount} />
-                <Info label="الدروس" value={`${stats.completedDays}/${stats.totalDays}`} />
-                <Info label="أوراق العمل" value={wsCount} />
-                <Info label="الاختبارات" value={quizCount} />
-                <Info label="المحاكاة" value={simRuns} />
-                <Info label="تشغيل بايثون" value={analytics?.pythonRuns ?? 0} />
+                <Info label="الصفحات المزارة" value={<LtrValue>{pagesCount}</LtrValue>} />
+                <Info
+                  label="الدروس (منشورة)"
+                  value={
+                    <LtrValue>
+                      {formatFraction(stats.completedLessons ?? stats.completedDays ?? 0, stats.totalPublishedLessons ?? stats.totalDays ?? 15)}
+                    </LtrValue>
+                  }
+                />
+                <Info label="أوراق العمل" value={<LtrValue>{stats.worksheetsDone ?? wsCount}</LtrValue>} />
+                <Info label="الاختبارات" value={<LtrValue>{stats.quizCount ?? quizCount}</LtrValue>} />
+                <Info label="المحاكاة" value={<LtrValue>{simRuns}</LtrValue>} />
+                <Info label="تشغيل بايثون" value={<LtrValue>{analytics?.pythonRuns ?? 0}</LtrValue>} />
                 <Info label="المشروع" value={progress.project?.status ?? "لم يبدأ"} />
                 <Info
-                  label="قبلي → بعدي"
-                  value={`${progress.preTest?.percent ?? "—"}% → ${progress.postTest?.percent ?? "—"}%`}
+                  label="قبلي → بعدي (تشخيصي)"
+                  value={
+                    <LtrValue>
+                      {stats.assessmentSummary
+                        ? formatAssessmentCardLine(stats.assessmentSummary)
+                        : formatAssessmentCardLine(
+                            buildAssessmentSummary(progress, { publishedDays: stats.publishedDays ?? publishedDays }),
+                          )}
+                    </LtrValue>
+                  }
                 />
-                <Info label="الأنشطة المكتملة" value={analytics?.activitiesCompleted ?? 0} />
+                <Info label="الأنشطة المكتملة" value={<LtrValue>{analytics?.activitiesCompleted ?? 0}</LtrValue>} />
               </div>
 
               {analytics?.teacherNotes ? (
@@ -222,7 +758,22 @@ export default function TeacherDashboard() {
                 </p>
               ) : null}
 
+              {stats.dayUnlock ? (
+                <StudentDayUnlockActions
+                  studentId={student.id}
+                  dayUnlock={stats.dayUnlock}
+                  onUnlocked={refreshTeacherAnalytics}
+                />
+              ) : null}
+
               <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="edu-btn edu-btn-primary text-xs"
+                  onClick={() => showProgressDetails(student.id)}
+                >
+                  عرض تفاصيل التقدم
+                </button>
                 <button
                   type="button"
                   className="edu-btn edu-btn-outline text-xs"
@@ -270,6 +821,72 @@ export default function TeacherDashboard() {
           );
         })}
       </section>
+
+      {progressDetails || progressDetailsLoading ? (
+        <EduCard className="fixed inset-x-4 bottom-4 z-50 mx-auto max-h-[70vh] max-w-lg overflow-y-auto shadow-2xl md:inset-x-auto md:right-8 md:top-24" accent="violet" title="تفاصيل التقدم">
+          {progressDetailsLoading ? (
+            <p className="text-sm text-slate-600">جاري التحميل...</p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-700">
+                النسبة: <LtrValue>{formatPercent(progressDetails.availableProgressPercent)}</LtrValue> —{" "}
+                <LtrValue>
+                  {formatFraction(progressDetails.completedRequiredItems, progressDetails.requiredItems)}
+                </LtrValue>
+              </p>
+              <p className="mt-1 text-xs text-slate-500">{progressDetails.pathProgress?.pathLabelAr}</p>
+              {progressDetails.assessmentSummary ? (
+                <div className="mt-4 rounded-lg border border-violet-100 bg-violet-50 p-3 text-sm">
+                  <p className="font-bold text-violet-900">التقويم القبلي</p>
+                  <p className="mt-1">
+                    الحالة: {progressDetails.assessmentSummary.preAssessment.statusLabelAr}
+                    {progressDetails.assessmentSummary.preAssessment.scorePercent != null
+                      ? ` — ${progressDetails.assessmentSummary.preAssessment.scorePercent}%`
+                      : ""}
+                  </p>
+                  {progressDetails.assessmentSummary.preAssessment.answeredCount != null ? (
+                    <p className="text-xs text-slate-600">
+                      الأسئلة المجابة: {progressDetails.assessmentSummary.preAssessment.answeredCount}
+                      {progressDetails.assessmentSummary.preAssessment.totalQuestions
+                        ? ` / ${progressDetails.assessmentSummary.preAssessment.totalQuestions}`
+                        : ""}
+                    </p>
+                  ) : null}
+                  {progressDetails.assessmentSummary.preAssessment.submittedAt ? (
+                    <p className="text-xs text-slate-600">
+                      وقت الإرسال: {formatLoginDateTime(progressDetails.assessmentSummary.preAssessment.submittedAt)}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-xs text-violet-800">
+                    ملاحظة: النتيجة تشخيصية ولا تؤثر على فتح الدروس.
+                  </p>
+                  <p className="mt-3 font-bold text-violet-900">التقويم البعدي</p>
+                  <p className="mt-1">{progressDetails.assessmentSummary.postAssessment.statusLabelAr}</p>
+                  {progressDetails.assessmentSummary.postAssessment.scorePercent != null ? (
+                    <p>{progressDetails.assessmentSummary.postAssessment.scorePercent}%</p>
+                  ) : null}
+                </div>
+              ) : null}
+              <ul className="mt-4 space-y-1 text-sm">
+                {(progressDetails.details || []).map((item) => (
+                  <li key={item.id} className="flex gap-2">
+                    <span>{item.icon}</span>
+                    <span>{item.labelAr}</span>
+                    <span className="text-slate-500">— {item.status === "completed" ? "مكتمل" : "لم يبدأ"}</span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                className="edu-btn edu-btn-outline mt-4 text-sm"
+                onClick={() => setProgressDetails(null)}
+              >
+                إغلاق
+              </button>
+            </>
+          )}
+        </EduCard>
+      ) : null}
     </PageShell>
   );
 }

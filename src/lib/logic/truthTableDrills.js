@@ -1,4 +1,4 @@
-import { buildSimpleExpression, buildTruthTable } from "./truthTable.js";
+import { buildSimpleExpression, buildTruthTable, parseLogicalExpression } from "./truthTable.js";
 import { LOGIC_OPS, varsForCount } from "./variables.js";
 
 const SINGLE_OPS = ["AND", "OR", "NOT", "XOR", "NAND", "NOR", "XNOR"];

@@ -61,24 +61,36 @@ export function getAccountStatus(analytics) {
 }
 
 export function getAttendanceStatus(analytics, stats) {
-  const today = todayKey();
-  const daily = analytics?.dailyLog?.[today];
-  if (!daily?.entered) {
-    return { key: "absent", label: "غائب", color: "bg-red-100 text-red-800" };
+  const last = analytics?.lastActivityAt || analytics?.lastLoginAt;
+  const loginCount = analytics?.loginCount || 0;
+
+  if (!loginCount && !last) {
+    return { key: "not_started", label: "لم يبدأ", color: "bg-slate-100 text-slate-700" };
   }
-  const pages = daily.pages || 0;
-  const acts = (analytics?.activitiesCompleted || 0) + (stats?.completedDays || 0);
-  const sims = Object.values(analytics?.simRuns || {}).reduce((a, b) => a + b, 0);
-  if (pages >= 4 || acts >= 2 || sims >= 2) {
-    return { key: "present_active", label: "حاضر ومتفاعل", color: "bg-emerald-100 text-emerald-800" };
+
+  if (last) {
+    const elapsed = Date.now() - new Date(last).getTime();
+    if (elapsed <= 5 * 60 * 1000) {
+      return { key: "active_now", label: "نشط الآن", color: "bg-emerald-100 text-emerald-800" };
+    }
+    if (elapsed <= 24 * 60 * 60 * 1000) {
+      return { key: "active_today", label: "نشط اليوم", color: "bg-cyan-100 text-cyan-800" };
+    }
+    if (elapsed <= 3 * 24 * 60 * 60 * 1000) {
+      return { key: "recently_active", label: "نشط مؤخرًا", color: "bg-violet-100 text-violet-800" };
+    }
   }
-  if (pages >= 1) {
-    return { key: "present_low", label: "حاضر بتفاعل منخفض", color: "bg-amber-100 text-amber-800" };
+
+  if (loginCount > 0) {
+    return { key: "inactive", label: "لا يوجد نشاط حديث", color: "bg-slate-100 text-slate-600" };
   }
-  if ((stats?.overallPercent ?? 0) < 20) {
-    return { key: "needs_followup", label: "يحتاج متابعة", color: "bg-orange-100 text-orange-800" };
+
+  const completed = stats?.completedRequiredItems ?? stats?.completedDays ?? 0;
+  if (completed > 0) {
+    return { key: "learning", label: "يتعلّم — لا نشاط حديث", color: "bg-amber-100 text-amber-800" };
   }
-  return { key: "present_low", label: "حاضر بتفاعل منخفض", color: "bg-amber-100 text-amber-800" };
+
+  return { key: "not_started", label: "لم يبدأ", color: "bg-slate-100 text-slate-700" };
 }
 
 export function defaultAnalytics() {
@@ -150,7 +162,8 @@ export function recordPageView(analytics, path) {
   const day = daily[today] || { entered: false, pages: 0, activities: 0, firstAt: null, lastAt: null };
   day.pages = (day.pages || 0) + 1;
   day.lastAt = now;
-  if (day.entered) {
+  if (!day.entered) {
+    day.entered = true;
     day.firstAt = day.firstAt || now;
   }
   daily[today] = day;
@@ -171,10 +184,12 @@ export function recordSimRun(analytics, simId) {
 }
 
 export function recordPythonRun(analytics) {
+  const now = new Date().toISOString();
   return {
     ...analytics,
     pythonRuns: (analytics.pythonRuns || 0) + 1,
-    lastActivityAt: new Date().toISOString(),
+    lastPythonRunAt: now,
+    lastActivityAt: now,
   };
 }
 

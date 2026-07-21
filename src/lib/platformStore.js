@@ -1,6 +1,8 @@
 import { getAllDayIds } from "../data/curriculum15Days";
 import { STUDENTS_ROSTER } from "../data/studentsRoster";
 import { defaultAnalytics } from "./platformAnalytics";
+import { resolvePreAssessmentStatus } from "../content/onboarding/onboardingPolicy.js";
+import { buildAssessmentSummary } from "./assessmentSummary.js";
 
 const STORAGE_KEY = "mubarmij-platform-v2";
 
@@ -133,6 +135,8 @@ export function computeProgressStats(progress) {
   const microbitDone = Object.values(progress.microbitProjects || {}).filter(
     (p) => p?.status === "completed",
   ).length;
+  const preResolved = resolvePreAssessmentStatus(progress);
+  const assessmentSummary = buildAssessmentSummary(progress);
   const percent = Math.round(
     ((completedDays / totalDays) * 0.35 +
       (worksheetsDone / Math.max(worksheets.length, 1)) * 0.2 +
@@ -153,6 +157,10 @@ export function computeProgressStats(progress) {
     overallPercent: Math.min(100, percent),
     preTest: progress.preTest,
     postTest: progress.postTest,
+    preAssessmentStatus: preResolved.status,
+    preAssessmentLabelAr: preResolved.statusLabelAr,
+    preAssessmentDiagnosticPercent: preResolved.diagnosticPercent,
+    assessmentSummary,
     projectStatus: progress.project?.status ?? "not_started",
   };
 }

@@ -1,0 +1,24 @@
+{
+  "dayId": "day-11",
+  "titleAr": "اليوم الحادي عشر — الذكاء الاصطناعي والبحث الأخلاقي",
+  "sourceOfTruth": "C:/Users/hosam/OneDrive/Desktop/برمجة الحاسب.pdf",
+  "pdfRefs": [
+    { "pdfPageIndex": 429, "topic": "أهداف اليوم 11" },
+    { "pdfPageIndex": 431, "topic": "مقدمة الذكاء الاصطناعي والتعلم الآلي" },
+    { "pdfPageIndex": 434, "topic": "الأخلاقيات والخصوصية" },
+    { "pdfPageIndex": 435, "topic": "العرض والبحث" }
+  ],
+  "lessons": [
+    { "id": "ai-foundations", "route": "/lessons/ai-foundations", "hasDetailedStructure": true, "lab": "ai-foundations-lab" },
+    { "id": "machine-learning-basics", "route": "/lessons/machine-learning-basics", "hasDetailedStructure": true, "lab": "machine-learning-lab" },
+    { "id": "ai-ethics-safety", "route": "/lessons/ai-ethics-safety", "hasDetailedStructure": true, "lab": "ai-ethics-lab" },
+    { "id": "ai-research-presentation", "route": "/lessons/ai-research-presentation", "hasDetailedStructure": true, "lab": "ai-presentation-lab" }
+  ],
+  "worksheetId": "ws-day-11",
+  "quizId": "quiz-day-11",
+  "teacherAnswersRoute": "/teacher/day-11-answers",
+  "studentVisibility": {
+    "publishedDaysRequirement": 11,
+    "currentExpectedStateWhenPublishedDays2": "draft-locked-for-students"
+  }
+}

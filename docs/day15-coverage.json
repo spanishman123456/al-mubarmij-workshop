@@ -1,0 +1,24 @@
+{
+  "dayId": "day-15",
+  "titleAr": "اليوم الخامس عشر — العروض الختامية والتقييم وخطة الاستمرار",
+  "sourceOfTruth": "C:/Users/hosam/OneDrive/Desktop/برمجة الحاسب.pdf",
+  "pdfRefs": [
+    { "pdfPageIndex": 459, "topic": "final presentation" },
+    { "pdfPageIndex": 460, "topic": "peer feedback" },
+    { "pdfPageIndex": 461, "topic": "final evaluation" },
+    { "pdfPageIndex": 462, "topic": "program closure" }
+  ],
+  "lessons": [
+    { "id": "final-project-presentation", "route": "/lessons/final-project-presentation", "hasDetailedStructure": true, "lab": "final-presentation-lab" },
+    { "id": "peer-feedback-and-refinement", "route": "/lessons/peer-feedback-and-refinement", "hasDetailedStructure": true, "lab": "peer-feedback-lab" },
+    { "id": "final-evaluation", "route": "/lessons/final-evaluation", "hasDetailedStructure": true, "lab": "final-evaluation-lab" },
+    { "id": "program-closure-next-steps", "route": "/lessons/program-closure-next-steps", "hasDetailedStructure": true, "lab": "final-evaluation-lab" }
+  ],
+  "worksheetId": "ws-day-15",
+  "quizId": null,
+  "teacherAnswersRoute": "/teacher/day-15-answers",
+  "studentVisibility": {
+    "publishedDaysRequirement": 15,
+    "currentExpectedStateWhenPublishedDays2": "draft-locked-for-students"
+  }
+}

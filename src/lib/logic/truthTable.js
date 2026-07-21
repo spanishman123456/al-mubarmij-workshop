@@ -20,6 +20,8 @@ function normalizeExpr(raw) {
     .replace(/\s+/g, " ")
     .replace(/⋀/g, " AND ")
     .replace(/⋁/g, " OR ")
+    .replace(/∧/g, " AND ")
+    .replace(/∨/g, " OR ")
     .replace(/⊕/g, " XOR ")
     .replace(/¬/g, "NOT ")
     .replace(/\(/g, " ( ")

@@ -20,7 +20,15 @@ def q(id_, order, question_ar, qtype="mcq", **kw):
         "questionAr": question_ar,
         "explainAr": kw.get("explainAr", "من التقويم الرسمي — ملف PDF المعتمد."),
     }
-    for k in ("optionsAr", "correctIndex", "correctAnswer", "acceptAnswers", "codeSnippetAr"):
+    for k in (
+        "optionsAr", "correctIndex", "correctAnswer", "acceptAnswers", "codeSnippetAr",
+        "matchLeft", "matchRight", "correctPairs", "orderItems", "correctOrder",
+        "instructionAr", "lessonLink", "modelAnswerAr",
+        "logicExpr", "logicExprDisplay", "varCount", "resultOnly",
+        "cardValues", "target", "targets", "baseLabel",
+        "correctFlow", "flowSlots", "flowMatchSymbols", "flowRoleOptions",
+        "circuitPreset", "circuitGate", "expectedOutputs", "allowedGates",
+    ):
         if k in kw:
             item[k] = kw[k]
     return item
@@ -140,8 +148,64 @@ def build_pre():
         q(
             "pre-04",
             o,
-            "سؤال 4: ارسم جدول الحقيقة لتمثيل العبارة المنطقية: (¬p ∧ q) ∨ r",
-            "essay",
+            "سؤال 4: أكمل جدول الحقيقة لتمثيل العبارة المنطقية: (¬p ∧ q) ∨ r",
+            "truth-table",
+            logicExpr="(NOT p AND q) OR r",
+            logicExprDisplay="(¬p ∧ q) ∨ r",
+            varCount=3,
+            resultOnly=True,
+            instructionAr="عبّئ عمود الناتج F لكل صف — استخدم 0 أو 1.",
+            explainAr="8 صفوف — الناتج = (NOT p AND q) OR r.",
+            lessonLink="/lessons/truth-tables",
+        )
+    )
+    o += 1
+
+    items.append(
+        q(
+            "pre-logic-and",
+            o,
+            "سؤال 4-ب: ابْنِ دارة منطقية ببوابة AND — وصّل A و B إلى المصباح (OUT).",
+            "logic-circuit",
+            circuitPreset="ab-out",
+            circuitGate="AND",
+            expectedOutputs=[False, False, False, True],
+            allowedGates=["AND", "NOT", "OR", "XOR", "NAND", "NOR", "XNOR"],
+            instructionAr="أضف بوابة AND ووصّل المدخلين A و B بالمخرج. جرّب قيم 0/1 قبل الإرسال.",
+            explainAr="AND: المخرج 1 فقط عندما A=1 و B=1 — جدول 0001.",
+            lessonLink="/simulations#circuit",
+        )
+    )
+    o += 1
+    items.append(
+        q(
+            "pre-logic-or",
+            o,
+            "سؤال 4-ج: ابْنِ دارة منطقية ببوابة OR — وصّل A و B إلى المصباح (OUT).",
+            "logic-circuit",
+            circuitPreset="ab-out",
+            circuitGate="OR",
+            expectedOutputs=[False, True, True, True],
+            allowedGates=["OR", "AND", "NOT", "XOR", "NOR", "XNOR", "NAND"],
+            instructionAr="أضف بوابة OR ووصّل A و B بالمخرج.",
+            explainAr="OR: المخرج 1 إذا كان A أو B = 1 — جدول 0111.",
+            lessonLink="/simulations#circuit",
+        )
+    )
+    o += 1
+    items.append(
+        q(
+            "pre-logic-not",
+            o,
+            "سؤال 4-د: ابْنِ دارة ببوابة NOT — وصّل A إلى المصباح (OUT).",
+            "logic-circuit",
+            circuitPreset="a-out",
+            circuitGate="NOT",
+            expectedOutputs=[True, False],
+            allowedGates=["NOT", "AND", "OR", "XOR"],
+            instructionAr="أضف بوابة NOT بين المدخل A والمخرج.",
+            explainAr="NOT يعكس A: 0→1 و 1→0.",
+            lessonLink="/simulations#circuit",
         )
     )
     o += 1
@@ -162,6 +226,22 @@ def build_pre():
             )
         )
         o += 1
+
+    # ── ترتيب خطوات خوارزمية ──
+    items.append(
+        q(
+            "pre-algo-order",
+            o,
+            "سؤال ترتيب: رتّب خطوات خوارزمية «قراءة عددين وطباعة المجموع».",
+            "order",
+            orderItems=["بداية البرنامج", "قراءة العددين", "جمع العددين", "طباعة النتيجة", "نهاية البرنامج"],
+            correctOrder=[0, 1, 2, 3, 4],
+            instructionAr="استخدم أزرار ↑ ↓ لترتيب الخطوات من البداية إلى النهاية.",
+            explainAr="الترتيب الصحيح: بداية → قراءة → جمع → طباعة → نهاية.",
+            lessonLink="/lessons/algorithms",
+        )
+    )
+    o += 1
 
     # ── سؤال 6 ──
     items.append(
@@ -349,8 +429,9 @@ def build_pre():
         q(
             "pre-15",
             o,
-            "سؤال 15: ارسم مسار أويلر (Euler Path) يبدأ بالرقم 1 ويعطي كل زاوية رقماً صحيحاً متزايداً.",
+            "سؤال 15: صِف مسار أويلر (Euler Path) يبدأ بالرقم 1 ويعطي كل زاوية رقماً صحيحاً متزايداً.",
             "essay",
+            instructionAr="اكتب تسلسل الأرقام على الحواف داخل المنصة — لا حاجة لرسم خارجي.",
         )
     )
     o += 1
@@ -406,14 +487,55 @@ def build_pre():
         )
     )
     o += 1
+    items.append(
+        q(
+            "pre-18-flow",
+            o,
+            "سؤال 18-ب: اختر الرمز المناسب لكل خطوة في مخطط حساب القيمة المطلقة لعدد.",
+            "flowchart",
+            flowSlots=[
+                {"id": "1", "label": "1 — بداية البرنامج"},
+                {"id": "2", "label": "2 — قراءة العدد من المستخدم"},
+                {"id": "3", "label": "3 — هل العدد سالب؟"},
+                {"id": "4", "label": "4 — طباعة القيمة المطلقة"},
+                {"id": "5", "label": "5 — نهاية البرنامج"},
+            ],
+            correctFlow={"1": "oval", "2": "parallelogram", "3": "diamond", "4": "rectangle", "5": "oval"},
+            instructionAr="اختر رمز مخطط التدفق المناسب لكل خطوة — داخل المنصة دون رسم خارجي.",
+            explainAr="بداية/نهاية = بيضاوي، إدخال = متوازي أضلاع، شرط = معيّن، طباعة = مستطيل.",
+            lessonLink="/lessons/algorithms",
+        )
+    )
+    o += 1
 
     # ── سؤال 19 ──
     items.append(
         q(
             "pre-19",
             o,
-            "سؤال 19: اطابق بين العملية ووظيفتها في مخطط البرنامج (قراءة، شرط، طباعة، إنهاء).",
-            "essay",
+            "سؤال 19: اطابق بين رمز مخطط التدفق ووظيفته.",
+            "flowchart",
+            flowMatchSymbols=[
+                {"id": "oval", "label": "البيضاوي", "emoji": "⬭"},
+                {"id": "parallelogram", "label": "متوازي الأضلاع", "emoji": "▱"},
+                {"id": "diamond", "label": "المعيّن (قرار)", "emoji": "◇"},
+                {"id": "rectangle", "label": "المستطيل", "emoji": "▭"},
+            ],
+            flowRoleOptions=[
+                {"id": "start-end", "label": "بداية أو نهاية"},
+                {"id": "io", "label": "إدخال أو إخراج"},
+                {"id": "decision", "label": "اختبار شرط"},
+                {"id": "process", "label": "تنفيذ عملية (طباعة/معالجة)"},
+            ],
+            correctFlow={
+                "oval": "start-end",
+                "parallelogram": "io",
+                "diamond": "decision",
+                "rectangle": "process",
+            },
+            instructionAr="اختر الوظيفة المناسبة لكل رمز — لا حاجة لرسم خارجي.",
+            explainAr="البيضاوي = بداية/نهاية، متوازي الأضلاع = I/O، المعيّن = شرط، المستطيل = عملية.",
+            lessonLink="/lessons/algorithms",
         )
     )
     o += 1
@@ -575,13 +697,18 @@ def build_pre():
         o += 1
 
     # ── أحجية الأرقام الثنائية (صفحات 48–53 من PDF) ──
-    for i in range(1, 8):
+    puzzle_targets = [8, 12, 15, 19, 21, 26, 31]
+    for i, target in enumerate(puzzle_targets, 1):
         items.append(
             q(
                 f"pre-puzzle-{i}",
                 o,
-                f"أحجية الأرقام الثنائية رقم {i}: ميِّز الأعداد الظاهرة في شبكة الأحجية باستخدام بطاقات النظام الثنائي (حسب PDF).",
-                "essay",
+                f"أحجية الأرقام الثنائية رقم {i}: مثِّل العدد {target} باستخدام بطاقات النظام الثنائي.",
+                "binary-cards",
+                target=target,
+                cardValues=[16, 8, 4, 2, 1],
+                instructionAr="اقلب البطاقات حتى يصبح مجموع الظاهر مساويًا للعدد المطلوب.",
+                lessonLink="/lessons/binary-cards",
             )
         )
         o += 1
@@ -614,34 +741,43 @@ def build_pre():
             q(
                 f"pre-match-{letter}",
                 o,
-                f"بطاقات المطابقة: ما العدد العشري الذي يطابق البطاقة/الحرف {letter}؟",
-                "fill",
-                correctAnswer=ans,
-                acceptAnswers=[ans],
+                f"بطاقات المطابقة ({letter}): مثِّل العدد {ans} باستخدام بطاقات النظام الثنائي.",
+                "binary-cards",
+                target=int(ans),
+                cardValues=[16, 8, 4, 2, 1],
+                instructionAr="اقلب البطاقات لتمثيل العدد المطلوب.",
+                lessonLink="/lessons/binary-cards",
             )
         )
         o += 1
 
-    # ── بطاقات النظام الثنائي (صفحة 56 — تمثيل بالرسم) ──
     items.append(
         q(
             "pre-bincard-sheet",
             o,
-            "بطاقات نظام الأرقام الثنائي: في المساحة المعطاة (حسب PDF)، مثِّل الأعداد المطلوبة باستخدام بطاقات النظام الثنائي المعطاة.",
-            "essay",
+            "بطاقات نظام الأرقام الثنائي: مثِّل الأعداد 13 و 27 و 31 باستخدام البطاقات.",
+            "binary-cards-sheet",
+            targets=[13, 27, 31],
+            cardValues=[16, 8, 4, 2, 1],
+            instructionAr="لكل عدد، اقلب البطاقات حتى يطابق المجموع العدد المطلوب.",
+            lessonLink="/lessons/binary-cards",
         )
     )
     o += 1
 
-    # ── نظام الأساس الثلاثي (بطاقات — صفحات 57–58 من PDF) ──
     ternary_nums = [1, 5, 9, 18, 25, 16, 12, 10, 29, 31, 65, 40, 36, 15, 57]
     for i, n in enumerate(ternary_nums, 1):
         items.append(
             q(
                 f"pre-tern-{i}",
                 o,
-                f"الأساس الثلاثي {i}: مثِّل العدد {n} باستخدام بطاقات نظام الأساس الثلاثي في المساحة المعطاة (حسب PDF).",
-                "essay",
+                f"الأساس الثلاثي {i}: مثِّل العدد {n} باستخدام بطاقات الأساس الثلاثي (1، 3، 9، 27، 81).",
+                "binary-cards",
+                target=n,
+                cardValues=[81, 27, 9, 3, 1],
+                baseLabel="₃",
+                instructionAr="اقلب البطاقات — الظاهرة = 1، المخفية = 0.",
+                lessonLink="/lessons/number-systems",
             )
         )
         o += 1
@@ -716,6 +852,10 @@ def emit(items, name):
                 lines.append(f"    optionsAr: {json.dumps(v, ensure_ascii=False)},")
             elif k == "codeSnippetAr":
                 lines.append(f"    codeSnippetAr: {js_string(v)},")
+            elif isinstance(v, bool):
+                lines.append(f"    {k}: {'true' if v else 'false'},")
+            elif isinstance(v, (list, dict)):
+                lines.append(f"    {k}: {json.dumps(v, ensure_ascii=False)},")
             elif isinstance(v, str):
                 lines.append(f"    {k}: {js_string(v)},")
             else:

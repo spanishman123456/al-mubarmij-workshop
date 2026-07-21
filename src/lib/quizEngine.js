@@ -1,6 +1,14 @@
 /**
  * محرك الاختبارات — خلط الأسئلة واختيار عشوائي من بنك الأسئلة
  */
+import {
+  computeAssessmentResult,
+  gradeQuestion,
+  isAutoGradable,
+  normalizeAnswerText,
+} from "./assessment/unifiedAssessment.js";
+
+export { isAutoGradable, normalizeAnswerText, gradeQuestion };
 
 function hashSeed(seed) {
   let h = 2166136261;
@@ -40,11 +48,6 @@ export function getQuizQuestionCount(quiz) {
   return quiz.questions?.length ?? 0;
 }
 
-export function isAutoGradable(question) {
-  const type = question.type || "mcq";
-  return type === "mcq" || type === "truefalse" || type === "fill";
-}
-
 export function prepareQuizForAttempt(quiz, attemptSeed = Date.now()) {
   if (!quiz) return null;
   const seed = `${quiz.id}-${attemptSeed}`;
@@ -68,58 +71,12 @@ export function prepareQuizForAttempt(quiz, attemptSeed = Date.now()) {
   return { ...quiz, questions, _sessionSeed: seed };
 }
 
-export function normalizeAnswerText(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[ًٌٍَُِّْ]/g, "");
-}
-
 export function isQuestionCorrect(question, userAnswer) {
-  const type = question.type || "mcq";
-
-  if (!isAutoGradable(question)) {
-    return false;
-  }
-
-  if (type === "fill") {
-    const normalized = normalizeAnswerText(userAnswer);
-    if (!normalized) return false;
-    const accepted = question.acceptAnswers?.length
-      ? question.acceptAnswers
-      : [question.correctAnswer];
-    return accepted.some((a) => normalizeAnswerText(a) === normalized);
-  }
-
-  if (userAnswer === undefined || userAnswer === null || userAnswer === "") return false;
-  return Number(userAnswer) === question.correctIndex;
+  const graded = gradeQuestion(question, userAnswer);
+  return graded.autoGraded && graded.correct === true;
 }
 
 export function computeQuizResult(quiz, answers) {
-  const gradable = quiz.questions.filter(isAutoGradable);
-  const manual = quiz.questions.filter((q) => !isAutoGradable(q));
-
-  let correct = 0;
-  for (const q of gradable) {
-    if (isQuestionCorrect(q, answers[q.id])) correct += 1;
-  }
-
-  let manualAnswered = 0;
-  for (const q of manual) {
-    if (String(answers[q.id] ?? "").trim().length > 0) manualAnswered += 1;
-  }
-
-  const total = gradable.length;
-  const percent = total === 0 ? 0 : Math.round((correct / total) * 100);
-  const passed = percent >= quiz.passPercent;
-  return {
-    correct,
-    total,
-    percent,
-    passed,
-    manualTotal: manual.length,
-    manualAnswered,
-    displayTotal: quiz.questions.length,
-  };
+  const byId = Object.fromEntries(quiz.questions.map((q) => [q.id, answers[q.id]]));
+  return computeAssessmentResult(quiz.questions, byId, quiz.passPercent ?? 0);
 }
