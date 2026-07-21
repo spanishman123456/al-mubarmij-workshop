@@ -26,6 +26,7 @@ import { fetchAllowedContent } from "../lib/codeVisibilityClient.js";
 import {
   getLevelDef,
   DEFAULT_CODE_VISIBILITY_LEVEL,
+  FALLBACK_CODE_VISIBILITY_LEVEL,
 } from "../config/codeVisibilityPolicy.js";
 import { getStepPlan } from "../data/stepLearningPlans.js";
 import {
@@ -118,6 +119,9 @@ export default function PythonLab() {
   const [assistMode, setAssistMode] = useState(getBuildTimeAssistMode);
   const [assistSaving, setAssistSaving] = useState(false);
   const [visibilityLevel, setVisibilityLevel] = useState(DEFAULT_CODE_VISIBILITY_LEVEL);
+  const [allowedContent, setAllowedContent] = useState(null);
+  const [studentCodeBackup, setStudentCodeBackup] = useState(null);
+  const [solutionInEditor, setSolutionInEditor] = useState(false);
   const [teacherSnippets, setTeacherSnippets] = useState([]);
   const [snippetQuery, setSnippetQuery] = useState("");
   const [snippetFilter, setSnippetFilter] = useState("all");
@@ -148,6 +152,7 @@ export default function PythonLab() {
   const sessionRef = useRef(null);
   const previewRef = useRef(null);
   const draftRestoredRef = useRef(false);
+  const policyAppliedRef = useRef(null);
   const codeRef = useRef(code);
   codeRef.current = code;
   const [appUi, setAppUi] = useState(null);
@@ -163,20 +168,56 @@ export default function PythonLab() {
   const myGraphicProjects = myProgress?.graphicProjects ?? [];
   const visibleAppTabs = APP_TABS.filter((tab) => !tab.teacherOnly || isTeacher);
 
+  // مصدر الحقيقة الوحيد لما يجوز عرضه للطالب هو استجابة allowed-content.
+  // نطبّقها على المحرر حسب المستوى الفعّال، مع منع سباق تحميل الكود:
+  //   السياسة (async) هي آخر ما يُطبَّق بعد كود المشروع المحلي (sync).
   useEffect(() => {
-    if (runMode !== "app" || !activeAppId) return;
+    const resourceId = runMode === "app" ? activeAppId : activeId;
+    const mode = runMode === "app" ? "app" : "console";
+    if (!resourceId) return undefined;
     let cancelled = false;
-    fetchAllowedContent(activeAppId, { mode: "app" })
+    fetchAllowedContent(resourceId, { mode })
       .then((data) => {
-        if (!cancelled && data?.content?.level) setVisibilityLevel(data.content.level);
+        if (cancelled || !data?.content) return;
+        const content = data.content;
+        setAllowedContent(content);
+        setVisibilityLevel(content.level || DEFAULT_CODE_VISIBILITY_LEVEL);
+        if (isTeacher) return;
+        // لا نطبّق تغييرات المحرر إلا مرة واحدة لكل (نمط:مورد) لحماية تعديلات الطالب.
+        const key = `${content.mode}:${content.resourceId}`;
+        if (policyAppliedRef.current === key) return;
+        policyAppliedRef.current = key;
+        // لا نستبدل مشروعًا محفوظًا فتحه الطالب أو مسودّة مستعادة.
+        if (savedProjectId || draftRestoredRef.current) return;
+        const lvl = content.level;
+        if (lvl <= 3) {
+          setCode("");
+          setSolutionInEditor(false);
+          setStudentCodeBackup(null);
+        } else if (lvl === 4) {
+          setCode(content.starterCode ?? "");
+          setSolutionInEditor(false);
+          setStudentCodeBackup(null);
+        } else if (lvl === 5) {
+          setCode(content.partialCode ?? content.starterCode ?? "");
+          setSolutionInEditor(false);
+          setStudentCodeBackup(null);
+        } else if (lvl === 8 && content.fullSolution) {
+          setStudentCodeBackup(codeRef.current);
+          setCode(content.fullSolution);
+          setSolutionInEditor(true);
+        }
+        // المستويان 6 و7: يبقى كود الخطوة/الابتدائي كما حمّله المشروع.
       })
       .catch(() => {
-        if (!cancelled) setVisibilityLevel(DEFAULT_CODE_VISIBILITY_LEVEL);
+        if (cancelled) return;
+        setAllowedContent(null);
+        setVisibilityLevel(FALLBACK_CODE_VISIBILITY_LEVEL);
       });
     return () => {
       cancelled = true;
     };
-  }, [runMode, activeAppId]);
+  }, [runMode, activeAppId, activeId, isTeacher, savedProjectId]);
 
   const visibilityDef = getLevelDef(visibilityLevel);
   const myStudentSnippets = myProgress?.pythonSnippets ?? [];
@@ -210,6 +251,23 @@ export default function PythonLab() {
     setStepCheckAttempts(s.stepCheckAttempts);
     setSolutionRevealed(s.solutionRevealed);
     if (plan && loadCode) setCode(getInitialCode(plan));
+  }
+
+  // يحمّل الحل النموذجي الذي سمح به المعلم داخل المحرر، مع حفظ نسخة الطالب أولًا.
+  // لا يُحفَظ تلقائيًا باسم الطالب ولا يُحتسب مشروعًا مكتملًا.
+  function loadSolutionIntoEditor() {
+    const sol = allowedContent?.fullSolution;
+    if (!sol) return;
+    if (!solutionInEditor) setStudentCodeBackup(codeRef.current);
+    setCode(sol);
+    setSolutionInEditor(true);
+    setAppTab("code");
+  }
+
+  // يعيد كود الطالب المحفوظ دون فقدان أي عمل.
+  function restoreMyCode() {
+    setCode(studentCodeBackup ?? "");
+    setSolutionInEditor(false);
   }
 
   const persistTeacherSnippets = useCallback(
@@ -1330,6 +1388,64 @@ export default function PythonLab() {
               </div>
             )}
 
+            {!isTeacher && allowedContent?.fullSolution ? (
+              <div
+                data-testid="cv-solution-panel"
+                className="mt-4 rounded-xl border border-violet-500/40 bg-violet-950/30 p-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-bold text-violet-200">
+                    الحل الكامل (سمح المعلم بعرضه)
+                    {solutionInEditor ? (
+                      <span className="ms-2 rounded bg-violet-500/30 px-2 py-0.5 text-xs text-violet-100">
+                        محمّل في المحرر
+                      </span>
+                    ) : null}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      data-testid="cv-load-solution"
+                      onClick={loadSolutionIntoEditor}
+                      className="rounded-lg border border-violet-400/50 px-3 py-1 text-xs font-bold text-violet-100 hover:bg-violet-900/40"
+                    >
+                      تحميل الحل في المحرر
+                    </button>
+                    {studentCodeBackup != null ? (
+                      <button
+                        type="button"
+                        data-testid="cv-restore-code"
+                        onClick={restoreMyCode}
+                        className="rounded-lg border border-slate-400/40 px-3 py-1 text-xs font-bold text-slate-200 hover:bg-slate-800/50"
+                      >
+                        العودة إلى كودي المحفوظ
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+                <pre
+                  data-testid="cv-solution-code"
+                  dir="ltr"
+                  className="mt-3 max-h-64 overflow-auto rounded-lg bg-slate-950/70 p-3 text-left text-xs leading-relaxed text-violet-100"
+                >
+                  {allowedContent.fullSolution}
+                </pre>
+                <p className="mt-2 text-xs text-violet-200/80">
+                  هذا حل نموذجي من المعلم للاطّلاع — لن يُحفَظ باسمك ولن يُحتسب مشروعك مكتملًا إلا إذا حفظته بنفسك.
+                </p>
+              </div>
+            ) : null}
+
+            {!isTeacher && allowedContent?.fullSolutionMissing ? (
+              <p
+                data-testid="cv-solution-missing"
+                className="mt-4 rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-sm text-amber-100"
+              >
+                {allowedContent.notice ||
+                  "المحتوى الكامل غير متاح لهذا المشروع حاليًا. تم إبقاء كود البداية."}
+              </p>
+            ) : null}
+
             {!isTeacher && visibilityLevel === 1 ? (
               <p
                 data-testid="cv-hide-notice"
@@ -1338,9 +1454,33 @@ export default function PythonLab() {
                 حدّد المعلم بدء هذا النشاط من صفحة فارغة — اكتب الكود بنفسك دون كود ابتدائي أو تلميحات.
               </p>
             ) : !isTeacher && visibilityLevel === 2 ? (
-              <div className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-3 text-sm text-emerald-100">
+              <div
+                data-testid="cv-task-notice"
+                className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-3 text-sm text-emerald-100"
+              >
                 <p className="font-bold text-emerald-200">المطلوب</p>
-                <p className="mt-1 text-slate-200">{stepPlan?.ideaAr || appTemplate.description}</p>
+                <p className="mt-1 text-slate-200">
+                  {allowedContent?.taskDescriptionAr || stepPlan?.ideaAr || appTemplate.description}
+                </p>
+              </div>
+            ) : !isTeacher && visibilityLevel === 3 ? (
+              <div
+                data-testid="cv-hints-notice"
+                className="mt-4 rounded-xl border border-sky-500/25 bg-sky-950/20 p-3 text-sm text-sky-100"
+              >
+                <p className="font-bold text-sky-200">التلميحات</p>
+                {allowedContent?.taskDescriptionAr ? (
+                  <p className="mt-1 text-slate-200">{allowedContent.taskDescriptionAr}</p>
+                ) : null}
+                <ul className="mt-2 list-disc space-y-1 pe-5 text-slate-200">
+                  {(allowedContent?.hints?.length
+                    ? allowedContent.hints
+                    : stepPlan?.stepsOverviewAr || []
+                  ).map((h, i) => (
+                    <li key={i}>{h}</li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-sky-200/80">اكتب الكود بنفسك — لا يُعرض كود جاهز في هذا الوضع.</p>
               </div>
             ) : stepPlan && !savedProjectId && !isTeacher ? (
               <StepLearningPanel

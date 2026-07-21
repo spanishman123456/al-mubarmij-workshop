@@ -16,6 +16,7 @@ import {
   revertCodeVisibility,
   undoCodeVisibility,
   previewCodeVisibility,
+  diagnoseCodeVisibility,
 } from "../../lib/codeVisibilityClient.js";
 
 const PROJECTS = listCatalogProjects();
@@ -42,6 +43,7 @@ export default function CodeVisibilityPage() {
   const [error, setError] = useState("");
   const [confirmFullSolution, setConfirmFullSolution] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [diagnostic, setDiagnostic] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -77,6 +79,21 @@ export default function CodeVisibilityPage() {
     else setSelectedLevel(config?.general ?? DEFAULT_CODE_VISIBILITY_LEVEL);
     setPreview(null);
   }, [scope, projectId, dayId, currentLevel, config]);
+
+  const refreshDiagnostic = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const data = await diagnoseCodeVisibility({ mode: "app", resourceId: projectId });
+      setDiagnostic(data.diagnostic);
+    } catch {
+      setDiagnostic(null);
+    }
+  }, [projectId]);
+
+  // يحدّث بطاقة «السياسة الفعّالة للمشروع» كلما تغيّر المشروع أو حُفظت السياسة.
+  useEffect(() => {
+    refreshDiagnostic();
+  }, [refreshDiagnostic, config]);
 
   async function doSave() {
     setBusy(true);
@@ -164,6 +181,21 @@ export default function CodeVisibilityPage() {
       setPreview(data.content);
     } catch {
       setError("تعذرت المعاينة.");
+    }
+  }
+
+  // اختبار التطبيق على المشروع المحدّد باستخدام نفس منطق الطالب (previewAsStudent → buildAllowedContent).
+  async function handleTestOnProject() {
+    setError("");
+    setPreview(null);
+    try {
+      const [prev] = await Promise.all([
+        previewCodeVisibility({ mode: "app", resourceId: projectId }),
+        refreshDiagnostic(),
+      ]);
+      setPreview(prev.content);
+    } catch {
+      setError("تعذر اختبار التطبيق على هذا المشروع.");
     }
   }
 
@@ -296,6 +328,115 @@ export default function CodeVisibilityPage() {
             معاينة كطالب
           </button>
         </div>
+      </EduCard>
+
+      <EduCard title="السياسة الفعّالة للمشروع المحدَّد" className="mt-4">
+        <label className="block text-sm">
+          <span className="mb-1 block font-semibold text-slate-700">المشروع</span>
+          <select
+            data-testid="cv-diag-project-select"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="w-full rounded-lg border p-2"
+          >
+            {PROJECTS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.titleAr} {p.dayId ? `(${p.dayId})` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            data-testid="cv-test-on-project"
+            className="edu-btn edu-btn-primary text-sm"
+            onClick={handleTestOnProject}
+            disabled={busy}
+          >
+            اختبار التطبيق على هذا المشروع
+          </button>
+        </div>
+
+        {diagnostic ? (
+          <dl
+            data-testid="cv-diagnostic-card"
+            className="mt-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2"
+          >
+            <div>
+              <dt className="text-slate-500">الإعداد العام</dt>
+              <dd className="font-semibold" data-testid="cv-diag-general">
+                {diagnostic.generalLevel}. {getLevelDef(diagnostic.generalLevel).labelAr}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">إعداد اليوم</dt>
+              <dd className="font-semibold">
+                {diagnostic.dayLevel
+                  ? `${diagnostic.dayLevel}. ${getLevelDef(diagnostic.dayLevel).labelAr}`
+                  : "غير موجود"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">إعداد المشروع</dt>
+              <dd className="font-semibold" data-testid="cv-diag-project">
+                {diagnostic.projectLevel
+                  ? `${diagnostic.projectLevel}. ${getLevelDef(diagnostic.projectLevel).labelAr}`
+                  : "غير موجود"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">المستوى الفعّال</dt>
+              <dd className="font-bold text-violet-700" data-testid="cv-diag-effective">
+                {diagnostic.resolvedLevel}. {getLevelDef(diagnostic.resolvedLevel).labelAr}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">مصدر المستوى الفعّال (النطاق الحاسم)</dt>
+              <dd className="font-semibold" data-testid="cv-diag-scope">
+                {diagnostic.resolvedScope}
+                {diagnostic.resolvedScope === "project" && diagnostic.generalLevel !== diagnostic.resolvedLevel
+                  ? " — إعداد المشروع أعلى أولوية من الإعداد العام"
+                  : ""}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">معرف المورد</dt>
+              <dd className="font-mono text-xs">{diagnostic.resourceId}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">مطابقة الكتالوج</dt>
+              <dd className="font-semibold">{diagnostic.catalogMatch ? "نعم" : "لا"}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">توفر الحل الكامل</dt>
+              <dd
+                className={`font-semibold ${diagnostic.fullSolutionAvailable ? "text-emerald-700" : "text-rose-700"}`}
+                data-testid="cv-diag-full-available"
+              >
+                {diagnostic.fullSolutionAvailable ? "متوفر" : "غير متوفر"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">آخر وقت جلب للسياسة</dt>
+              <dd className="text-xs">{new Date(diagnostic.fetchedAt).toLocaleString("ar")}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="mt-3 text-sm text-slate-500">
+            اضغط «اختبار التطبيق على هذا المشروع» لعرض السياسة الفعّالة والنطاق الحاسم.
+          </p>
+        )}
+
+        {diagnostic && diagnostic.resolvedLevel >= 7 && !diagnostic.fullSolutionAvailable ? (
+          <p
+            data-testid="cv-diag-no-solution"
+            className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700"
+          >
+            تعذّر تطبيق «عرض الحل الكامل» لأن هذا المشروع لا يحتوي على حلٍّ نموذجيٍّ صالح (fullSolutionId).
+          </p>
+        ) : null}
       </EduCard>
 
       <EduCard title="ملخص الإعداد" className="mt-4">

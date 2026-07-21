@@ -62,6 +62,12 @@ export function previewCodeVisibility({ mode, resourceId, attemptsCompleted, ste
   });
 }
 
+/** تشخيص السياسة الفعّالة لمورد عبر كل النطاقات (للمعلم فقط). */
+export function diagnoseCodeVisibility({ mode = "app", resourceId }) {
+  const params = new URLSearchParams({ mode, resourceId });
+  return requestJson(`/api/config/code-visibility/diagnose?${params.toString()}`);
+}
+
 /** المحتوى المسموح للمستخدم الحالي (الدور من الجلسة). */
 export function fetchAllowedContent(resourceId, { mode = "app", attemptsCompleted = 0, stepsCompleted = false } = {}) {
   const params = new URLSearchParams({

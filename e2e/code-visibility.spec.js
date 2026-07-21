@@ -37,6 +37,19 @@ async function setLevel(page, scope, level, { project } = {}) {
   }
   await page.getByTestId(`cv-level-${level}`).check();
   await page.getByTestId("cv-save").click();
+  // مستويات كشف الحل الكامل (7/8) تتطلب تأكيدًا.
+  const confirmBtn = page.getByTestId("cv-confirm-full");
+  if (await confirmBtn.isVisible().catch(() => false)) {
+    await confirmBtn.click();
+  }
+  await expect(page.getByText("تم حفظ الإعداد وتطبيقه فورًا.")).toBeVisible();
+}
+
+async function resetProjectOverride(page, project) {
+  await page.goto("/teacher/code-visibility");
+  await page.getByTestId("cv-scope-project").click();
+  await page.getByTestId("cv-project-select").selectOption(project);
+  await page.getByTestId("cv-reset").click();
 }
 
 test.describe("code visibility control", () => {
@@ -105,5 +118,56 @@ test.describe("code visibility control", () => {
     await expect(page.getByTestId("cv-teacher-bar")).toBeVisible();
     await expect(page.getByTestId("cv-teacher-mode")).toContainText("التلميحات");
     await expect(page.getByTestId("cv-change-link")).toBeVisible();
+  });
+
+  test("teacher diagnostic card surfaces a hidden project override that beats general", async ({ page }) => {
+    await loginTeacher(page);
+    await setLevel(page, "general", 8);
+    await setLevel(page, "project", 4, { project: APP_ID });
+    await page.goto("/teacher/code-visibility");
+    await page.getByTestId("cv-diag-project-select").selectOption(APP_ID);
+    await page.getByTestId("cv-test-on-project").click();
+    await expect(page.getByTestId("cv-diag-general")).toContainText("8");
+    await expect(page.getByTestId("cv-diag-project")).toContainText("4");
+    await expect(page.getByTestId("cv-diag-effective")).toContainText("4");
+    await expect(page.getByTestId("cv-diag-scope")).toContainText("project");
+  });
+
+  test("level 8 actually shows the full solution to the student, and level 3 hides it", async ({ browser }) => {
+    const teacherCtx = await browser.newContext();
+    const teacherPage = await teacherCtx.newPage();
+    await loginTeacher(teacherPage);
+    // أزل أي تخصيص مشروع مخفي ثم اضبط العام إلى 8.
+    await resetProjectOverride(teacherPage, APP_ID);
+    await setLevel(teacherPage, "general", 8);
+
+    const studentCtx = await browser.newContext();
+    const studentPage = await studentCtx.newPage();
+    await loginStudent(studentPage);
+
+    const solved = studentPage.waitForResponse(
+      (r) => r.url().includes(`/api/lab/${APP_ID}/allowed-content`) && r.ok(),
+    );
+    await studentPage.goto(`/python?mode=app&app=${APP_ID}`);
+    const body = await (await solved).json();
+    expect(body.content.level).toBe(8);
+    expect(body.content.fullSolution).toBeTruthy();
+
+    // الحل الكامل ظاهر فعلًا للطالب (لوحة الحل + المحرر لا يعود إلى Starter).
+    await studentPage.getByTestId("app-tab-code").click();
+    await expect(studentPage.getByTestId("cv-solution-panel")).toBeVisible();
+    await expect(studentPage.getByTestId("cv-solution-code")).toContainText("import");
+    // المحرر حُمِّل بالحل تلقائيًا (فتح جديد بلا كود محفوظ) — ليس كود البداية.
+    await expect(studentPage.getByTestId("python-code-editor")).toHaveValue(/import random/);
+
+    // المعلم يعيد المستوى إلى 3 → الطالب يحدّث → يختفي الحل.
+    await setLevel(teacherPage, "general", 3);
+    await studentPage.reload();
+    await studentPage.getByTestId("app-tab-code").click();
+    await expect(studentPage.getByTestId("cv-hints-notice")).toBeVisible();
+    await expect(studentPage.getByTestId("cv-solution-panel")).toHaveCount(0);
+
+    await teacherCtx.close();
+    await studentCtx.close();
   });
 });

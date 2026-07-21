@@ -7,7 +7,15 @@ import {
   revertCodeVisibility,
   buildAllowedContent,
   previewAsStudent,
+  diagnoseResource,
 } from "../services/codeVisibilityService.js";
+
+// السياسة حسّاسة زمنيًا: يجب ألا تُخزَّن مؤقتًا كي ينعكس تغيير المعلم فورًا.
+function noStore(res) {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+}
 
 function serializeConfig(config) {
   return {
@@ -26,12 +34,32 @@ export function registerCodeVisibilityRoutes(app, logError) {
   // خريطة السياسة (بدون أي حل نموذجي) — قراءة عامة آمنة.
   app.get("/api/config/code-visibility", (_req, res) => {
     try {
+      noStore(res);
       res.json(serializeConfig(getCodeVisibilityConfig()));
     } catch (err) {
       logError?.("codeVisibility.get", err);
       res.status(500).json({ ok: false, error: "failed" });
     }
   });
+
+  // تشخيص السياسة الفعّالة لمورد عبر كل النطاقات — للمعلم فقط، دون كشف الحل.
+  app.get(
+    "/api/config/code-visibility/diagnose",
+    requireAuth,
+    requireRole("teacher"),
+    (req, res) => {
+      try {
+        noStore(res);
+        const mode = req.query.mode === "console" ? "console" : "app";
+        const resourceId = String(req.query.resourceId || "");
+        if (!resourceId) return res.status(400).json({ ok: false, error: "missing_resource" });
+        res.json({ ok: true, diagnostic: diagnoseResource(mode, resourceId) });
+      } catch (err) {
+        logError?.("codeVisibility.diagnose", err);
+        res.status(500).json({ ok: false, error: "failed" });
+      }
+    },
+  );
 
   app.put("/api/config/code-visibility", requireAuth, requireRole("teacher"), (req, res) => {
     try {
@@ -88,6 +116,7 @@ export function registerCodeVisibilityRoutes(app, logError) {
   // معاينة كطالب — للمعلم فقط، دون أي تأثير على التقدم.
   app.post("/api/config/code-visibility/preview", requireAuth, requireRole("teacher"), (req, res) => {
     try {
+      noStore(res);
       const { mode, resourceId, attemptsCompleted, stepsCompleted } = req.body || {};
       if (!resourceId) return res.status(400).json({ ok: false, error: "missing_resource" });
       const content = previewAsStudent(mode === "console" ? "console" : "app", String(resourceId), {
@@ -104,11 +133,13 @@ export function registerCodeVisibilityRoutes(app, logError) {
   // المحتوى المسموح للطالب — الدور يؤخذ من الجلسة لا من رأس الطلب.
   app.get("/api/lab/:resourceId/allowed-content", requireAuth, (req, res) => {
     try {
+      noStore(res);
       const mode = req.query.mode === "console" ? "console" : "app";
       const content = buildAllowedContent(mode, String(req.params.resourceId), {
         role: req.auth.role,
         attemptsCompleted: Number(req.query.attemptsCompleted) || 0,
         stepsCompleted: req.query.stepsCompleted === "true",
+        logDiagnostic: (tag, info) => logError?.(tag, info),
       });
       res.json({ ok: true, content });
     } catch (err) {
